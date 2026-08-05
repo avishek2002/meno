@@ -91,6 +91,19 @@ test('a module with any unproved concept has score null (insufficient evidence i
   assert.equal(m.courses[C].modules[M].score, null);
 });
 
+test('answering an interleaved check never reattributes a concept to the quizzing module', () => {
+  const events = [
+    GENERATED, // alpha taught in module 01-first
+    ev({ ts: 'T2', event: 'scored', level: 'transfer', module: M, lesson: '01-a', concepts: ['alpha'], item: 'i1', item_type: 'transfer', correct: null, score: 1, attempt: 1 }),
+    // an interleaved recognition check for alpha living inside a module-2 lesson,
+    // answered in the app - must not move alpha out of module 01-first
+    ev({ ts: 'T3', event: 'scored', source: 'ui', level: 'recognition', module: '02-next', lesson: '01-b', concepts: ['alpha'], item: '01-b#alpha-callback', item_type: 'cloze', correct: true, score: null, attempt: 1 }),
+  ];
+  const m = deriveMastery(events);
+  assert.equal(m.courses[C].concepts.alpha.module, M);
+  assert.equal(m.courses[C].modules[M].score, 1, 'module score must still include the interleaved concept');
+});
+
 test('rebuild is deterministic: same lines, byte-identical serialization', () => {
   const events = [
     GENERATED,
