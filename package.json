@@ -10,6 +10,7 @@
     "dev": "node app/server/index.ts --dev",
     "build": "vite build --config app/client/vite.config.ts",
     "validate": "node tools/validate.ts",
+    "eval": "node tools/eval.ts",
     "typecheck": "tsc --noEmit && tsc --noEmit -p app/client/tsconfig.json",
     "test": "node --test tools/test/*.test.ts app/test/*.test.ts",
     "gate": "npm run typecheck && npm test && npm run validate"
