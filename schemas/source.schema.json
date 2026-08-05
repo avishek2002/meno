@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/avishek2002/meno/schemas/source.schema.json",
+  "title": "Meno source record",
+  "description": "One citation record, shared by module manifests and lesson frontmatter. Canonical prose definition: .agents/skills/generate-curriculum/references/sourcing.md. Referenced via $ref from module.schema.json and lesson.schema.json.",
+  "type": "object",
+  "required": ["title", "url", "archived_url", "accessed", "source_type", "why"],
+  "properties": {
+    "title": { "type": "string", "minLength": 1 },
+    "url": { "type": "string", "minLength": 1 },
+    "archived_url": { "type": "string" },
+    "accessed": { "type": "string", "format": "date" },
+    "source_type": { "enum": ["web", "user"] },
+    "why": { "type": "string", "minLength": 1 }
+  },
+  "additionalProperties": true
+}

@@ -15,6 +15,8 @@ const addFormats = ((addFormatsExport as unknown as { default?: unknown }).defau
   addFormatsExport) as (ajv: Ajv2020) => void;
 import { parse as parseYaml } from 'yaml';
 import { parseFrontmatter } from '../lib/frontmatter.ts';
+import { parseLesson, anatomyOf } from '../lib/lesson.ts';
+import { parseLedger, deriveMastery, serializeMastery, type LedgerEvent } from '../lib/mastery.ts';
 
 export interface Finding {
   level: 'error' | 'warning';
@@ -39,6 +41,9 @@ function walk(dir: string, out: string[] = []): string[] {
 function loadSchema(name: string): ValidateFunction {
   const ajv = new Ajv2020({ allErrors: true, strict: false });
   addFormats(ajv);
+  if (name !== 'source.schema.json') {
+    ajv.addSchema(JSON.parse(readFileSync(join(repoRoot, 'schemas', 'source.schema.json'), 'utf8')));
+  }
   const schema = JSON.parse(readFileSync(join(repoRoot, 'schemas', name), 'utf8'));
   return ajv.compile(schema);
 }
@@ -377,10 +382,170 @@ export function checkCourses(_target: string, files: string[]): Finding[] {
   return findings;
 }
 
+export function checkLessons(_target: string, files: string[]): Finding[] {
+  const findings: Finding[] = [];
+  const validateLesson = loadSchema('lesson.schema.json');
+
+  for (const courseFile of files.filter((f) => f.endsWith('/course.yml'))) {
+    const courseDir = courseFile.slice(0, -'/course.yml'.length);
+    const course = parseYamlFile(courseFile, [], 'lessons');
+    const courseSlug = String(course?.slug ?? courseDir.split('/').at(-1));
+
+    // course-wide concept union (interleaving legitimately crosses lessons)
+    const moduleFiles = files.filter((f) => f.startsWith(join(courseDir, 'modules') + '/') && f.endsWith('/module.yml'));
+    const courseConcepts = new Set<string>();
+    const modules: { dir: string; slug: string; mod: Record<string, unknown> }[] = [];
+    for (const mf of moduleFiles) {
+      const mod = parseYamlFile(mf, [], 'lessons');
+      if (!mod) continue;
+      for (const c of (mod.concepts as string[]) ?? []) courseConcepts.add(c);
+      modules.push({ dir: mf.slice(0, -'/module.yml'.length), slug: String(mod.module), mod });
+    }
+
+    for (const { dir, slug: moduleSlug, mod } of modules) {
+      const moduleConcepts = new Set((mod.concepts as string[]) ?? []);
+      const lessons = ((mod.lessons as { file?: string; status?: string; concept?: string }[]) ?? []).filter(
+        (l) => l.status && l.status !== 'planned',
+      );
+      for (const [li, entry] of lessons.entries()) {
+        const file = join(dir, entry.file ?? '');
+        if (!existsSync(file)) continue; // refs check already reports this
+        const rel = relative(repoRoot, file);
+        const lesson = parseLesson(readFileSync(file, 'utf8'));
+        for (const w of lesson.warnings) findings.push({ level: 'error', check: 'lessons', path: rel, message: w });
+        const fm = lesson.frontmatter;
+        if (!fm) continue;
+
+        if (!validateLesson(fm)) {
+          for (const err of validateLesson.errors ?? []) {
+            findings.push({ level: 'error', check: 'lessons', path: rel, message: `${err.instancePath || '/'} ${err.message}` });
+          }
+        }
+        const expectedId = `${courseSlug}/${moduleSlug}/${(entry.file ?? '').replace(/\.md$/, '')}`;
+        if (fm.id !== expectedId) {
+          findings.push({ level: 'error', check: 'lessons', path: rel, message: `frontmatter id "${fm.id}" should be "${expectedId}"` });
+        }
+        if (fm.module !== moduleSlug) {
+          findings.push({ level: 'error', check: 'lessons', path: rel, message: `frontmatter module "${fm.module}" does not match "${moduleSlug}"` });
+        }
+        if (fm.status !== entry.status) {
+          findings.push({ level: 'warning', check: 'lessons', path: rel, message: `frontmatter status "${fm.status}" drifted from module.yml entry "${entry.status}"` });
+        }
+        for (const c of (fm.concepts as string[]) ?? []) {
+          if (!moduleConcepts.has(c)) {
+            findings.push({ level: 'error', check: 'lessons', path: rel, message: `frontmatter concept "${c}" not in the module's concepts list` });
+          }
+        }
+
+        const anatomy = anatomyOf(lesson);
+        if (anatomy.score < 9) {
+          const missing = Object.entries(anatomy.parts).filter(([, ok]) => !ok).map(([k]) => k);
+          findings.push({ level: 'error', check: 'lessons', path: rel, message: `anatomy ${anatomy.score}/9 - missing: ${missing.join(', ')}` });
+        }
+
+        const seenIds = new Set<string>();
+        for (const check of lesson.checks) {
+          const at = `check at line ${check.line}`;
+          for (const field of ['id', 'type', 'concept', 'prompt', 'explain'] as const) {
+            if (!check[field]) findings.push({ level: 'error', check: 'checks', path: rel, message: `${at}: missing required "${field}"` });
+          }
+          if (check.answer === undefined) findings.push({ level: 'error', check: 'checks', path: rel, message: `${at}: missing required "answer"` });
+          if (check.id) {
+            if (seenIds.has(check.id)) findings.push({ level: 'error', check: 'checks', path: rel, message: `${at}: duplicate check id "${check.id}"` });
+            seenIds.add(check.id);
+            if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(check.id)) {
+              findings.push({ level: 'error', check: 'checks', path: rel, message: `${at}: id "${check.id}" is not a kebab-case slug` });
+            }
+          }
+          if (check.type && !['mcq', 'cloze', 'flashcard'].includes(check.type)) {
+            findings.push({ level: 'error', check: 'checks', path: rel, message: `${at}: unknown type "${check.type}"` });
+          }
+          if (check.type === 'mcq') {
+            const opts = check.options ?? [];
+            if (opts.length < 3 || opts.length > 5) {
+              findings.push({ level: 'error', check: 'checks', path: rel, message: `${at}: mcq needs 3-5 options, has ${opts.length}` });
+            }
+            const ans = Number(check.answer);
+            if (!Number.isInteger(ans) || ans < 1 || ans > opts.length) {
+              findings.push({ level: 'error', check: 'checks', path: rel, message: `${at}: mcq answer "${check.answer}" out of range 1-${opts.length}` });
+            }
+          }
+          if (check.type === 'cloze' && check.prompt && !check.prompt.includes('{{')) {
+            findings.push({ level: 'error', check: 'checks', path: rel, message: `${at}: cloze prompt has no {{...}} gap` });
+          }
+          if (check.concept && !courseConcepts.has(check.concept)) {
+            findings.push({ level: 'error', check: 'checks', path: rel, message: `${at}: concept "${check.concept}" not taught anywhere in this course` });
+          }
+        }
+
+        // interleaving: later lessons in a multi-concept module should mix concepts
+        if (li > 0 && moduleConcepts.size >= 2 && lesson.checks.length > 0) {
+          const used = new Set(lesson.checks.map((c) => c.concept).filter(Boolean));
+          if (used.size === 1) {
+            findings.push({ level: 'warning', check: 'checks', path: rel, message: 'all recall checks target one concept; later lessons should interleave earlier concepts' });
+          }
+        }
+      }
+    }
+  }
+  return findings;
+}
+
+export function checkLedgers(_target: string, files: string[]): Finding[] {
+  const findings: Finding[] = [];
+  const validateEvent = loadSchema('ledger.schema.json');
+  for (const file of files.filter((f) => f.endsWith('/progress/ledger.jsonl'))) {
+    const rel = relative(repoRoot, file);
+    const { events, warnings } = parseLedger(readFileSync(file, 'utf8'));
+    for (const w of warnings) findings.push({ level: 'error', check: 'ledger', path: rel, message: w });
+    let prevTs = '';
+    for (const [i, e] of events.entries()) {
+      const at = `line ${i + 1}`;
+      const eventName = e.event;
+      if (!validateEvent(e)) {
+        const msgs = (validateEvent.errors ?? []).slice(0, 3).map((err) => `${err.instancePath || '/'} ${err.message}`);
+        findings.push({ level: 'error', check: 'ledger', path: rel, message: `${at} (${eventName}): ${msgs.join('; ')}` });
+      }
+      if (e.ts <= prevTs) {
+        findings.push({ level: 'error', check: 'ledger', path: rel, message: `${at}: ts "${e.ts}" not strictly after the previous line (ts is a join key; bump 1ms on collision)` });
+      }
+      prevTs = e.ts;
+      // write authority at rest: the one place a hand-edited or buggy-agent ledger gets caught
+      const gateClass = e.event !== 'read' && e.event !== 'scored';
+      if (e.source === 'ui' && (gateClass || (e as LedgerEvent).level === 'transfer')) {
+        findings.push({ level: 'error', check: 'ledger', path: rel, message: `${at}: source "ui" may never carry event "${e.event}"${(e as LedgerEvent).level === 'transfer' ? ' at transfer level' : ''} (decision 14)` });
+      }
+    }
+  }
+  return findings;
+}
+
+export function checkMastery(_target: string, files: string[]): Finding[] {
+  const findings: Finding[] = [];
+  for (const ledgerFile of files.filter((f) => f.endsWith('/progress/ledger.jsonl'))) {
+    const masteryFile = join(ledgerFile.slice(0, -'/ledger.jsonl'.length), 'mastery.yml');
+    const relM = relative(repoRoot, masteryFile);
+    const { events } = parseLedger(readFileSync(ledgerFile, 'utf8'));
+    const expected = serializeMastery(deriveMastery(events));
+    if (!existsSync(masteryFile)) {
+      findings.push({ level: 'warning', check: 'mastery', path: relM, message: 'mastery.yml not derived yet (node tools/rebuild-mastery.ts <tenant-dir>)' });
+      continue;
+    }
+    const actual = readFileSync(masteryFile, 'utf8');
+    if (actual !== expected) {
+      findings.push({ level: 'error', check: 'mastery', path: relM, message: 'mastery.yml is not byte-identical to the ledger-derived rebuild (stale or hand-edited; rerun tools/rebuild-mastery.ts)' });
+    }
+  }
+  return findings;
+}
+
 type Check = (target: string, files: string[]) => Finding[];
 const CHECKS: Record<string, Check> = {
   profiles: checkProfiles,
   courses: checkCourses,
+  lessons: checkLessons,
+  ledger: checkLedgers,
+  mastery: checkMastery,
   tenancy: checkTenancy,
 };
 
