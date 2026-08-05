@@ -1,37 +1,60 @@
 courses:
   rust-for-backend:
     concepts:
-      cargo-and-toolchain:
+      borrowing:
         level: introduced
-        module: 01-syntax-and-ownership-basics
+        module: 02-borrowing-in-practice
         n_transfer: 0
-        next_review: 2026-08-07
+        next_review: 2026-08-09
+        recognition_rate: null
+        stale: false
+        transfer_score: null
+        weak_until: null
+      cargo-and-toolchain:
+        level: mastered
+        module: 01-syntax-and-ownership-basics
+        n_transfer: 1
+        next_review: 2026-08-16
+        recognition_rate: null
+        stale: false
+        transfer_score: 1
+        weak_until: null
+      lifetimes:
+        level: introduced
+        module: 02-borrowing-in-practice
+        n_transfer: 0
+        next_review: 2026-08-09
         recognition_rate: null
         stale: false
         transfer_score: null
         weak_until: null
       ownership:
-        level: introduced
+        level: shaky
         module: 01-syntax-and-ownership-basics
-        n_transfer: 0
-        next_review: 2026-08-07
-        recognition_rate: null
+        n_transfer: 1
+        next_review: 2026-08-09
+        recognition_rate: 1
         stale: false
-        transfer_score: null
-        weak_until: null
+        transfer_score: 0.5
+        weak_until: 2026-08-09
       syntax-for-experienced-developers:
-        level: introduced
+        level: shaky
         module: 01-syntax-and-ownership-basics
-        n_transfer: 0
-        next_review: 2026-08-07
+        n_transfer: 1
+        next_review: 2026-08-16
         recognition_rate: null
         stale: false
-        transfer_score: null
+        transfer_score: 0.75
         weak_until: null
     modules:
       01-syntax-and-ownership-basics:
         gate: none
         locked: false
         overridden: false
+        score: 0.75
+      02-borrowing-in-practice:
+        gate: fail
+        locked: false
+        overridden: true
         score: null
 schema_version: 1

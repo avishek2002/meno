@@ -63,8 +63,11 @@ test('no route handler contains an agent source literal', () => {
   assert.ok(!/source:\s*['"]agent['"]/.test(ledger.replace(/\/\/.*$/gm, '')), 'ledger.ts must never construct an agent-sourced event');
 });
 
-test('a full scripted UI session unlocks zero gates', async () => {
-  // answer every check in every generated lesson of module 1, correctly where possible
+test('a full scripted UI session changes no gate-relevant state', async () => {
+  // the fixture legitimately contains agent activity (the Phase 5 session), so the
+  // assertion is a before/after diff: UI activity must change NOTHING a gate reads
+  const before = deriveMastery(readLedgerEvents(app.tenantDir));
+  // answer every check in every generated lesson, correctly where possible
   const tree = (await api(app, 'GET', '/api/v1/example-learner/tree')).json as never as {
     courses: { slug: string; modules: { slug: string; lessons: { file: string; status: string }[] }[] }[];
   };
@@ -87,15 +90,17 @@ test('a full scripted UI session unlocks zero gates', async () => {
       }
     }
   }
-  const mastery = deriveMastery(readLedgerEvents(app.tenantDir));
-  for (const course of Object.values(mastery.courses)) {
+  const after_ = deriveMastery(readLedgerEvents(app.tenantDir));
+  for (const [courseSlug, course] of Object.entries(after_.courses)) {
+    const beforeCourse = before.courses[courseSlug];
     for (const [slug, mod] of Object.entries(course.modules)) {
-      assert.notEqual(mod.gate, 'pass', `module ${slug} gate passed from UI activity alone`);
-      assert.equal(mod.score, null, `module ${slug} gained a gate score from UI activity alone`);
+      assert.deepEqual(mod, beforeCourse.modules[slug], `module ${slug} gate state changed from UI activity alone`);
     }
     for (const [name, concept] of Object.entries(course.concepts)) {
-      assert.equal(concept.n_transfer, 0, `concept ${name} gained transfer evidence from the UI`);
-      assert.notEqual(concept.level, 'mastered', `concept ${name} mastered from UI activity alone`);
+      const b = beforeCourse.concepts[name];
+      assert.equal(concept.n_transfer, b?.n_transfer ?? 0, `concept ${name} gained transfer evidence from the UI`);
+      assert.equal(concept.transfer_score, b?.transfer_score ?? null, `concept ${name} transfer score moved from UI activity`);
+      assert.equal(concept.module, b?.module ?? concept.module, `concept ${name} was reattributed by UI activity`);
     }
   }
 });

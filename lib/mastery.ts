@@ -118,7 +118,10 @@ export function deriveMastery(events: LedgerEvent[]): Mastery {
       case 'scored': {
         for (const c of eventConcepts) {
           const st = conceptState(e.course, c);
-          st.module = (e.module as string) ?? st.module;
+          // a concept belongs to the module that TAUGHT it (its generated event);
+          // scored events carry the quizzing lesson's module, which differs under
+          // interleaving and must never reattribute the concept
+          if (st.module === null) st.module = (e.module as string) ?? null;
           const item = e.item as string;
           if (e.level === 'transfer' && e.source === 'agent') {
             // the single most important line: only agent-graded transfer moves gates

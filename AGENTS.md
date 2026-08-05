@@ -28,6 +28,7 @@ All skills live in `.agents/skills/<name>/SKILL.md` (Claude Code discovers them 
 - `elicit-needs` - interview a learner into a confirmed learning contract (`profile.md`). Run this first whenever someone wants to learn something new.
 - `generate-curriculum` - turn a confirmed profile into a course skeleton plus module 1.
 - `generate-module` - write one module's lesson bodies (nine-part anatomy, tiered checks, verified citations).
+- `tutor-session` - run a spaced review session: due computation, Socratic grading, mastery gates with logged overrides, generate-ahead.
 - `extend-meno` - change or add to this Meno instance without breaking its invariants.
 - `second-brain` - vault conventions (wikilinks, hub notes), graph operations, and the `todos.md` shared queue.
 

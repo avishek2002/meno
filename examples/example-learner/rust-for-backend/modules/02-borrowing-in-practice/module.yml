@@ -1,7 +1,7 @@
 schema_version: 1
 module: 02-borrowing-in-practice
 title: Borrowing and lifetimes in practice
-status: skeleton
+status: generated
 serves: [O1]
 prerequisites: [01-syntax-and-ownership-basics]
 est_hours: 3
@@ -35,8 +35,8 @@ lessons:
   - file: 01-borrowing.md
     title: Borrowing and references
     concept: borrowing
-    status: planned
+    status: generated
   - file: 02-lifetimes.md
     title: Lifetimes
     concept: lifetimes
-    status: planned
+    status: generated

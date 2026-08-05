@@ -142,6 +142,7 @@ test('concurrent submits plus an agent appender never corrupt the ledger', async
     const scriptPath = join(fresh.root, 'agent-appender.mjs');
     writeFileSync(scriptPath, agentScript);
     const ledgerPath = join(fresh.tenantDir, 'progress', 'ledger.jsonl');
+    const seedLines = readFileSync(ledgerPath, 'utf8').trim().split('\n').length;
     const childDone = promisify(execFile)('node', [scriptPath, ledgerPath], { timeout: 20000 });
     const submits = Array.from({ length: 50 }, (_, i) =>
       api(fresh, 'POST', '/api/v1/example-learner/check/submit', {
@@ -151,7 +152,7 @@ test('concurrent submits plus an agent appender never corrupt the ledger', async
     await Promise.all(submits);
     await childDone;
     const lines = readFileSync(ledgerPath, 'utf8').trim().split('\n');
-    assert.equal(lines.length, 3 + 30 + 50); // 3 seed generated + 30 agent + 50 ui
+    assert.equal(lines.length, seedLines + 30 + 50); // fixture seed + 30 agent + 50 ui
     for (const line of lines) JSON.parse(line); // every line parses
   } finally {
     await fresh.close();

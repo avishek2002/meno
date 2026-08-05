@@ -36,7 +36,7 @@ modules:                       # ordered; every field here mirrors module.yml at
   - n: 2
     slug: 02-borrowing-in-practice
     title: Borrowing and lifetimes in practice
-    status: skeleton
+    status: generated
     est_hours: 3
     serves: [O1]
   - n: 3
