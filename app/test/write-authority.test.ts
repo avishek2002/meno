@@ -6,7 +6,7 @@ import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { withTenant, api, type TestApp } from './helpers.ts';
+import { withTenant, api, rawRequest, type TestApp } from './helpers.ts';
 import { appendUiEvent, readLedgerEvents } from '../server/ledger.ts';
 import { deriveMastery } from '../../lib/mastery.ts';
 
@@ -109,6 +109,32 @@ test('a full scripted UI session changes no gate-relevant state', async () => {
 test('a foreign Origin header is rejected', async () => {
   const { status } = await api(app, 'GET', '/api/v1/tenants', undefined, { origin: 'https://evil.example' });
   assert.equal(status, 403);
+});
+
+// The rebinding case the Origin check cannot see: once the attacker's name
+// resolves to 127.0.0.1 the request is same-origin, so no Origin header is
+// sent - only the Host header still gives the attacker away.
+test('a rebound Host header is rejected even with no Origin at all', async () => {
+  for (const host of ['evil.example', 'evil.example:7373', 'meno.internal']) {
+    const { status } = await rawRequest(app, 'GET', '/api/v1/tenants', { host });
+    assert.equal(status, 403, `Host: ${host} was not rejected`);
+  }
+});
+
+test('loopback Hosts still pass, IPv6 and named forms included', async () => {
+  const port = new URL(app.base).port;
+  for (const host of [`127.0.0.1:${port}`, `localhost:${port}`, `[::1]:${port}`, 'localhost']) {
+    const { status } = await rawRequest(app, 'GET', '/api/v1/tenants', { host });
+    assert.equal(status, 200, `Host: ${host} was rejected`);
+  }
+});
+
+// the guard runs before routing, so it covers writes and unknown paths too
+test('the Host guard covers write routes and unrouted paths', async () => {
+  const write = await rawRequest(app, 'POST', '/api/v1/example-learner/todos', { host: 'evil.example' });
+  assert.equal(write.status, 403);
+  const unrouted = await rawRequest(app, 'GET', '/api/v1/nope', { host: 'evil.example' });
+  assert.equal(unrouted.status, 403);
 });
 
 test('appendUiEvent refuses a caller-supplied level, even recognition', () => {

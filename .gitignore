@@ -12,6 +12,11 @@ CLAUDE.local.md
 # no gitignore rule can ever hide it or leak a real tenant alongside it.
 content/
 
+# Agent worktrees: `.claude/` is committed (the skill symlinks live there), so
+# without this rule a worktree checked out under it shows up as untracked in the
+# parent clone and can be committed by accident.
+.claude/worktrees/
+
 # Node
 node_modules/
 app/client/dist/

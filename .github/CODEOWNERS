@@ -1,0 +1,38 @@
+# Files where a change is a capability change, not a content change.
+#
+# Honest scope: this repository has one maintainer, and GitHub does not let you
+# approve your own pull request - so "require review from code owners" cannot be
+# turned on without making main unmergeable. Today this file does the two things
+# that work solo: it labels these paths in the pull request UI, and it names, in
+# one place, the diffs that must be read as code even when they arrive dressed
+# as documentation or tests. See docs/specs/supply-chain.md.
+#
+# When a second maintainer exists, add code-owner review to the main ruleset.
+
+# The gate that guards everything else, and the token permissions it runs with
+/.github/                       @avishek2002
+
+# Dependency resolution - a lockfile edit can substitute any package in the tree
+/package.json                   @avishek2002
+/package-lock.json              @avishek2002
+
+# Executed by `npm run build` and by `npm start` on a fresh clone (the server
+# mounts vite in middleware mode when no built client exists)
+/app/client/vite.config.ts      @avishek2002
+
+# Everything under tools/ runs on a maintainer's machine during the gate -
+# including tools/test/**, which `npm test` globs and executes
+/tools/                         @avishek2002
+
+# Agent instructions. Prose here is executed by an agent with tool access, which
+# makes it the highest-value target in the repository and the one with no
+# compiler, type check, or test standing behind it.
+/.agents/skills/                @avishek2002
+/.claude/                       @avishek2002
+/AGENTS.md                      @avishek2002
+/CLAUDE.md                      @avishek2002
+
+# The contracts the rest of the system trusts
+/schemas/                       @avishek2002
+/tsconfig.json                  @avishek2002
+/app/client/tsconfig.json       @avishek2002

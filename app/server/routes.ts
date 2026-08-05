@@ -315,6 +315,10 @@ const ROUTES: [string, RegExp, Handler][] = [
   ['POST', /^\/api\/v1\/(?<tenant>[^/]+)\/todos\/(?<line>\d+)\/park$/, postTodoPark],
 ];
 
+// loopback names only, with or without a port; `[::1]` is how IPv6 appears in a
+// Host header
+const LOOPBACK_HOST = /^(127\.0\.0\.1|localhost|\[::1\])(:\d+)?$/;
+
 const MIME: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -328,7 +332,19 @@ const MIME: Record<string, string> = {
 export function makeHandler(ctx: Ctx) {
   return async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
     try {
-      // drive-by / DNS-rebinding guard: a foreign Origin is rejected outright
+      // Rebinding guard. The Origin check below stops an ordinary drive-by
+      // request, but not DNS rebinding: once evil.example resolves to
+      // 127.0.0.1 the attacker's page is same-origin with us, so its GETs
+      // carry no Origin header at all and would sail through. The Host header
+      // still names the attacker's domain, which is why pinning it to loopback
+      // is the check that actually closes rebinding (a browser cannot forge
+      // it). Anything reaching a 127.0.0.1-bound socket under another name is
+      // either an attack or a proxy this private vault has no reason to trust.
+      const host = req.headers.host;
+      if (!host || !LOOPBACK_HOST.test(host)) {
+        return json(res, 403, { error: 'non-loopback Host rejected' });
+      }
+      // drive-by guard: a foreign Origin is rejected outright
       const origin = req.headers.origin;
       if (origin && !/^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(origin)) {
         return json(res, 403, { error: 'foreign origin rejected' });
