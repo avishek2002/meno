@@ -1,0 +1,46 @@
+schema_version: 1
+module: 01-http-basics
+title: How an HTTP exchange works
+status: generated
+serves: [O1]
+prerequisites: []
+est_hours: 2
+concepts:
+  - request-response
+  - methods-and-safety
+  - status-codes
+  - headers-and-caching
+objectives:
+  - id: M1-1
+    text: Explain what the method, status code, and caching headers each contribute to an HTTP exchange
+    bloom: understand
+sources:
+  - title: "RFC 9110: HTTP Semantics"
+    url: https://www.rfc-editor.org/rfc/rfc9110
+    archived_url: https://web.archive.org/web/20260805000000/https://www.rfc-editor.org/rfc/rfc9110
+    accessed: 2026-08-05
+    source_type: web
+    why: the current HTTP semantics specification the module's method and status-code claims trace to
+  - title: "MDN: An overview of HTTP"
+    url: https://developer.mozilla.org/en-US/docs/Web/HTTP/Overview
+    archived_url: https://web.archive.org/web/20260805000000/https://developer.mozilla.org/en-US/docs/Web/HTTP/Overview
+    accessed: 2026-08-05
+    source_type: web
+    why: describes the request-response model and statelessness the module opens with
+lessons:
+  - file: 01-request-response.md
+    title: The request-response cycle
+    concept: request-response
+    status: generated
+  - file: 02-methods-and-safety.md
+    title: Methods, safety, and idempotence
+    concept: methods-and-safety
+    status: generated
+  - file: 03-status-codes.md
+    title: Status codes and what they promise
+    concept: status-codes
+    status: generated
+  - file: 04-headers-and-caching.md
+    title: Headers and caching
+    concept: headers-and-caching
+    status: generated

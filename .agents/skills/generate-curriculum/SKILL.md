@@ -54,5 +54,5 @@ no matter how its prose is phrased.
 - `course.yml` and all `module.yml` files written per spec, `schema_version` present.
 - Course hub note exists, its Mermaid map renders, every module is wikilinked from it, and the tenant home note links the hub.
 - Module 1's body exists (nine-part anatomy, via `generate-module`) and its manifest status says so.
-- Run `tools/validate.py` if it exists (Phase 2 delivers it); until then, self-check each file against the format references.
+- Run `npm run validate` (`tools/validate.ts`) and fix every error it reports.
 - The learner has been told where to start: module 1, lesson 1, in the app or Obsidian.

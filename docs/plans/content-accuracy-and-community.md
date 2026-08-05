@@ -22,16 +22,16 @@ Two gaps and one opportunity, surfaced under questioning:
 The enforcement-plus-drill pattern the repo already uses (sanitization catalog + blind
 publish drills; write-authority seam + at-rest ledger check).
 
-- [ ] **Blocking self-audit in `generate-module`**: after drafting a lesson, (a) extract
+- [x] **Blocking self-audit in `generate-module`**: after drafting a lesson, (a) extract
   its factual claims; each must trace to one of the lesson's cited sources or be fixed,
   cited, or removed; (b) independently re-solve every check item and compare against the
   authored answer key; disagreement blocks the lesson. Audit results recorded in the
   module's generation notes. Owner: `generate-module` SKILL.md + references;
   spec amendment: `docs/specs/lessons.md`.
-- [ ] **Seeded-fault fixtures**: a lesson tree planted with known uncited-hallucination
+- [x] **Seeded-fault fixtures**: a lesson tree planted with known uncited-hallucination
   claims and wrong answer keys, in the `examples/seeded-faults/` pattern, with an
   answer key file naming every plant.
-- [ ] **Eval scorers**: `tools/eval.ts` gains claim-faithfulness and answer-key scorers
+- [x] **Eval scorers**: `tools/eval.ts` gains claim-faithfulness and answer-key scorers
   run against the seeded-fault fixtures - the eval measures whether the *auditor
   catches the plants*, under the existing pinned-judge and anchor discipline.
   Spec amendment: `docs/specs/quality.md`.

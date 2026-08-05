@@ -7,7 +7,7 @@ Ordered steps per recipe. All paths relative to the repo root; `<t>` is the tena
 1. `content/tenants/<t>/<course-slug>/` with: `profile.md` (write it honestly - even a hand-made course deserves a contract; format: `.agents/skills/elicit-needs/references/profile-format.md`), `course.yml` and `modules/NN-slug/module.yml` per `.agents/skills/generate-curriculum/references/manifest-format.md`.
 2. Lessons can be any markdown you want, but the closer to the nine-part anatomy (`.agents/skills/generate-module/references/lesson-format.md`), the more the app and tutor can do with them; at minimum give each lesson the frontmatter block so scheduling and progress work.
 3. Hub note wikilinking every module; link it from the tenant home note (`.agents/skills/second-brain/references/vault-conventions.md`).
-4. Validate: `tools/validate.py` when it exists; until then check each file against its format reference.
+4. Validate: `npm run validate` (`tools/validate.ts`).
 5. Seed `generated` ledger events if you want reviews scheduled (event format in the lesson format reference).
 
 ## Amend an existing course

@@ -18,5 +18,12 @@
       "judge_model": "claude-sonnet-5",
       "judge_prompt_sha256": "15b2e6d03d5b4cfd"
     }
+  },
+  "auditor-accuracy": {
+    "recall_min": 0.9,
+    "established_with": {
+      "auditor_model": "claude-sonnet-5",
+      "audit_prompt_sha256": "69715c0ad5caf3ee"
+    }
   }
 }
