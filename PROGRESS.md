@@ -221,6 +221,16 @@ _Last updated: 2026-08-05_
 
 ## On the agenda (backlog, not started)
 
+- **Decision 19 program** (plan: `docs/plans/content-accuracy-and-community.md`): (1) blocking
+  self-audit in `generate-module` + seeded-fault fixtures + eval scorers that drill the
+  auditor; (2) the five-pack community slate (git-and-github and agent-harness-craft first);
+  (3) vault-candidate scan, approval-gated. Deferred pieces named in the plan: `audit-accuracy`
+  skill, tutor-grading sycophancy drills.
+- **`app` todos machinery mutates the committed example fixture**: running the test suite (or
+  app) locally left `examples/example-learner/todos.md` modified in the working tree (a
+  `## Parked` heading inserted). Fixtures should never be written by tests; find the writer
+  and point it at a temp copy.
+
 - **Extend `pack-safety`'s file scan to `.agents/skills/**`** - at minimum the error-level
   patterns (curl-pipe-to-shell, `process.env`, `~/.ssh`, credential shapes), plus a warning on
   any newly introduced URL. Skills are prose an agent executes with tool access and nothing

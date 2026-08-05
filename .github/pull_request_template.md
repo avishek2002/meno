@@ -31,6 +31,10 @@
   - [ ] No personal identifiers (names, emails, employers, machine paths, keys)
   - [ ] No worked examples drawn from the learner's real work - **reviewer: check this one
         by eye, it is not machine-checkable**
+  - [ ] No passage traces to a private knowledge base (employer vault, internal docs) and
+        nothing names the maintainer's employer - imported craft knowledge is fine only
+        once re-derived from public sources or scrubbed of workplace specifics -
+        **reviewer: check this one by eye too**
 - [ ] `audit-citations` run in full against the pack tree; verdicts pasted below
 - [ ] `npm run validate` clean on the pack tree
 - [ ] `node tools/packs.ts` run; `content/community/INDEX.md` diff included
