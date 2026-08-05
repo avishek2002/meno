@@ -1,0 +1,37 @@
+courses:
+  rust-for-backend:
+    concepts:
+      cargo-and-toolchain:
+        level: introduced
+        module: 01-syntax-and-ownership-basics
+        n_transfer: 0
+        next_review: 2026-08-07
+        recognition_rate: null
+        stale: false
+        transfer_score: null
+        weak_until: null
+      ownership:
+        level: introduced
+        module: 01-syntax-and-ownership-basics
+        n_transfer: 0
+        next_review: 2026-08-07
+        recognition_rate: null
+        stale: false
+        transfer_score: null
+        weak_until: null
+      syntax-for-experienced-developers:
+        level: introduced
+        module: 01-syntax-and-ownership-basics
+        n_transfer: 0
+        next_review: 2026-08-07
+        recognition_rate: null
+        stale: false
+        transfer_score: null
+        weak_until: null
+    modules:
+      01-syntax-and-ownership-basics:
+        gate: none
+        locked: false
+        overridden: false
+        score: null
+schema_version: 1

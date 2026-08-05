@@ -13,9 +13,10 @@ will live in `schemas/` as JSON Schema files and be enforced by `tools/validate.
 | `module.yml` | `generate-curriculum/references/manifest-format.md` | `schemas/module.schema.json` | landed (Phase 2) |
 | `course.yml` | `generate-curriculum/references/manifest-format.md` | `schemas/course.schema.json` | landed (Phase 2) |
 | Source records | `generate-curriculum/references/sourcing.md` | `$defs/source` in module.schema.json | landed (Phase 2) |
-| Lesson frontmatter | `generate-module/references/lesson-format.md` | `schemas/lesson.schema.json` | Phase 3 |
-| Check blocks (`meno-check`) | `generate-module/references/check-formats.md` | embedded in lesson schema | Phase 3 |
-| `progress/ledger.jsonl` events | `generate-module/references/lesson-format.md` | `schemas/ledger.schema.json` | Phase 3 |
+| Lesson frontmatter | `generate-module/references/lesson-format.md` | `schemas/lesson.schema.json` | landed (Phase 3) |
+| Check blocks (`meno-check`) | `generate-module/references/check-formats.md` | body rules via `lib/lesson.ts` + validate `checks` | landed (Phase 3) |
+| `progress/ledger.jsonl` events | semantics: `docs/specs/progress.md` | `schemas/ledger.schema.json` | landed (Phase 3) |
+| `progress/mastery.yml` | derived view: `docs/specs/progress.md` | byte-identical rebuild via `lib/mastery.ts` | landed (Phase 3) |
 | `todos.md` lines | `second-brain/references/todo-format.md` | not schema-validated (line format) | - |
 | Hub notes / derived regions | `second-brain/references/vault-conventions.md` | not schema-validated (prose format) | - |
 

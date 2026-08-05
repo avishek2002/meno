@@ -12,7 +12,10 @@ graph TD
     m5 --> m6[06 persistence]
     m6 --> m7[07 packaging and shipping]
 ```
-**01 syntax and ownership basics** (planned)
+**01 syntax and ownership basics** (generated)
+- [[modules/01-syntax-and-ownership-basics/01-cargo-and-toolchain|Cargo and the Rust toolchain]] - one command replaces pip/npm's multi-step project setup
+- [[modules/01-syntax-and-ownership-basics/02-syntax-for-experienced-developers|Rust syntax for Python and TypeScript developers]] - maps variables, functions, and control flow you already know onto Rust's stricter syntax
+- [[modules/01-syntax-and-ownership-basics/03-ownership|Ownership]] - the one idea with no Python/TypeScript analogue, and the whole reason the link-shortener won't need a garbage collector
 **02 borrowing in practice** (planned)
 **03 error handling** (planned)
 **04 modeling the domain** (planned)

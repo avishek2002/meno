@@ -1,7 +1,7 @@
 schema_version: 1
 module: 01-syntax-and-ownership-basics
 title: Rust syntax and ownership basics
-status: skeleton              # skeleton | generated | in-progress | mastered | stale
+status: generated              # skeleton | generated | in-progress | mastered | stale
 serves: [O1]
 prerequisites: []              # first module, nothing gates it
 est_hours: 4
@@ -42,12 +42,12 @@ lessons:                       # planned at skeleton time, one per concept
   - file: 01-cargo-and-toolchain.md
     title: Cargo and the Rust toolchain
     concept: cargo-and-toolchain
-    status: planned             # planned | generated | reviewed | stale
+    status: generated             # planned | generated | reviewed | stale
   - file: 02-syntax-for-experienced-developers.md
     title: Rust syntax for Python and TypeScript developers
     concept: syntax-for-experienced-developers
-    status: planned
+    status: generated
   - file: 03-ownership.md
     title: Ownership
     concept: ownership
-    status: planned
+    status: generated

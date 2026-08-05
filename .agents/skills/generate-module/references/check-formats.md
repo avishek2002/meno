@@ -8,6 +8,7 @@ Fenced code blocks with the `meno-check` language tag and a YAML payload. The ap
 
 ````markdown
 ```meno-check
+id: ownership-move-mcq   # REQUIRED: stable authored slug, unique within the lesson
 type: mcq                # mcq | cloze | flashcard
 concept: ownership       # ties the result to a concept for review scheduling
 prompt: |
@@ -26,6 +27,7 @@ Cloze uses `prompt` with `{{...}}` for the gap and `answer` as the exact fill. F
 
 Authoring rules:
 
+- `id` is a short kebab-case slug authored once at creation time, unique within its lesson, and stable forever: prose edits and reorderings never change it, so a learner's scoring history survives both. Ledger events reference a check as `<lesson id>#<check id>` (the single transfer prompt needs no id: it is `<lesson id>#transfer`) - the vocabulary lives in [docs/specs/progress.md](../../../../docs/specs/progress.md).
 - Produce-the-answer beats recognize-the-answer: prefer cloze and flashcard over mcq; when mcq, make distractors real misconceptions, not filler.
 - `concept` must match a `concepts` entry from a lesson in this course - review scheduling keys on it.
 - Interleave: once two or more concepts are taught in the module, a lesson's Recall section mixes them.

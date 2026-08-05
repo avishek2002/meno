@@ -30,7 +30,7 @@ modules:                       # ordered; every field here mirrors module.yml at
   - n: 1
     slug: 01-syntax-and-ownership-basics
     title: Rust syntax and ownership basics
-    status: skeleton
+    status: generated
     est_hours: 4
     serves: [O1]
   - n: 2

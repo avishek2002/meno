@@ -1,0 +1,164 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/avishek2002/meno/schemas/ledger.schema.json",
+  "title": "Meno ledger event (one JSONL line of progress/ledger.jsonl)",
+  "description": "Discriminated union keyed on `event`. Semantics are owned by docs/specs/progress.md; this file is the machine contract. The ledger is append-only, folded in file order; gates key exclusively on source=agent AND level=transfer scored events.",
+  "type": "object",
+  "required": ["v", "ts", "event", "source", "course"],
+  "properties": {
+    "v": { "type": "integer", "minimum": 1 },
+    "ts": { "type": "string", "format": "date-time" },
+    "event": { "enum": ["generated", "read", "scored", "reviewed", "gated", "overridden", "rescoped", "noted"] },
+    "source": { "enum": ["agent", "ui"] },
+    "course": { "type": "string", "minLength": 1 }
+  },
+  "oneOf": [
+    {
+      "title": "generated - a lesson body was written to disk",
+      "properties": {
+        "event": { "const": "generated" },
+        "source": { "const": "agent" },
+        "module": { "type": "string" },
+        "lesson": { "type": "string" },
+        "concepts": { "$ref": "#/$defs/concepts" },
+        "review_after": { "$ref": "#/$defs/date" }
+      },
+      "required": ["module", "lesson", "concepts", "review_after"]
+    },
+    {
+      "title": "read - the learner opened a lesson past a dwell threshold",
+      "properties": {
+        "event": { "const": "read" },
+        "source": { "const": "ui" },
+        "module": { "type": "string" },
+        "lesson": { "type": "string" },
+        "seconds": { "type": "number", "minimum": 0 }
+      },
+      "required": ["module", "lesson"]
+    },
+    {
+      "title": "scored - one check or prompt was answered and graded",
+      "properties": {
+        "event": { "const": "scored" },
+        "level": { "enum": ["recognition", "transfer"] },
+        "module": { "type": "string" },
+        "lesson": { "type": "string" },
+        "concepts": { "$ref": "#/$defs/concepts" },
+        "item": { "type": "string", "minLength": 1 },
+        "item_type": { "enum": ["mcq", "cloze", "flashcard", "transfer"] },
+        "correct": { "type": ["boolean", "null"] },
+        "score": { "enum": [0, 0.25, 0.5, 0.75, 1, null] },
+        "attempt": { "type": "integer", "minimum": 1 },
+        "session": { "type": ["string", "null"] },
+        "rubric": { "type": "string" }
+      },
+      "required": ["level", "module", "lesson", "concepts", "item", "item_type", "correct", "score", "attempt"],
+      "allOf": [
+        {
+          "if": { "properties": { "level": { "const": "recognition" } } },
+          "then": { "properties": { "correct": { "type": "boolean" }, "score": { "const": null } } }
+        },
+        {
+          "if": { "properties": { "level": { "const": "transfer" } } },
+          "then": {
+            "properties": {
+              "source": { "const": "agent" },
+              "correct": { "const": null },
+              "score": { "enum": [0, 0.25, 0.5, 0.75, 1] },
+              "item_type": { "const": "transfer" }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "title": "reviewed - a review session closed over a set of items",
+      "properties": {
+        "event": { "const": "reviewed" },
+        "source": { "const": "agent" },
+        "session": { "type": "string", "minLength": 1 },
+        "items": { "type": "array", "items": { "type": "string" } },
+        "concepts": { "$ref": "#/$defs/concepts" },
+        "due_covered": { "type": "integer", "minimum": 0 },
+        "due_skipped": { "type": "integer", "minimum": 0 },
+        "next_review": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/date" }
+        }
+      },
+      "required": ["session", "items", "concepts", "next_review"]
+    },
+    {
+      "title": "gated - a gate was evaluated at a module boundary",
+      "properties": {
+        "event": { "const": "gated" },
+        "source": { "const": "agent" },
+        "level": { "const": "transfer" },
+        "module": { "type": "string" },
+        "gate": { "const": "module_entry" },
+        "result": { "enum": ["pass", "fail", "insufficient-evidence"] },
+        "score": { "type": ["number", "null"] },
+        "threshold": { "type": "number" },
+        "basis": {
+          "type": "object",
+          "properties": {
+            "window": { "const": "latest_per_item" },
+            "items": { "type": "array", "items": { "type": "string" } },
+            "n": { "type": "integer" },
+            "of": { "type": "integer" }
+          },
+          "required": ["window", "items"]
+        },
+        "unlocks": { "type": "string" }
+      },
+      "required": ["level", "module", "gate", "result", "threshold", "basis", "unlocks"]
+    },
+    {
+      "title": "overridden - the learner chose to proceed past a failed gate",
+      "properties": {
+        "event": { "const": "overridden" },
+        "source": { "const": "agent" },
+        "module": { "type": "string" },
+        "gate_ts": { "type": "string", "format": "date-time" },
+        "reason": { "type": "string", "minLength": 1 },
+        "weak_concepts": { "$ref": "#/$defs/concepts" },
+        "reinject_after": { "$ref": "#/$defs/date" }
+      },
+      "required": ["module", "gate_ts", "reason", "weak_concepts", "reinject_after"]
+    },
+    {
+      "title": "rescoped - the learning contract changed",
+      "properties": {
+        "event": { "const": "rescoped" },
+        "source": { "const": "agent" },
+        "trigger": { "enum": ["struggle", "drift", "manual"] },
+        "changes": { "type": "object" },
+        "note": { "type": "string" }
+      },
+      "required": ["trigger", "changes"]
+    },
+    {
+      "title": "noted - a scheduling-relevant maintenance fact",
+      "properties": {
+        "event": { "const": "noted" },
+        "source": { "const": "agent" },
+        "kind": { "enum": ["stale", "refreshed", "migrated", "rescheduled"] },
+        "module": { "type": "string" },
+        "lesson": { "type": "string" },
+        "concepts": { "$ref": "#/$defs/concepts" },
+        "detail": { "type": "string" },
+        "review_after": { "$ref": "#/$defs/date" }
+      },
+      "required": ["kind", "detail"]
+    }
+  ],
+  "$defs": {
+    "date": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+    "concepts": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "minItems": 1,
+      "description": "always an array, even at length 1 - consumers never branch on shape"
+    }
+  }
+}

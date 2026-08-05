@@ -1,6 +1,6 @@
 # Lesson format (canonical)
 
-Frontmatter, section skeleton, and the ledger seed event. This is the spec until `schemas/lesson.schema.json` lands in Phase 3.
+Frontmatter, section skeleton, and the ledger seed event. The frontmatter is formalized in `schemas/lesson.schema.json` and machine-checked by `tools/validate.ts` (schema, nine-part anatomy, check rules); this document remains the canonical prose definition.
 
 ## Frontmatter
 
@@ -74,10 +74,10 @@ Part 8 (spaced-review hook) lives in frontmatter (`review_offsets`, `review_afte
 
 ## Ledger seed event
 
-Appended per lesson to `content/<tenant>/progress/ledger.jsonl` at generation time (full event schema arrives in Phase 3; these fields are stable):
+Appended per lesson to `content/<tenant>/progress/ledger.jsonl` at generation time:
 
 ```json
-{"ts": "2026-08-05T10:00:00+10:00", "course": "rust-for-backend", "module": "01-ownership-basics", "lesson": "01-ownership", "concepts": ["ownership"], "event": "generated", "source": "agent", "review_after": "2026-08-07"}
+{"v": 1, "ts": "2026-08-05T10:00:00+10:00", "event": "generated", "source": "agent", "course": "rust-for-backend", "module": "01-ownership-basics", "lesson": "01-ownership", "concepts": ["ownership"], "review_after": "2026-08-07"}
 ```
 
-Rules: the ledger is append-only; events are one JSON object per line; `review_after` uses the same field name as lesson frontmatter on purpose (one concept, one name). `source` is `agent` or `ui`, and every `scored` or `reviewed` event additionally carries `level: recognition|transfer` - gates key exclusively on `source: agent` + `level: transfer` events, and recognition-level UI events never carry gate consequences (PLAN.md decision 14).
+The full event vocabulary (eight types), field sets, and the mastery-derivation rules are owned by [docs/specs/progress.md](../../../../docs/specs/progress.md) and machine-checked by `schemas/ledger.schema.json` - this file defines only the seed event a generation appends. Standing rules: the ledger is append-only, one JSON object per line, in file order; `review_after` deliberately shares its name with the lesson frontmatter field. Gates key exclusively on `source: agent` plus `level: transfer` events (PLAN.md decision 14).
