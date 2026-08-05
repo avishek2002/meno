@@ -45,10 +45,21 @@ their own machine, and every documented invariant is honor-system.
    them in the review UI and records which diffs must be read as code; it does not yet
    block, because GitHub does not permit self-approval and a required code-owner review
    would make `main` unmergeable for a single maintainer.
-7. **Degraded path: CI cannot run the eval gate.** `npm run eval` shells out to the
+7. **Repository-level checks run outside the workflow.** Secret scanning with push
+   protection (a credential is blocked at `git push`, not reported after it is public),
+   Dependabot alerts and security updates, and private vulnerability reporting are all
+   enabled on the repository. They are settings, not files, so they are recorded here -
+   nothing in the tree would show they are on, and nothing in CI would notice if one were
+   turned off.
+8. **A vulnerability has a private channel.** [SECURITY.md](../../SECURITY.md) routes
+   reports to a draft advisory rather than a public issue, states the threat model, and
+   points at this spec's "Verified by" section so a known gap is not re-reported as news.
+   Everything here is cloned and run locally, so a public report is a working exploit
+   against every instance before anyone can update.
+9. **Degraded path: CI cannot run the eval gate.** `npm run eval` shells out to the
    `claude` CLI, which no runner has. The eval gate stays a manual, reported step under
    CONTRIBUTING.md, and CI makes no claim about it.
-8. **A green gate is not a safety verdict.** It proves the change typechecks, passes the
+10. **A green gate is not a safety verdict.** It proves the change typechecks, passes the
    tests, and validates. It proves nothing about whether `tools/test/a.test.ts` also
    read `~/.ssh`, or whether a sentence added to a skill instructs an agent to. The
    invariants below say exactly which of those a machine checks.
@@ -75,6 +86,10 @@ graph TD
 - `.github/CODEOWNERS` - the capability-path inventory.
 - `.github/pull_request_template.md` - the attestations CI cannot make (sanitization,
   eval runs, smoke tests).
+- `SECURITY.md` - the private reporting channel, the threat model, and the scope
+  boundaries a reporter needs before deciding whether something is worth writing up.
+- Repository settings (not files): secret scanning + push protection, Dependabot alerts +
+  security updates, private vulnerability reporting.
 - `tools/validate.ts`'s `pack-safety` - the only content scanner, scoped to
   `topic-packs/` and `org/` ([validation.md](validation.md)).
 - `tools/org-sync.sh` - the downstream amplifier: whatever lands on `main` is merged and
@@ -101,6 +116,10 @@ graph TD
    the same job.
 6. Every path listed in `CODEOWNERS` is a path whose contents are executed, followed as
    instructions, or resolve dependencies.
+7. The repository has secret scanning with push protection, Dependabot alerts and
+   security updates, and private vulnerability reporting enabled.
+8. A gap named in this spec's "Verified by" is also reachable from `SECURITY.md`, so a
+   reporter can tell a known gap from a new one.
 
 ## Verified by
 
@@ -110,6 +129,14 @@ graph TD
   than pretended.
 - Invariant 5: by construction - there is exactly one workflow, and it holds no secrets.
 - Invariant 6: by inspection, restated in the file's own comments.
+- Invariant 7: not machine-verified and not verifiable from the tree - these are
+  repository settings, so nothing in a clone reveals whether they are on and no check
+  would fail if one were switched off. Confirm with
+  `gh api repos/<owner>/meno --jq .security_and_analysis` and
+  `gh api repos/<owner>/meno/private-vulnerability-reporting`. A fork inherits none of
+  them.
+- Invariant 8: by inspection - `SECURITY.md`'s "Already known, and tracked" section links
+  here rather than restating the gaps, so the two cannot drift apart.
 - **Not verified, and named here so it is not mistaken for covered:**
   - `.agents/skills/**` is scanned by nothing. `pack-safety`'s error patterns
     (curl-pipe-to-shell, `process.env`, `~/.ssh`, credential shapes) apply only under
