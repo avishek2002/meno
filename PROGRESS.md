@@ -15,6 +15,22 @@ _Last updated: 2026-08-05_
 
 ## Done
 
+- 2026-08-05 - **Post-consolidation reconcile: the one constraint decision 18 narrowed.** Follow-up
+  to the v1.4 security review. Two of its three items had already been absorbed by #18 (the stale
+  `topic-packs/`/`org/` paths in `docs/specs/supply-chain.md`, and `SECURITY.md`, which was written
+  against the post-consolidation layout and became correct when that layout landed) - only the third
+  was real. `course.schema.json`'s `derived_from.pack` pattern moved from
+  `^topic-packs/…|^org/packs/…` to `^content/community/…|^content/org/…`, which silently turns a
+  pre-consolidation adopted `course.yml` invalid, under a migrations heading reading "layout, not
+  schema" and with no migration step covering it. Amended the heading to "layout, plus one narrowed
+  pattern", added the one-line rewrite users need, and recorded *why* no `schema_version` bump:
+  `derived_from` is optional, shipped the same day, and the fix is a one-line edit with a validate
+  error that names the field - whereas bumping would make every existing `course.yml` stale and
+  oblige validate to keep blessing a path form that exists nowhere in the layout. Pinned the pattern
+  with a test in `tools/test/courses.test.ts` (both consolidated roots accepted, both
+  pre-consolidation forms rejected), since nothing under `examples/` carries a `derived_from` block -
+  which is exactly why the change went unnoticed.
+
 - 2026-08-05 - **Content tier consolidation (decision 18): one root for all learning material.**
   `topic-packs/` -> `content/community/`, `org/packs/` -> `content/org/`, tenant vaults
   `content/<tenant>/` -> `content/tenants/<tenant>/`; the directory tree now mirrors the tier
