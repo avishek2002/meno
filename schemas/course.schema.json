@@ -15,6 +15,17 @@
       "type": "string",
       "description": "path to profile.md; absent for topic packs (pre-contract)"
     },
+    "derived_from": {
+      "type": "object",
+      "description": "adoption provenance: which pack this course was copied from (additive, optional)",
+      "required": ["pack", "pack_version", "adopted_at"],
+      "properties": {
+        "pack": { "type": "string", "pattern": "^topic-packs/[a-z0-9-]+/[a-z0-9-]+$|^org/packs/[a-z0-9-]+/[a-z0-9-]+$" },
+        "pack_version": { "type": "string", "minLength": 1 },
+        "adopted_at": { "type": "string", "format": "date" }
+      },
+      "additionalProperties": true
+    },
     "hub": { "type": "string", "minLength": 1 },
     "objectives": {
       "type": "array",

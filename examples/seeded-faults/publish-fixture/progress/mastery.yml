@@ -1,0 +1,28 @@
+courses:
+  error-handling-patterns:
+    concepts:
+      error-boundaries:
+        level: shaky
+        module: 01-error-boundaries
+        n_transfer: 1
+        next_review: 2026-08-07
+        recognition_rate: null
+        stale: false
+        transfer_score: 0.5
+        weak_until: null
+      typed-results:
+        level: shaky
+        module: 01-error-boundaries
+        n_transfer: 1
+        next_review: 2026-08-09
+        recognition_rate: null
+        stale: false
+        transfer_score: 0.5
+        weak_until: 2026-08-09
+    modules:
+      01-error-boundaries:
+        gate: fail
+        locked: false
+        overridden: true
+        score: 0.5
+schema_version: 1

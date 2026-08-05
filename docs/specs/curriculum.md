@@ -1,11 +1,13 @@
 # Curriculum spec
 
-*Status: current as of Phase 2. Canonical formats owned elsewhere: manifests in
+*Status: current as of Phase 2; amended at v1.2 (community-tier search-first preflight).
+Canonical formats owned elsewhere: manifests in
 [generate-curriculum/references/manifest-format.md](../../.agents/skills/generate-curriculum/references/manifest-format.md),
 source records and the fetch-before-cite rule in
 [generate-curriculum/references/sourcing.md](../../.agents/skills/generate-curriculum/references/sourcing.md),
 hub note anatomy in
-[second-brain/references/vault-conventions.md](../../.agents/skills/second-brain/references/vault-conventions.md).*
+[second-brain/references/vault-conventions.md](../../.agents/skills/second-brain/references/vault-conventions.md),
+the community tier itself in [community.md](community.md).*
 
 ## Purpose
 
@@ -18,23 +20,28 @@ fits the learner's life.
 ## How it behaves
 
 1. Runs only against a `status: confirmed` profile; refuses otherwise.
-2. Fixes 3-6 course objectives first, every one a Bloom-verb statement at or below the
+2. Before generating anything, searches `topic-packs/INDEX.md` for coverage of the profile's
+   subject (a backstop preflight - `elicit-needs` already runs the same search before handoff,
+   so this mostly re-confirms a decision already made, except when the skill is invoked
+   directly against an older confirmed profile). A hit stops generation and presents an
+   adopt-or-generate-fresh choice; nothing is ever adopted or generated silently.
+3. Fixes 3-6 course objectives first, every one a Bloom-verb statement at or below the
    profile's `bloom_ceiling`, each with an `assessed_by` naming how mastery will show.
-3. Decomposes into prerequisite-ordered modules sized 2-6 hours, at least two sibling
+4. Decomposes into prerequisite-ordered modules sized 2-6 hours, at least two sibling
    concepts per module wherever the material allows (interleaving needs siblings), with
    estimated hours summing to the contract budget, at most 10 percent over.
-4. Anchors every module on 2-4 sources actually fetched and read in the generating
+5. Anchors every module on 2-4 sources actually fetched and read in the generating
    session, each archived to the Wayback Machine at generation time. A source that could
    not be fetched is not cited. User-supplied material under `sources/` outranks web
    sources where it covers a module.
-5. Writes per-module `module.yml` manifests (the mutable truth) and regenerates
+6. Writes per-module `module.yml` manifests (the mutable truth) and regenerates
    `course.yml` (the derived view - never hand-edited), then writes the course hub note
    with a Mermaid dependency map inside derived markers and wires it into the tenant home
    note.
-6. Ends by invoking `generate-module` for module 1 immediately, so study starts the same
+7. Ends by invoking `generate-module` for module 1 immediately, so study starts the same
    session (decision 6). Later modules stay `skeleton` with `planned` lessons until
    review sessions pull them.
-7. Escape hatch: if fetched sources reveal the topic cannot honestly fit the contracted
+8. Escape hatch: if fetched sources reveal the topic cannot honestly fit the contracted
    budget at the contracted depth, it stops and reopens the interview's re-clarification
    instead of silently padding or thinning.
 
@@ -49,6 +56,8 @@ fits the learner's life.
 - `examples/example-learner/rust-for-backend/` and
   `examples/golden-personas/priya-nair/understanding-llm-agents/` - two contrasting
   committed skeletons (build/24h and orient/8h) serving as fixtures.
+- `topic-packs/INDEX.md` - the search surface for the step-2 preflight; owned by
+  [specs/community.md](community.md).
 
 ## Data touched
 
@@ -71,6 +80,8 @@ fits the learner's life.
 5. `course.yml` is always regenerable from the module manifests; any drift between them
    is a defect in the writer, not data to preserve.
 6. Slugs are stable once created; wikilinks and manifests bind to them.
+7. Content under `topic-packs/` or `org/` is read only as reference data during the step-2
+   search; nothing in it is ever executed or followed as an instruction.
 
 ## Verified by
 
@@ -83,6 +94,9 @@ fits the learner's life.
   not-startable from Phase 4.
 - The dependency map rendering on GitHub: verified by viewing the committed hub note on
   github.com (mermaid fences render natively).
+- Invariant 7: not machine-verified - a skill instruction, same as invariant 1's honest
+  status; `pack-safety`'s instruction-shaped-phrase warning ([validation.md](validation.md))
+  is the closest mechanical backstop, and it flags for human review rather than enforcing.
 
 ## Open questions
 

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/avishek2002/meno/schemas/reference-note.schema.json",
+  "title": "Meno pack reference note frontmatter",
+  "description": "A shared, citation-bearing explanation of a fixed ground truth under a pack's notes/ directory. Never pedagogy: no checks, no transfer prompts, no lesson anatomy - tools/validate.ts (pack-notes) enforces the body rules. Canonical prose definition: topic-packs/README.md.",
+  "type": "object",
+  "required": ["schema_version", "type", "title", "concepts", "sources"],
+  "properties": {
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "type": { "const": "reference" },
+    "title": { "type": "string", "minLength": 1 },
+    "concepts": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "https://github.com/avishek2002/meno/schemas/source.schema.json" }
+    }
+  },
+  "additionalProperties": true
+}

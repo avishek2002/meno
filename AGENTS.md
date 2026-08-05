@@ -36,6 +36,7 @@ All skills live in `.agents/skills/<name>/SKILL.md` (Claude Code discovers them 
 - `tutor-session` - run a spaced review session: due computation, Socratic grading, mastery gates with logged overrides, generate-ahead.
 - `audit-citations` - adversarially re-check cited sources against the live web (existence, claim support, archive liveness and match) and route findings into citation-refresh or content-refresh.
 - `study-insights` - user-invoked only: turn a study-insights snapshot (`npm run insights`, `lib/insights.ts`) into a dated narrative report - observations, stuck points, up to three suggestions and three topic candidates, every number quoted from the snapshot, never computed.
+- `publish-to-community` - turn a finished tenant course into a topic-pack pull request: search first for overlapping coverage, transcribe the structure onto a fresh pack tree (never copy the tenant directory), sanitize what must never leave `content/`, then the quality gate.
 - `extend-meno` - change or add to this Meno instance without breaking its invariants.
 - `second-brain` - vault conventions (wikilinks, hub notes), graph operations, and the `todos.md` shared queue.
 

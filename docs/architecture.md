@@ -69,6 +69,18 @@ graph TD
 Data flows one way through generation (interview to profile to skeleton to lessons) and
 accumulates in the ledger from two writers; everything else is a derived view.
 
+## The three content tiers
+
+Orthogonal to the three pillars above (which are surfaces), content itself splits into three
+tiers: **base** (this repository - the skills, schemas, and docs every Meno instance starts
+with), **community** (`topic-packs/`, pre-vetted pack skeletons landed and amended through pull
+requests), and **tenant** (`content/<tenant>/`, one learner's private, gitignored vault).
+Generation prefers adopting a matching pack over regenerating one from scratch (search-first,
+run before `elicit-needs` hands off and again as `generate-curriculum`'s own preflight), and a
+finished tenant course can publish back to the community tier through the same reviewed path
+(`publish-to-community`, search-first and sanitize-then-gate in the other direction). Full
+spec: [specs/community.md](specs/community.md).
+
 ## The write-authority seam
 
 The central correctness boundary in Meno (decision 14). Two writers touch tenant state, with
@@ -121,7 +133,8 @@ schemas/                     JSON Schema files - the machine-checkable format co
 examples/example-learner/    committed fake-persona tenant: living spec + test fixture
 app/                         localhost app: server/ (Node, no build) + client/ (Vite + React)
 tools/                       validate.ts, eval.ts, meno-mirror
-topic-packs/                 pre-vetted shareable curricula (same schema as courses)
+topic-packs/                 community tier: pre-vetted pack skeletons under <domain>/<slug>/,
+                             same schema as courses, plus PACK.md provenance and INDEX.md
 content/<tenant>/            gitignored; a real learner's Obsidian vault
 ```
 
@@ -144,6 +157,7 @@ spec row is stale.
 | [specs/durability.md](specs/durability.md) | init, private mirror, restore | Phase 7 | - |
 | [specs/quality.md](specs/quality.md) | evals, baselines, smoke protocol, topic packs | Phase 8 | - |
 | [specs/insights.md](specs/insights.md) | study-insights snapshot (`lib/insights.ts`), read-only endpoint, CLI, narrative reports | v1.1 | - |
+| [specs/community.md](specs/community.md) | topic-pack layout, search-first, publish-to-community, amend-over-fork | v1.2 | - |
 
 Vault conventions (wikilinks, hub notes, todos) deliberately have no spec file: the
 `second-brain` skill and its references are the canonical owner, and a spec would duplicate

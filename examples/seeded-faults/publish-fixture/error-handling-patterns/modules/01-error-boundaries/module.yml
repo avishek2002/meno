@@ -1,0 +1,32 @@
+schema_version: 1
+module: 01-error-boundaries
+title: Error boundaries and the cost of swallowing failures
+status: generated
+serves: [O1]
+prerequisites: []
+est_hours: 2
+concepts:
+  - error-boundaries
+  - typed-results
+objectives:
+  - id: M1-1
+    text: Apply a typed result to replace a bare catch-and-ignore at a function boundary
+    bloom: apply
+sources:
+  - title: "The Rust Book, ch. 9: Error Handling"
+    url: https://doc.rust-lang.org/book/ch09-00-error-handling.html
+    archived_url: https://web.archive.org/web/20260805033645/https://doc.rust-lang.org/book/ch09-00-error-handling.html
+    accessed: 2026-08-05
+    source_type: web
+    why: states the Result-based recoverable-error pattern this module applies
+  - title: "Acme backend style guide: error handling section"
+    url: sources/internal-style-guide.md
+    archived_url: ""
+    accessed: 2026-08-05
+    source_type: user
+    why: the checkout team's internal convention at Acme this lesson follows
+lessons:
+  - file: 01-error-boundaries.md
+    title: Error boundaries and the cost of swallowing failures
+    concept: error-boundaries
+    status: generated

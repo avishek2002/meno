@@ -49,6 +49,10 @@ validate and the renderer can never disagree about what a file says.
 | `ledger` | per-line schema, strictly-increasing ts, write-authority at rest | 3 |
 | `mastery` | byte-identical rebuild vs committed mastery.yml | 3 |
 | `insights` | narrative insights-note frontmatter against schema, six required body sections, cite-your-numbers (every body number traces to the note's own `metrics_snapshot`) | v1.1 |
+| `pack-layout` | pack directory shape (`topic-packs\|org/packs`/domain/slug), domain in the closed vocabulary, `PACK.md` present and schema-valid with a matching `pack` field, `course.yml` is `status: draft` with no `profile` field | v1.2 |
+| `pack-notes` | `notes/*.md` frontmatter against `reference-note.schema.json`, source records, and the no-pedagogy rule (no check blocks, no transfer callouts, no lesson-anatomy headings) | v1.2 |
+| `pack-overlap` | no two packs in a domain share a slug; objective-text token overlap above 60 percent between packs in a domain is flagged | v1.2 |
+| `pack-safety` | community content is markdown/YAML only; error-level patterns (scripts, inline handlers, credential-shaped strings, private-key blocks, curl-pipe-to-shell, mermaid click/href) and warning-level patterns (instruction-shaped phrases, plain-http URLs) | v1.2 |
 
 Planned: `vault` (wikilink resolution, orphan detection - needs the app's resolver).
 
