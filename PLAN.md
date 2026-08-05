@@ -4,7 +4,7 @@
 
 ## What Meno is
 
-Meno is a learning system that lives entirely in a git repository. An AI coding agent (Claude Code first-class, any capable agent CLI supported) interviews you to pin down what you actually need to learn, generates a cited curriculum sized to your goal and time budget, and tutors you through it with spaced reviews and mastery gates. A static site renders your course; an append-only progress ledger keeps the picture honest.
+Meno is a learning system that lives entirely in a git repository. An AI coding agent (Claude Code first-class, any capable agent CLI supported) interviews you to pin down what you actually need to learn, generates a cited curriculum sized to your goal and time budget, and tutors you through it with spaced reviews and mastery gates. A local web app renders your course on localhost; an append-only progress ledger keeps the picture honest.
 
 The name is Plato's *Meno*, home of Meno's paradox: how can you search for something when you don't know what it is? That paradox is the exact problem a novice faces when asked "what do you want to learn, and how deeply?" Meno's clarification interview is the answer to it.
 
@@ -15,7 +15,7 @@ These were decided during the research and grill phase (2026-08-05). Revisit del
 | # | Decision | Choice |
 |---|----------|--------|
 | 1 | Audience | Public from day one. Developers who know the basics: CLI-fluent, subject novices. |
-| 2 | Study surface | Static site from day one. The site composes committed base content plus gitignored tenant content locally; the public deploy shows base plus the example tenant only. |
+| 2 | Study surface | A local-first web app served on localhost (superseded "static site", 2026-08-05 addendum). It reads and writes repo files directly, derives all structure from the file tree and manifests so it grows automatically with content, and needs no database: files are the only source of truth. |
 | 3 | Study loop | Hybrid: the site is the daily study surface; the agent runs periodic review sessions, grading, and re-scoping. |
 | 4 | Comprehensiveness dial | Depth menu x time budget, asked in the interview and reconciled by the agent, with pushback when they conflict. |
 | 5 | Content strategy | Hybrid: generated explanations and practice, anchored on 2-4 fetched-and-verified external sources per module, plus user-supplied documents when present. |
@@ -27,6 +27,12 @@ These were decided during the research and grill phase (2026-08-05). Revisit del
 | 11 | Tutoring rule | Mode-scoped: no direct answers in live review sessions (Socratic); static practice material carries answer feedback, because retrieval practice requires it. |
 | 12 | License and ownership | MIT for the base. Generated tenant content belongs to the user, stated explicitly in the guide. |
 | 13 | Governance | Central upstream (`avishek2002/meno`), pull-request-reviewed, eval-gated contributions. |
+| 14 | UI write authority | Split (2026-08-05 addendum): the app writes todos, reading progress, and recognition-level self-check results it can grade deterministically; only the agent writes mastery-gate events, from Socratic transfer-level reviews. Ledger events are typed by source (`ui`/`agent`) and grader level; gates key on agent-graded transfer events only. |
+| 15 | Second brain | `content/<tenant>/` is itself an Obsidian vault (2026-08-05 addendum). Wikilinks are the canonical link syntax inside tenant content; the agent maintains hub (map-of-content) notes and keeps the graph connected. Base content keeps standard markdown links (it renders on GitHub). |
+| 16 | Todos | One shared queue per tenant as Obsidian-Tasks-compatible markdown checklists (2026-08-05 addendum). The app manages them, Obsidian renders them, and agents scan them at session start and propose acting on actionable ones - acting only after user confirmation. |
+| 17 | App stack | Vite + React front end plus a small local Node file-API server (2026-08-05 addendum). One command starts both; the server is the single writer for UI-originated changes. |
+
+Rows 14-17 and the row 2 revision come from the second grill (2026-08-05), which added the three-pillar model: Obsidian as the second brain (all tenant content as connected markdown), the localhost app for study, tracking, and todos, and the agent setup for creating content and extending the repo.
 
 ## Target architecture
 
@@ -34,15 +40,21 @@ These were decided during the research and grill phase (2026-08-05). Revisit del
 graph TD
     A[User: I want to learn X] --> B[elicit-needs skill<br/>5-7 anchored questions + one live probe]
     B --> C[profile.md<br/>goal, prior knowledge, depth x time contract]
-    C --> D[generate-curriculum skill<br/>skeleton: objectives, module manifests, dependency map]
-    D --> E[Static site<br/>daily study surface]
+    C --> D[generate-curriculum skill<br/>skeleton: objectives, manifests, dependency map, module 1 body]
+    D --> E[Localhost LMS app<br/>daily study, recognition checks, todos, progress]
     F[generate-module skill<br/>lesson bodies, one module ahead] --> E
-    E --> G[tutor-session skill<br/>due reviews, Socratic grading, mastery gates]
-    G --> H[ledger.jsonl append-only events<br/>mastery.yml derived view]
+    E --> G[tutor-session skill<br/>due reviews, Socratic transfer grading, mastery gates]
+    G --> H[ledger.jsonl typed events<br/>mastery.yml derived view]
+    E -->|ui-typed events| H
     H --> E
     G -->|generates next module| F
     G -->|struggle or drift| B
+    V[Obsidian: content dir opens as a vault<br/>wikilinks, hub notes, graph view] --- E
+    T[todos.md shared queue] --- E
+    T -->|scanned at session start| G
 ```
+
+The three pillars in one line each: **Obsidian** is the second-brain view (every tenant file is vault-native markdown, so connections are visible as a graph); **the localhost app** is where study, tracking, and todo management happen; **the agent** is how content gets created and how the instance gets extended.
 
 Target repo layout (from research, section 6):
 
@@ -57,12 +69,14 @@ docs/                          RESEARCH.md, guide, content schema, migrations
 .claude/skills/                symlinks into .agents/skills/
 schemas/                       profile, course, module, lesson, ledger schemas
 examples/example-learner/      committed fake-persona tenant: living spec + eval fixture
-site/                          static site toolchain (generator chosen in Phase 4)
+app/                           localhost LMS app: Vite + React front end, local file-API server
 tools/                         validation scripts, mirror tooling, eval runner
-content/<tenant>/              gitignored: profile.md, sources/, courses, progress/
+content/<tenant>/              gitignored, opens as an Obsidian vault:
+                               todos.md, sources/, progress/, and per course:
+                               <course-slug>/{profile.md, course.yml, hub note, modules/}
 ```
 
-**Key architectural fact: Meno ships almost no model-calling code.** The agent CLI is the runtime and the skills (procedural markdown) are the program. Conventional code exists only where determinism is required: the static site, schema validation, the eval runner, and the mirror tooling.
+**Key architectural fact: Meno ships almost no model-calling code.** The agent CLI is the runtime and the skills (procedural markdown) are the program. Conventional code exists only where determinism is required: the localhost app, schema validation, the eval runner, and the mirror tooling.
 
 ## Cross-phase conventions
 
@@ -71,10 +85,14 @@ content/<tenant>/              gitignored: profile.md, sources/, courses, progre
 - Renderers and skills tolerate missing optional fields and broken links; a partial curriculum never breaks the site or a session.
 - Nothing in base ever reads or depends on a real tenant's content (anything under `content/`). Committed fixtures under `examples/` (the example learner, golden personas) are the only learner-shaped material that tests, evals, and docs may reference.
 - Every `SKILL.md` follows the open Agent Skills spec: name and description frontmatter, body under 5,000 tokens, progressive disclosure via a `references/` directory, and load-bearing instructions in plain body prose, so an agent without native skill support succeeds by just reading the file.
+- Link syntax is split by audience: tenant content uses wikilinks (Obsidian-canonical; the app resolves them identically), base content uses standard markdown links (it renders on GitHub). The committed example tenant uses wikilinks like any tenant; its degraded GitHub rendering is accepted, since the app and Obsidian are the real views.
+- Each canonical format is specified exactly once, in the skill that owns it (profile format in elicit-needs, manifests and sourcing in generate-curriculum, lesson anatomy and check blocks in generate-module, vault and todo conventions in second-brain); everything else links to the owner.
 
 ## Phases
 
-A phase is done when its acceptance criteria pass, not when its files exist. Phases 0-3 build the generation core (a usable course exists even with no site), 4 makes it visible, 5 makes it a tutor, 6-8 harden it. The repo stays coherent after every phase.
+A phase is done when its acceptance criteria pass, not when its files exist. Phases 0-3 build the generation core (a usable course exists even with no app), 4 makes it visible, 5 makes it a tutor, 6-8 harden it. The repo stays coherent after every phase.
+
+**Sequencing addendum (2026-08-05):** the five core skills (elicit-needs, generate-curriculum, generate-module, extend-meno, second-brain) were authored ahead of their phases, as drafts. Front-loading them does not close any phase: each phase still gates "done" on its acceptance criteria (golden fixtures, validation tooling, cold-start tests), and the skills get hardened as those phases execute.
 
 ### Phase 0 - Skeleton and entry points
 
@@ -100,7 +118,7 @@ Acceptance:
 Deliverables:
 - `.agents/skills/elicit-needs/SKILL.md` implementing the researched protocol: goal and motivation (jobs-to-be-done framing), prior-knowledge self-report plus one live micro-probe, depth menu x time budget, format and bring-your-own-content check, mandatory confirmation brief.
 - Anchored option menus and example answers for every question (novices cannot answer open questions); question budget and two-vague-answers stop condition encoded in the skill, not left to model judgment.
-- `schemas/profile.schema.json` for `profile.md` frontmatter; the brief persists as `content/<tenant>/profile.md`.
+- `schemas/profile.schema.json` for `profile.md` frontmatter; the brief persists as `content/<tenant>/<course-slug>/profile.md`.
 - Re-clarification triggers defined for later phases: struggle (repeated misses) and drift (off-goal requests).
 - Three golden personas with expected briefs under `examples/` (used by evals from Phase 8, hand-checked until then).
 
@@ -120,7 +138,7 @@ Deliverables:
 - The example learner gets a complete committed skeleton.
 
 Acceptance:
-- Skeletons generated for the two contrasting personas validate cleanly; objectives use Bloom verbs; estimated module hours sum to within the profile's budget.
+- Skeletons generated for the two contrasting personas validate cleanly; objectives use Bloom verbs; estimated module hours sum to within the profile's budget, at most 10 percent over.
 - Every anchor source in the example skeleton resolves and has an archive URL.
 - The dependency map renders on GitHub.
 
@@ -134,6 +152,8 @@ Deliverables:
 - Retrieval checks as collapsible answer reveals (static material carries feedback, decision 11); desirable-difficulty framing in learner-facing prose ("this feeling hard means it is working").
 - Bring-your-own-content ingestion: skills read `content/<tenant>/sources/` agentically before drafting; user material cited with relative paths.
 - Interleaving rule: once a module has two or more sibling concepts, retrieval checks draw on mixed concepts rather than only the current lesson's.
+- Vault weaving per the second-brain conventions: wikilinks between related concepts, every lesson linked from its module hub note (no orphans in the Obsidian graph).
+- Checks authored at two explicit levels: recognition-level checks in the UI-parsable check-block format (the app grades them deterministically), transfer-level prompts marked for agent grading only (decision 14).
 - Onboarding rule encoded in the skill chain: after skeleton confirmation, module 1's body generates immediately (decision 6); later modules wait for review sessions.
 - Ledger and mastery formats defined here as schemas plus hand-authored example fixtures (`schemas/ledger.schema.json`, `progress/ledger.jsonl` and `mastery.yml` under the example learner), so Phase 4 has something real to render; the skill that writes them live arrives in Phase 5.
 - Example learner module 1 fully generated.
@@ -144,20 +164,24 @@ Acceptance:
 - With `sources/` empty, generation completes without error, output passes schema validation, and contains zero `source_type: user` citations.
 - Spaced-review metadata (review offsets) present on every concept.
 
-### Phase 4 - The static site
+### Phase 4 - The localhost app
 
-**Goal:** the daily study surface; the "LMS visually presents content" requirement made real.
+**Goal:** the daily study surface; "the LMS visually presents content" made real as a local-first, read-write web app (decisions 2, 14, 16, 17). Rewritten 2026-08-05; this phase superseded a static-site design.
 
 Deliverables:
-- Generator selection spike (timeboxed, decision recorded in this file): candidates Quartz, Docusaurus, Astro Starlight. Criteria: composes committed base plus gitignored local tenant content, Mermaid support, zero-config local serve, GitHub Pages deploy of base plus example only, minimal toolchain for a public dev audience.
-- `site/` toolchain; one documented command serves the local site including tenant content.
-- Renders: curriculum map (Mermaid), lesson pages with a references panel built from structured sources, progress view charted from `mastery.yml` (the Phase 3 example fixture until Phase 5 writes it live).
-- Public deploy (GitHub Pages) of base plus example tenant.
+- `app/`: Vite + React front end plus a small local Node file-API server; one documented command starts both. The server is the single writer for all UI-originated changes (atomic writes; the ledger stays append-only) and is the only component that touches disk on the UI's behalf.
+- Derived-structure rendering: the app walks `content/<tenant>/` plus manifests at runtime, so new courses, modules, and lessons appear without any registration step ("grows automatically"). Wikilinks resolve in the app exactly as Obsidian resolves them.
+- Renders: curriculum map (Mermaid dependency graph), lesson pages with a references panel from structured sources, progress views charted from `mastery.yml` (the Phase 3 example fixture until Phase 5 writes it live), and due-review visibility.
+- Interactive checks: the app runs recognition-level check blocks (multiple choice, cloze, flashcards), grades them deterministically, and appends `source: ui`, recognition-level events to the ledger. Transfer-level prompts render as prompts only, marked "graded in agent review sessions".
+- Todo management: full create/edit/complete flow over the tenant's `todos.md`, round-tripping Obsidian Tasks syntax without mangling it.
+- Empty states that teach: with no tenant content, every screen points at the interview as the way to begin.
 
 Acceptance:
-- Fresh clone with zero tenant content builds and serves cleanly; the same command picks up tenant content when present.
-- Verified: no file under `content/` reaches the public deploy artifact.
-- Example course is fully navigable: map, lessons, references, progress.
+- Fresh clone with zero tenant content starts cleanly and shows the onboarding empty state; adding files under `content/` makes them appear with no config change.
+- A recognition check answered in the UI produces a correctly typed ledger event, and no sequence of UI actions can produce an agent-typed gate event or unlock a module.
+- A todo created, edited, and completed in the UI survives a round-trip: the file diff touches only the intended lines, and Obsidian renders the result correctly.
+- A lesson with wikilinks renders with working links in the app, and the same file resolves identically as an Obsidian vault note.
+- The example course is fully navigable: map, lessons, references, checks, progress, todos.
 
 ### Phase 5 - The tutor loop (`tutor-session` skill and the ledger)
 
@@ -167,7 +191,8 @@ Deliverables:
 - `.agents/skills/tutor-session/SKILL.md`: on invocation, read the ledger, compute due reviews against today, run them Socratically (no direct answers, decision 11), grade, append events, then generate the next module (decision 6) before closing.
 - Live implementation of the ledger and mastery formats defined in Phase 3: append-only `progress/ledger.jsonl` events (reviewed, scored, gated, overridden, generated, rescoped); `mastery.yml` derived, disposable, rebuildable from the ledger.
 - Review sessions interleave due items across modules rather than reviewing one module at a time.
-- Gate logic: below roughly 80 percent on transfer items, next module stays locked and remediation is offered; explicit user override proceeds, is logged, and re-injects weak concepts into future review schedules (decision 7).
+- Gate logic: below roughly 80 percent on transfer items, next module stays locked and remediation is offered; explicit user override proceeds, is logged, and re-injects weak concepts into future review schedules (decision 7). Gates key exclusively on agent-graded transfer events; UI-typed recognition events inform the session (what to probe first) but never unlock (decision 14).
+- Session start also reconciles UI activity since the last session (recognition results, completed todos) and scans `todos.md` for actionable items, proposing but never auto-acting (decision 16).
 - Struggle and drift triggers wired back to a targeted re-run of `elicit-needs`.
 
 Acceptance:
@@ -225,6 +250,7 @@ Acceptance:
 | Tenant data loss / leakage | init hook, private mirror, clone-don't-fork guidance | 0, 7 |
 | Mirror tooling complexity (knowingly accepted) | design doc first, init-plus-manual-remote fallback | 7 |
 | Skill/schema version skew | schema_version, migrations doc, permissive rendering | 2 onward |
+| Write contention: app server and agent both touch ledger/todos | append-only ledger, atomic single-writer file API for UI writes, agent sessions reconcile rather than rewrite UI events | 4, 5 |
 
 ## V1 success criteria
 
@@ -234,13 +260,14 @@ A stranger with no context can: clone Meno, run init, be interviewed by their ag
 
 - Hosted service, accounts, databases, background daemons.
 - A flashcard scheduler app (spacing lives in content metadata and the ledger; optional Obsidian Spaced Repetition syntax export is a later additive).
+- A public showcase deploy (GitHub Pages of base plus example): possible later additive, no longer a Phase 4 deliverable since the study surface moved to localhost.
+- Bridging into a user's pre-existing personal Obsidian vault (the tenant dir IS the vault; an export/link bridge is a later additive).
 - Gamification: streaks, points, badges.
 - Non-developer onboarding (graphical installer, web-only flow).
 - Institutional interop: SCORM, LTI, gradebooks, seat management.
 
 ## Open items
 
-- Static site generator: decided by the Phase 4 spike against the listed criteria.
 - Mirror tooling design: Phase 7 design doc before code.
 - Which agent CLIs beyond Claude Code exist on the maintainer machine (affects how Phase 0 and 8 acceptance runs are recorded).
 - Whether linking external video and interactive resources (not just written sources) is in scope as a content type: owner decision pending.

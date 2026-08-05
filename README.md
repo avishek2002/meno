@@ -4,7 +4,7 @@
 
 > **Status: planning phase.** The design is settled and researched; implementation has not started. Details below.
 
-You tell your coding agent (Claude Code, Codex, Gemini CLI, or any capable agent CLI) what you want to learn. Meno's skills will make it interrogate you properly first - goal, prior knowledge, depth, time budget - because a novice can't spec their own curriculum. Then it generates a course with real, verified sources, renders it on a local static site, and runs spaced review sessions that gate progress on actual mastery.
+You tell your coding agent (Claude Code, Codex, Gemini CLI, or any capable agent CLI) what you want to learn. Meno's skills will make it interrogate you properly first - goal, prior knowledge, depth, time budget - because a novice can't spec their own curriculum. Then it generates a course with real, verified sources, renders it in a local web app on your machine, and runs spaced review sessions that gate progress on actual mastery.
 
 Your content stays yours: everything generated for you is gitignored, never committed or published, and backed up only to your own private mirror. (Your agent's model provider does process what it generates for you - that's true of any agent workflow, and the guide will say so plainly.) The repo you clone will contain only the shared machinery - the skills, schemas, guide, and one example course.
 
