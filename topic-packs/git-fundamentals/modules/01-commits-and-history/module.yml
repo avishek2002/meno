@@ -1,0 +1,53 @@
+schema_version: 1
+module: 01-commits-and-history
+title: Commits and history
+status: skeleton
+serves: [O1, O2]
+prerequisites: []
+est_hours: 5
+concepts:                      # siblings: staging, commit crafting, history archaeology
+  - staging-area
+  - commit-crafting
+  - history-archaeology
+objectives:
+  - id: M1-1
+    text: Stage exactly the changes belonging to one logical commit, reading git status and git diff --staged to check the split
+    bloom: apply
+  - id: M1-2
+    text: Write atomic commits whose messages explain why a change was made, not just what changed
+    bloom: apply
+  - id: M1-3
+    text: Trace the origin and rationale of a specific line of code using git log, git diff, and git blame together
+    bloom: apply
+sources:                       # 3, each fetched this session; see sourcing.md
+  - title: "Pro Git, ch. 2.2: Recording Changes to the Repository"
+    url: https://git-scm.com/book/en/v2/Git-Basics-Recording-Changes-to-the-Repository
+    archived_url: https://web.archive.org/web/20260805054650/https://git-scm.com/book/en/v2/Git-Basics-Recording-Changes-to-the-Repository
+    accessed: 2026-08-05
+    source_type: web
+    why: explains the working-directory/staging-area/repository three-stage model the staging-area lesson stages changes against
+  - title: "Pro Git, ch. 2.3: Viewing the Commit History"
+    url: https://git-scm.com/book/en/v2/Git-Basics-Viewing-the-Commit-History
+    archived_url: https://web.archive.org/web/20260805054731/https://git-scm.com/book/en/v2/Git-Basics-Viewing-the-Commit-History
+    accessed: 2026-08-05
+    source_type: web
+    why: covers git log's filtering and formatting options the history-archaeology lesson applies to trace a change
+  - title: "git-blame (official reference)"
+    url: https://git-scm.com/docs/git-blame
+    archived_url: https://web.archive.org/web/20260805054813/https://git-scm.com/docs/git-blame
+    accessed: 2026-08-05
+    source_type: web
+    why: canonical reference for blame's line-attribution output and rename/move detection flags used in the archaeology lesson
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-staging-area.md
+    title: The staging area
+    concept: staging-area
+    status: planned
+  - file: 02-commit-crafting.md
+    title: Crafting atomic commits
+    concept: commit-crafting
+    status: planned
+  - file: 03-history-archaeology.md
+    title: History archaeology with log, diff, and blame
+    concept: history-archaeology
+    status: planned

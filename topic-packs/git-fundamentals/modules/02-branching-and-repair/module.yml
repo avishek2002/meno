@@ -1,0 +1,59 @@
+schema_version: 1
+module: 02-branching-and-repair
+title: Branching and repair
+status: skeleton
+serves: [O3, O4]
+prerequisites: [01-commits-and-history]
+est_hours: 6
+concepts:                      # siblings: branching, merging and conflicts, undoing safely
+  - branching
+  - merging-and-conflicts
+  - undoing-safely
+objectives:
+  - id: M2-1
+    text: Create and switch branches to isolate a feature's work from main until it is ready to integrate
+    bloom: apply
+  - id: M2-2
+    text: Resolve a merge conflict by interpreting conflict markers and choosing the correct resulting code
+    bloom: apply
+  - id: M2-3
+    text: Choose and apply the matching undo tool, reset, revert, or reflog recovery, for a given mistake without losing work
+    bloom: apply
+sources:                       # 4, each fetched this session; see sourcing.md
+  - title: "Pro Git, ch. 3.1: Branches in a Nutshell"
+    url: https://git-scm.com/book/en/v2/Git-Branching-Branches-in-a-Nutshell
+    archived_url: https://web.archive.org/web/20260805054854/https://git-scm.com/book/en/v2/Git-Branching-Branches-in-a-Nutshell
+    accessed: 2026-08-05
+    source_type: web
+    why: explains why branches are cheap movable pointers, the mental model the branching lesson builds on
+  - title: "Pro Git, ch. 3.2: Basic Branching and Merging"
+    url: https://git-scm.com/book/en/v2/Git-Branching-Basic-Branching-and-Merging
+    archived_url: https://web.archive.org/web/20260805054935/https://git-scm.com/book/en/v2/Git-Branching-Basic-Branching-and-Merging
+    accessed: 2026-08-05
+    source_type: web
+    why: walks fast-forward vs three-way merges and conflict-marker resolution that the merging lesson practices
+  - title: "Pro Git, ch. 7.7: Reset Demystified"
+    url: https://git-scm.com/book/en/v2/Git-Tools-Reset-Demystified
+    archived_url: https://web.archive.org/web/20260805055046/https://git-scm.com/book/en/v2/Git-Tools-Reset-Demystified
+    accessed: 2026-08-05
+    source_type: web
+    why: the three-trees model behind soft/mixed/hard reset that the undoing-safely lesson uses to pick the right undo
+  - title: "git-reflog (official reference)"
+    url: https://git-scm.com/docs/git-reflog
+    archived_url: https://web.archive.org/web/20260805055131/https://git-scm.com/docs/git-reflog
+    accessed: 2026-08-05
+    source_type: web
+    why: documents the reflog as the safety net for recovering commits after a bad reset or a deleted branch
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-branching.md
+    title: Branching to isolate work
+    concept: branching
+    status: planned
+  - file: 02-merging-and-conflicts.md
+    title: Merging and resolving conflicts
+    concept: merging-and-conflicts
+    status: planned
+  - file: 03-undoing-safely.md
+    title: "Undoing safely: reset, revert, reflog"
+    concept: undoing-safely
+    status: planned
