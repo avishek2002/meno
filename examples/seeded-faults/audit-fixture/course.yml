@@ -1,0 +1,18 @@
+schema_version: 1
+slug: audit-fixture
+title: Borrowing recap (seeded-fault audit fixture)
+created: 2026-08-05
+status: draft
+hub: ./audit-fixture-hub.md
+objectives:
+  - id: O1
+    text: Explain how borrowing avoids ownership transfer in everyday Rust code
+    bloom: understand
+    assessed_by: audit-fixture transfer prompt
+modules:
+  - n: 1
+    slug: 01-borrow-recap
+    title: Borrowing without moving
+    status: generated
+    est_hours: 2
+    serves: [O1]

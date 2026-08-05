@@ -1,0 +1,32 @@
+schema_version: 1
+module: 01-borrow-recap
+title: Borrowing without moving
+status: generated
+serves: [O1]
+prerequisites: []
+est_hours: 2
+concepts:
+  - borrowing-recap
+  - error-signaling
+objectives:
+  - id: M1-1
+    text: Explain when a borrow beats a move in a function signature
+    bloom: understand
+sources:
+  - title: "The Rust Book, ch. 4.2: References and Borrowing"
+    url: https://doc.rust-lang.org/book/ch04-02-references-and-borrowing.html
+    archived_url: https://web.archive.org/web/20260805033733/https://doc.rust-lang.org/book/ch04-02-references-and-borrowing.html
+    accessed: 2026-08-05
+    source_type: web
+    why: states the borrowing rules this module recaps
+  - title: "Serde: the serialization framework overview"
+    url: https://docs.rs/serde/latest/serde/
+    archived_url: https://web.archive.org/web/20260723040415/https://docs.rs/serde/latest/serde/
+    accessed: 2026-08-05
+    source_type: web
+    why: defines the three borrowing rules the lesson quotes verbatim
+lessons:
+  - file: 01-borrowing-recap.md
+    title: Borrowing without moving
+    concept: borrowing-recap
+    status: generated
