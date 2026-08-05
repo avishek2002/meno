@@ -6,10 +6,11 @@ One line per breaking or behavior-relevant schema change: date, what changed, wh
 |------|--------|---------------------------|
 | - | (none yet; all formats are at schema_version 1) | - |
 
-## 2026-08-05 - content tier consolidation (layout, not schema)
+## 2026-08-05 - content tier consolidation (layout, plus one narrowed pattern)
 
-All learning material moved under one root, `content/` (decision 18 in PLAN.md). No
-schema fields changed; every format keeps `schema_version` 1. Path changes:
+All learning material moved under one root, `content/` (decision 18 in PLAN.md). No schema
+field was added, removed, or changed meaning, and every format keeps `schema_version` 1 -
+but one constraint did narrow, so "layout only" is not quite the whole truth. Path changes:
 
 | Was | Now |
 |-----|-----|
@@ -23,6 +24,20 @@ For an existing instance: move each tenant vault with
 any private-mirror scripts that hardcode `content/<tenant>`. Org clones: move
 `org/packs/*` under `content/org/` before the next upstream merge; `tools/org-sync.sh`
 now guards `content/tenants/` and `content/org/` instead of `content/` and `org/`.
+
+**If you adopted a pack before this change**, one more edit: `course.schema.json`'s
+`derived_from.pack` pattern moved with the layout and now accepts only
+`content/community/<domain>/<slug>` or `content/org/<domain>/<slug>`. A `course.yml`
+carrying the old `topic-packs/<domain>/<slug>` or `org/packs/<domain>/<slug>` form fails
+`npm run validate` until you rewrite that one line. Nothing else in the block changes.
+
+No `schema_version` bump for it, deliberately: `derived_from` is optional, it shipped the
+same day (v1.2), and the fix is a one-line edit with a validate error that names the field.
+Bumping would make every existing `course.yml` stale and oblige validate to keep blessing a
+path form that no longer exists anywhere in the layout - a worse trade than a migration
+note. The pattern is pinned by a test in `tools/test/courses.test.ts`, because no fixture
+under `examples/` carries a `derived_from` block and the constraint was otherwise
+unexercised.
 
 ## 2026-08-05 - topic packs gain domains
 
