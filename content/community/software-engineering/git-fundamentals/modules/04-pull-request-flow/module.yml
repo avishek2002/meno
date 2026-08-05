@@ -1,0 +1,59 @@
+schema_version: 1
+module: 04-pull-request-flow
+title: The pull request flow
+status: skeleton
+serves: [O6]
+prerequisites: [03-remotes-and-forks]
+est_hours: 5
+concepts:                      # siblings: the lifecycle, reviewing, merge strategies
+  - pull-request-lifecycle
+  - code-review-practice
+  - merge-strategies
+objectives:
+  - id: M4-1
+    text: Carry a change from a local branch to a merged pull request, branch, push, open the pull request, respond to review, merge, delete the branch
+    bloom: apply
+  - id: M4-2
+    text: Review a pull request, reading the diff, commenting on specific lines, proposing suggested changes, and submitting an approve or request-changes verdict
+    bloom: analyze
+  - id: M4-3
+    text: Compare merge commit, squash and merge, and rebase and merge, and pick the method that fits a repository's history goals
+    bloom: analyze
+sources:                       # 4, each fetched this session; see sourcing.md
+  - title: "GitHub Docs: GitHub flow"
+    url: https://docs.github.com/en/get-started/using-github/github-flow
+    archived_url: https://web.archive.org/web/20260805093029/https://docs.github.com/en/get-started/using-github/github-flow
+    accessed: 2026-08-05
+    source_type: web
+    why: the canonical branch-change-pull-request-review-merge-delete loop this module's lifecycle lesson follows end to end
+  - title: "GitHub Docs: About pull requests"
+    url: https://docs.github.com/en/pull-requests/reference/pull-requests
+    archived_url: https://web.archive.org/web/20260805093113/https://docs.github.com/en/pull-requests/reference/pull-requests
+    accessed: 2026-08-05
+    source_type: web
+    why: defines pull requests as proposals to merge code changes and documents draft pull request status, both of which the lifecycle lesson builds on
+  - title: "GitHub Docs: Reviewing proposed changes in a pull request"
+    url: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/reviewing-proposed-changes-in-a-pull-request
+    archived_url: https://web.archive.org/web/20260714213357/https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/reviewing-proposed-changes-in-a-pull-request
+    accessed: 2026-08-05
+    source_type: web
+    why: the mechanics the review lesson practices, line comments, suggested changes, and the comment/approve/request-changes verdicts
+  - title: "GitHub Docs: Pull request merges"
+    url: https://docs.github.com/en/pull-requests/reference/pull-request-merges
+    archived_url: https://web.archive.org/web/20260805093326/https://docs.github.com/en/pull-requests/reference/pull-request-merges
+    accessed: 2026-08-05
+    source_type: web
+    why: contrasts merge commit, squash, and rebase merges and their history effects, the ground truth for the merge-strategies lesson
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-pull-request-lifecycle.md
+    title: "Branch, push, open, merge: the lifecycle"
+    concept: pull-request-lifecycle
+    status: planned
+  - file: 02-code-review-practice.md
+    title: Reviewing a pull request well
+    concept: code-review-practice
+    status: planned
+  - file: 03-merge-strategies.md
+    title: "Merge, squash, or rebase: choosing a merge method"
+    concept: merge-strategies
+    status: planned

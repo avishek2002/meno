@@ -1,0 +1,53 @@
+schema_version: 1
+module: 01-repo-shape-and-rules
+title: The repo's shape and rules
+status: skeleton
+serves: [O1]
+prerequisites: []
+est_hours: 2
+concepts:                      # stream A (building meno), part 1
+  - entry-point-discipline
+  - one-owner-law
+  - gate-and-spec-discipline
+objectives:
+  - id: M1-1
+    text: Trace three named conventions from AGENTS.md to the file that owns each, writing down the hop path without restating any procedure
+    bloom: apply
+  - id: M1-2
+    text: Run the gate locally and attribute each reported finding to the check that owns it
+    bloom: apply
+  - id: M1-3
+    text: Map a proposed behavior change to the spec under docs/specs/ that must be amended in the same change
+    bloom: apply
+sources:                       # 3, each fetched this session; see sourcing.md
+  - title: "AGENTS.md (canonical agent entry point)"
+    url: https://github.com/avishek2002/meno/blob/main/AGENTS.md
+    archived_url: https://web.archive.org/web/20260805092506/https://github.com/avishek2002/meno/blob/main/AGENTS.md
+    accessed: 2026-08-05
+    source_type: web
+    why: the front door every rule in this module hangs off - the repo map, the rules-for-agents list, and the one-owner table the tracing exercise walks
+  - title: "docs/architecture.md (system architecture)"
+    url: https://github.com/avishek2002/meno/blob/main/docs/architecture.md
+    archived_url: https://web.archive.org/web/20260805092615/https://github.com/avishek2002/meno/blob/main/docs/architecture.md
+    accessed: 2026-08-05
+    source_type: web
+    why: the component map and write-authority seam that explain why the repo is shaped the way it is, one level below the entry point
+  - title: "docs/specs/README.md (spec template and amendment discipline)"
+    url: https://github.com/avishek2002/meno/blob/main/docs/specs/README.md
+    archived_url: https://web.archive.org/web/20260805092913/https://github.com/avishek2002/meno/blob/main/docs/specs/README.md
+    accessed: 2026-08-05
+    source_type: web
+    why: defines specs as the living technical truth amended in place, and the link-don't-restate rule the M1-3 mapping exercise applies
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-the-front-door.md
+    title: The front door
+    concept: entry-point-discipline
+    status: planned
+  - file: 02-one-owner-law.md
+    title: The one-owner law
+    concept: one-owner-law
+    status: planned
+  - file: 03-gate-and-living-specs.md
+    title: The gate and living specs
+    concept: gate-and-spec-discipline
+    status: planned

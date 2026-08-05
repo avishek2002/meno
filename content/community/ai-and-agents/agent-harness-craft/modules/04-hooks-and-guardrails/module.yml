@@ -1,0 +1,47 @@
+schema_version: 1
+module: 04-hooks-and-guardrails
+title: Hooks and guardrails
+status: skeleton
+serves: [O4]
+prerequisites: [01-harness-anatomy]
+est_hours: 5
+concepts:                      # siblings: lifecycle hooks, permission rules, fail-closed design
+  - lifecycle-hooks
+  - permission-rules
+  - fail-closed-design
+objectives:
+  - id: M4-1
+    text: Attach a hook to a lifecycle event so an automation runs at that point regardless of what the model decides
+    bloom: apply
+  - id: M4-2
+    text: Write permission rules that allow routine operations and deny dangerous ones, respecting deny-over-allow precedence
+    bloom: apply
+  - id: M4-3
+    text: Design a guardrail that fails closed, so a check that errors or cannot run blocks the gated action instead of waving it through
+    bloom: create
+sources:                       # 2, each fetched this session; see sourcing.md
+  - title: "Hooks reference (Claude Code docs)"
+    url: https://code.claude.com/docs/en/hooks
+    archived_url: https://web.archive.org/web/20260805093521/https://code.claude.com/docs/en/hooks
+    accessed: 2026-08-05
+    source_type: web
+    why: specifies lifecycle events and exit-code semantics (exit 2 blocks, other nonzero errors proceed), the exact behavior the fail-closed lesson designs around
+  - title: "Configure permissions (Claude Code docs)"
+    url: https://code.claude.com/docs/en/permissions
+    archived_url: https://web.archive.org/web/20260804212553/https://code.claude.com/docs/en/permissions
+    accessed: 2026-08-05
+    source_type: web
+    why: documents allow/ask/deny rules, permission modes, and managed policies enforced by the client independent of the model's judgment
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-event-driven-hooks.md
+    title: Event-driven hooks
+    concept: lifecycle-hooks
+    status: planned
+  - file: 02-permission-rules-and-modes.md
+    title: Permission rules and modes
+    concept: permission-rules
+    status: planned
+  - file: 03-designing-fail-closed.md
+    title: Designing fail-closed guardrails
+    concept: fail-closed-design
+    status: planned

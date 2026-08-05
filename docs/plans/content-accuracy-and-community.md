@@ -62,11 +62,11 @@ private-source review question).
 | 4 | `limits-of-agent-generated-content` | `ai-and-agents` | Public sources only: sycophancy feedback loops, hallucination, cognitive offloading costs, Dunning-Kruger. |
 | 5 | `contributing-to-meno` | `meta` | Two module streams (building meno; authoring community packs). Exercise-driven; links to CONTRIBUTING.md and the owning skills, never restates them. |
 
-- [ ] Packs 3 and 2 first (prove the authoring pipeline), then 1, 4, 5.
+- [x] All five packs landed together (each independently citation-audited and sanitization-swept; the git pack landed as an amendment to `git-fundamentals` per the search-first rule, not a new pack).
 
 ## Workstream 4 - vault-candidate scan (approval-gated)
 
-- [ ] Scan the maintainer's private knowledge base for further *generic, employer-free,
+- [x] Scan done (2026-08-05); 10-candidate list delivered to the maintainer privately, approval pending. Scan the maintainer's private knowledge base for further *generic, employer-free,
   teachable* topics; produce a candidate list with a one-line scope each. **Nothing is
   authored until the maintainer approves candidates** - the scan output itself stays
   out of the repo (it references the private source).

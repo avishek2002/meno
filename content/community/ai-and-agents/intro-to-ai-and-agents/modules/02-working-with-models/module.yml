@@ -1,0 +1,67 @@
+schema_version: 1
+module: 02-working-with-models
+title: Working with models
+status: skeleton
+serves: [O2]
+prerequisites: [01-what-is-a-language-model]
+est_hours: 4
+concepts:                      # siblings: the four levers a caller controls
+  - prompting
+  - context-windows
+  - sampling-controls
+  - structured-output
+objectives:
+  - id: M2-1
+    text: Write prompts that state the task, constraints, and examples explicitly, and iterate on them against real outputs
+    bloom: apply
+  - id: M2-2
+    text: Manage the context window on long tasks, predicting what happens as it fills and deciding what to include or drop
+    bloom: apply
+  - id: M2-3
+    text: Choose sampling settings to match the task, near-deterministic for extraction and looser for ideation
+    bloom: apply
+  - id: M2-4
+    text: Produce machine-parseable model output, valid JSON (JavaScript Object Notation) against a schema, fit for scripts and pipelines
+    bloom: apply
+sources:                       # 4, each fetched this session; see sourcing.md
+  - title: "Anthropic docs: Prompt engineering overview"
+    url: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/overview
+    archived_url: https://web.archive.org/web/20260805093625/https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/overview
+    accessed: 2026-08-05
+    source_type: web
+    why: frames prompt engineering as empirical iteration against success criteria and indexes the technique catalog the prompting lesson draws on
+  - title: "Anthropic docs: Context windows"
+    url: https://platform.claude.com/docs/en/build-with-claude/context-windows
+    archived_url: https://web.archive.org/web/20260805034729/https://platform.claude.com/docs/en/build-with-claude/context-windows
+    accessed: 2026-08-05
+    source_type: web
+    why: defines the context window as working memory, lists what counts toward it, and documents overflow behavior and long-context degradation for the context lesson
+  - title: "Anthropic docs: Glossary"
+    url: https://platform.claude.com/docs/en/about-claude/glossary
+    archived_url: https://web.archive.org/web/20260805093519/https://platform.claude.com/docs/en/about-claude/glossary
+    accessed: 2026-08-05
+    source_type: web
+    why: the temperature entry - randomness control and the caveat that temperature 0 is still not fully deterministic - anchoring the sampling lesson
+  - title: "Anthropic docs: Structured outputs"
+    url: https://platform.claude.com/docs/en/build-with-claude/structured-outputs
+    archived_url: https://web.archive.org/web/20260805093928/https://platform.claude.com/docs/en/build-with-claude/structured-outputs
+    accessed: 2026-08-05
+    source_type: web
+    why: documents schema-constrained JSON output and strict tool use, the mechanism the structured-output lesson teaches for pipeline-safe results
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-prompting.md
+    title: Prompting as programming in prose
+    concept: prompting
+    status: planned
+  - file: 02-context-windows.md
+    title: "Context windows: the model's working memory"
+    concept: context-windows
+    status: planned
+  - file: 03-sampling-and-temperature.md
+    title: Temperature and sampling controls
+    concept: sampling-controls
+    status: planned
+  - file: 04-structured-output.md
+    title: Structured output for scripts and pipelines
+    concept: structured-output
+    status: planned

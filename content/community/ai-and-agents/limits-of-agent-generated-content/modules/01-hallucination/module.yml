@@ -1,0 +1,53 @@
+schema_version: 1
+module: 01-hallucination
+title: Hallucination - mechanisms and taxonomies
+status: skeleton
+serves: [O1]
+prerequisites: []
+est_hours: 3
+concepts:                      # siblings: what it is, where it comes from, why it persists
+  - hallucination-taxonomy
+  - hallucination-causes
+  - guessing-incentives
+objectives:
+  - id: M1-1
+    text: Explain what makes a model output a hallucination and classify examples as factuality vs faithfulness errors using the survey taxonomies
+    bloom: understand
+  - id: M1-2
+    text: Explain how data, training, and inference each introduce hallucinations into large language model output
+    bloom: understand
+  - id: M1-3
+    text: Explain why training and evaluation procedures that reward guessing over acknowledging uncertainty keep hallucination persistent
+    bloom: understand
+sources:                       # 3, each fetched this session; see sourcing.md
+  - title: "Survey of Hallucination in Natural Language Generation (Ji et al., ACM Computing Surveys)"
+    url: https://arxiv.org/abs/2202.03629
+    archived_url: https://web.archive.org/web/20260805092703/https://arxiv.org/abs/2202.03629
+    accessed: 2026-08-05
+    source_type: web
+    why: the field-defining survey of hallucination across natural language generation tasks; its definitions and task-spanning organization anchor the taxonomy lesson
+  - title: "A Survey on Hallucination in Large Language Models (Huang et al., ACM Transactions on Information Systems)"
+    url: https://arxiv.org/abs/2311.05232
+    archived_url: https://web.archive.org/web/20260805093131/https://arxiv.org/abs/2311.05232
+    accessed: 2026-08-05
+    source_type: web
+    why: the large-language-model-era survey whose taxonomy of plausible-yet-nonfactual content and analysis of contributing factors the causes lesson follows
+  - title: "Why Language Models Hallucinate (Kalai, Nachum, Vempala, and Zhang)"
+    url: https://arxiv.org/abs/2509.04664
+    archived_url: https://web.archive.org/web/20260805092824/https://arxiv.org/abs/2509.04664
+    accessed: 2026-08-05
+    source_type: web
+    why: argues hallucination persists because training and evaluation reward guessing over acknowledging uncertainty - the incentives lesson's central claim
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-hallucination-taxonomy.md
+    title: What hallucination is, and its taxonomies
+    concept: hallucination-taxonomy
+    status: planned
+  - file: 02-hallucination-causes.md
+    title: Where hallucinations come from
+    concept: hallucination-causes
+    status: planned
+  - file: 03-guessing-incentives.md
+    title: Why models guess instead of abstaining
+    concept: guessing-incentives
+    status: planned

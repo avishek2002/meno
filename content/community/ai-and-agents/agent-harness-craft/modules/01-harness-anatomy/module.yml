@@ -1,0 +1,59 @@
+schema_version: 1
+module: 01-harness-anatomy
+title: Anatomy of an agent harness
+status: skeleton
+serves: [O1]
+prerequisites: []
+est_hours: 4
+concepts:                      # siblings: what fills the window, the tool round trip, the loop
+  - context-assembly
+  - tool-use-loop
+  - agent-loop
+objectives:
+  - id: M1-1
+    text: Describe what the harness places in the context window before the first user message, including base instructions, memory files, and tool definitions
+    bloom: understand
+  - id: M1-2
+    text: Explain the tool-use round trip, where the model returns a structured tool call, the harness executes it, and the result returns as a new message
+    bloom: understand
+  - id: M1-3
+    text: Distinguish a predefined workflow from an agent directing its own tool use, and identify which a given task calls for
+    bloom: analyze
+sources:                       # 4, each fetched this session; see sourcing.md
+  - title: "Building effective agents (Anthropic engineering)"
+    url: https://www.anthropic.com/engineering/building-effective-agents
+    archived_url: https://web.archive.org/web/20260805092535/https://www.anthropic.com/engineering/building-effective-agents
+    accessed: 2026-08-05
+    source_type: web
+    why: defines the augmented LLM (retrieval, tools, memory) and the agent loop, and draws the workflow-vs-agent line the loop lesson teaches
+  - title: "Tool use with Claude (Claude API docs)"
+    url: https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview
+    archived_url: https://web.archive.org/web/20260805092615/https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview
+    accessed: 2026-08-05
+    source_type: web
+    why: documents the tool_use and tool_result round trip, schema-defined tools, and client-vs-server execution the round-trip lesson traces
+  - title: "Claude Code overview (official docs)"
+    url: https://code.claude.com/docs/en/overview
+    archived_url: https://web.archive.org/web/20260805092703/https://code.claude.com/docs/en/overview
+    accessed: 2026-08-05
+    source_type: web
+    why: names one real harness's extension surfaces (instruction files, skills, hooks, subagents, Model Context Protocol servers) that later modules each take up
+  - title: "Explore the context window (Claude Code docs)"
+    url: https://code.claude.com/docs/en/context-window
+    archived_url: https://web.archive.org/web/20260805084058/https://code.claude.com/docs/en/context-window
+    accessed: 2026-08-05
+    source_type: web
+    why: itemizes what fills the window at session start (base instructions, memory files, tool listings) and how it fills as a session runs
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-what-the-harness-assembles.md
+    title: What the harness assembles
+    concept: context-assembly
+    status: planned
+  - file: 02-the-tool-use-round-trip.md
+    title: The tool-use round trip
+    concept: tool-use-loop
+    status: planned
+  - file: 03-the-agent-loop.md
+    title: The agent loop
+    concept: agent-loop
+    status: planned

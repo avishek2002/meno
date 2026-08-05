@@ -1,0 +1,53 @@
+schema_version: 1
+module: 02-landing-a-change
+title: Landing a change
+status: skeleton
+serves: [O2]
+prerequisites: [01-repo-shape-and-rules]
+est_hours: 3
+concepts:                      # stream A (building meno), part 2
+  - branch-and-pull-request-flow
+  - continuous-integration-gate
+  - review-contract
+objectives:
+  - id: M2-1
+    text: Prepare a small documentation fix on a branch and run the gate locally before pushing
+    bloom: apply
+  - id: M2-2
+    text: Open a pull request whose description fills the template checklist honestly, including the spec-amendment line
+    bloom: create
+  - id: M2-3
+    text: Diagnose a continuous-integration failure by reading the workflow's steps and reproducing the failing command locally
+    bloom: apply
+sources:                       # 3, each fetched this session; see sourcing.md
+  - title: "CONTRIBUTING.md (the whole contribution bar)"
+    url: https://github.com/avishek2002/meno/blob/main/CONTRIBUTING.md
+    archived_url: https://web.archive.org/web/20260805092530/https://github.com/avishek2002/meno/blob/main/CONTRIBUTING.md
+    accessed: 2026-08-05
+    source_type: web
+    why: owns what lands where, the gate commands, the eval and smoke-test requirements, and the standing rules the pull-request exercise must clear
+  - title: ".github/workflows/gate.yml (the continuous-integration workflow)"
+    url: https://github.com/avishek2002/meno/blob/main/.github/workflows/gate.yml
+    archived_url: https://web.archive.org/web/20260805093104/https://github.com/avishek2002/meno/blob/main/.github/workflows/gate.yml
+    accessed: 2026-08-05
+    source_type: web
+    why: the exact commands continuous integration runs on every pull request - the file the M2-3 diagnosis exercise reads to reproduce a red run locally
+  - title: ".github/pull_request_template.md (the review contract)"
+    url: https://github.com/avishek2002/meno/blob/main/.github/pull_request_template.md
+    archived_url: https://web.archive.org/web/20260805102040/https://github.com/avishek2002/meno/blob/main/.github/pull_request_template.md
+    accessed: 2026-08-05
+    source_type: web
+    why: the checklist a pull request must fill in honestly - the gate line, the spec-amendment line, and the community-tier block module 04 returns to
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-branch-and-gate.md
+    title: Branch, change, gate
+    concept: branch-and-pull-request-flow
+    status: planned
+  - file: 02-pull-request-and-ci.md
+    title: The pull request and continuous integration
+    concept: continuous-integration-gate
+    status: planned
+  - file: 03-review-as-execution.md
+    title: Review as execution
+    concept: review-contract
+    status: planned

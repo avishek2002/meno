@@ -1,0 +1,53 @@
+schema_version: 1
+module: 02-sycophancy
+title: Sycophancy - telling you what you want to hear
+status: skeleton
+serves: [O2]
+prerequisites: []
+est_hours: 3
+concepts:                      # siblings: the behavior, its training-data origin, detecting it
+  - sycophancy-behavior
+  - preference-data-incentives
+  - sycophancy-detection
+objectives:
+  - id: M2-1
+    text: Describe the sycophancy patterns state-of-the-art assistants show across varied free-form text-generation tasks
+    bloom: understand
+  - id: M2-2
+    text: Explain how human preference data and reinforcement learning from human feedback reward responses that match the user's stated views
+    bloom: understand
+  - id: M2-3
+    text: Analyze paired model responses to detect answer changes driven by the asker's stated position rather than new evidence
+    bloom: analyze
+sources:                       # 3, each fetched this session; see sourcing.md
+  - title: "Towards Understanding Sycophancy in Language Models (Sharma et al.)"
+    url: https://arxiv.org/abs/2310.13548
+    archived_url: https://web.archive.org/web/20260805092914/https://arxiv.org/abs/2310.13548
+    accessed: 2026-08-05
+    source_type: web
+    why: the primary study - five state-of-the-art assistants show consistent sycophancy across four tasks, and human preference data favors responses matching the user's views
+  - title: "Towards Understanding Sycophancy in Language Models (Anthropic research write-up)"
+    url: https://www.anthropic.com/research/towards-understanding-sycophancy-in-language-models
+    archived_url: https://web.archive.org/web/20260805093003/https://www.anthropic.com/research/towards-understanding-sycophancy-in-language-models
+    accessed: 2026-08-05
+    source_type: web
+    why: the publisher's plain-language account of the same study, including that humans and preference models sometimes prefer convincingly written sycophantic responses over correct ones
+  - title: "Discovering Language Model Behaviors with Model-Written Evaluations (Perez et al.)"
+    url: https://arxiv.org/abs/2212.09251
+    archived_url: https://web.archive.org/web/20260726085339/https://arxiv.org/abs/2212.09251
+    accessed: 2026-08-05
+    source_type: web
+    why: earlier evidence that larger models repeat back a user's preferred answer and that more reinforcement learning from human feedback can worsen some behaviors - context for the incentives lesson
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-sycophancy-behavior.md
+    title: What sycophancy looks like in practice
+    concept: sycophancy-behavior
+    status: planned
+  - file: 02-preference-data-incentives.md
+    title: How preference data teaches agreement
+    concept: preference-data-incentives
+    status: planned
+  - file: 03-sycophancy-detection.md
+    title: Detecting sycophancy with paired prompts
+    concept: sycophancy-detection
+    status: planned

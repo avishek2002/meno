@@ -1,0 +1,53 @@
+schema_version: 1
+module: 05-repo-hygiene
+title: Repository hygiene
+status: skeleton
+serves: [O7]
+prerequisites: [04-pull-request-flow]
+est_hours: 2
+concepts:                      # siblings: ignoring files, guarding main, branch lifecycle
+  - ignoring-files
+  - protected-branches
+  - branch-lifecycle
+objectives:
+  - id: M5-1
+    text: Write gitignore patterns that keep generated and local-only files untracked, and untrack files that were committed before the rule existed
+    bloom: apply
+  - id: M5-2
+    text: Configure branch protection so the default branch changes only through reviewed, checks-passing pull requests
+    bloom: apply
+  - id: M5-3
+    text: Keep the branch list clean by enabling automatic deletion of merged head branches
+    bloom: apply
+sources:                       # 3, each fetched this session; see sourcing.md
+  - title: "gitignore (official reference)"
+    url: https://git-scm.com/docs/gitignore
+    archived_url: https://web.archive.org/web/20260805092706/https://git-scm.com/docs/gitignore
+    accessed: 2026-08-05
+    source_type: web
+    why: the pattern format and precedence rules, and the point that ignore rules affect only untracked files, which the ignoring-files lesson applies
+  - title: "GitHub Docs: About protected branches"
+    url: https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches
+    archived_url: https://web.archive.org/web/20260805093404/https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches
+    accessed: 2026-08-05
+    source_type: web
+    why: defines branch protection rules, required reviews, required status checks, and push restrictions the protected-branches lesson configures
+  - title: "GitHub Docs: Managing the automatic deletion of branches"
+    url: https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/managing-the-automatic-deletion-of-branches
+    archived_url: https://web.archive.org/web/20260805093507/https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/managing-the-automatic-deletion-of-branches
+    accessed: 2026-08-05
+    source_type: web
+    why: documents the auto-delete-merged-head-branches setting, who can enable it, and that protection rules can exempt branches from it
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-ignoring-files.md
+    title: Ignoring files with gitignore
+    concept: ignoring-files
+    status: planned
+  - file: 02-protected-branches.md
+    title: Protecting the default branch
+    concept: protected-branches
+    status: planned
+  - file: 03-branch-lifecycle.md
+    title: Branch auto-delete and a clean branch list
+    concept: branch-lifecycle
+    status: planned

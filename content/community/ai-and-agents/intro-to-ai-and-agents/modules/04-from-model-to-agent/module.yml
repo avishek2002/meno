@@ -1,0 +1,53 @@
+schema_version: 1
+module: 04-from-model-to-agent
+title: From model to agent
+status: skeleton
+serves: [O4]
+prerequisites: [03-capabilities-and-failure-modes]
+est_hours: 3
+concepts:                      # siblings: the mechanism, the loop, the discipline
+  - tool-use
+  - agent-loop
+  - planning-and-decomposition
+objectives:
+  - id: M4-1
+    text: Explain the tool-use round trip, where the model emits a structured call, the harness executes it, and the result returns as context
+    bloom: understand
+  - id: M4-2
+    text: Distinguish workflows, predefined code paths that call models, from agents, where the model directs its own tool use in a loop
+    bloom: understand
+  - id: M4-3
+    text: Analyze a multi-step task into an agent plan of tool calls, observations, checks, and a stopping condition, and identify where it can fail
+    bloom: analyze
+sources:                       # 3, each fetched this session; see sourcing.md
+  - title: "Anthropic docs: Tool use overview"
+    url: https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview
+    archived_url: https://web.archive.org/web/20260805092615/https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview
+    accessed: 2026-08-05
+    source_type: web
+    why: documents the full round trip - tool definitions with JSON (JavaScript Object Notation) schemas, tool_use blocks, client-side execution, tool_result - the tool-use lesson walks through
+  - title: "Anthropic engineering: Building effective agents"
+    url: https://www.anthropic.com/engineering/building-effective-agents
+    archived_url: https://web.archive.org/web/20260805092535/https://www.anthropic.com/engineering/building-effective-agents
+    accessed: 2026-08-05
+    source_type: web
+    why: defines the workflow-vs-agent boundary, catalogs the five workflow patterns, and describes agents as models using tools in a loop on environmental feedback
+  - title: "ReAct: Synergizing Reasoning and Acting in Language Models (Yao et al.)"
+    url: https://arxiv.org/abs/2210.03629
+    archived_url: https://web.archive.org/web/20260803151324/https://arxiv.org/abs/2210.03629
+    accessed: 2026-08-05
+    source_type: web
+    why: the research result behind interleaving reasoning with actions, showing grounding in external observations reduces hallucination and error propagation
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-tool-use.md
+    title: "Tool use: giving the model hands"
+    concept: tool-use
+    status: planned
+  - file: 02-agent-loop.md
+    title: The agent loop
+    concept: agent-loop
+    status: planned
+  - file: 03-planning-multi-step-work.md
+    title: Planning and multi-step work
+    concept: planning-and-decomposition
+    status: planned

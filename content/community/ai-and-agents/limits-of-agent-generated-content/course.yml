@@ -1,0 +1,58 @@
+schema_version: 1
+slug: limits-of-agent-generated-content
+title: Limits of agent-generated content
+created: 2026-08-05
+status: draft                  # topic pack: pre-contract, not yet adopted by a tenant
+hub: ./limits-of-agent-generated-content-hub.md
+objectives:
+  - id: O1
+    text: Explain why language models produce plausible but false content, classifying real examples with the survey taxonomies and naming a likely cause for each
+    bloom: understand
+    assessed_by: a written classification of provided hallucination examples as factuality vs faithfulness errors, each with a stated data, training, or inference cause
+  - id: O2
+    text: Analyze model outputs for sycophancy, distinguishing agreement driven by the asker's stated view from agreement driven by evidence
+    bloom: analyze
+    assessed_by: a side-by-side analysis of paired prompts showing where an assistant's answer flipped to match the asker's stated position without new evidence
+  - id: O3
+    text: Explain what cognitive offloading and automation bias cost the person doing the offloading, grounded in the memory and decision research
+    bloom: understand
+    assessed_by: a written account applying the Google-effect and automation-bias findings to one of the learner's own AI-assisted workflows
+  - id: O4
+    text: Evaluate their own calibration in a domain they are learning, using the Dunning-Kruger and overconfidence research to interpret the gap
+    bloom: evaluate
+    assessed_by: a logged set of confidence predictions checked against outcomes, with a written reading of where and why the learner was miscalibrated
+  - id: O5
+    text: Evaluate defenses against the compounding loop in which sycophancy confirms a wrong model, offloading removes the check, and miscalibration hides the damage
+    bloom: evaluate
+    assessed_by: a written failure-chain analysis of one real or constructed incident plus a personal verification checklist, each item justified from the cited evidence
+modules:                       # ordered; every field here mirrors module.yml at regen time
+  - n: 1
+    slug: 01-hallucination
+    title: Hallucination - mechanisms and taxonomies
+    status: skeleton
+    est_hours: 3
+    serves: [O1]
+  - n: 2
+    slug: 02-sycophancy
+    title: Sycophancy - telling you what you want to hear
+    status: skeleton
+    est_hours: 3
+    serves: [O2]
+  - n: 3
+    slug: 03-cognitive-offloading
+    title: The cost of offloading thinking
+    status: skeleton
+    est_hours: 3
+    serves: [O3]
+  - n: 4
+    slug: 04-dunning-kruger-and-calibration
+    title: Dunning-Kruger and calibration
+    status: skeleton
+    est_hours: 3
+    serves: [O4]
+  - n: 5
+    slug: 05-compounding-loop-and-defenses
+    title: The compounding loop and its defenses
+    status: skeleton
+    est_hours: 4
+    serves: [O5]

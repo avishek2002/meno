@@ -1,0 +1,53 @@
+schema_version: 1
+module: 03-remotes-and-forks
+title: Remotes, clones, and forks
+status: skeleton
+serves: [O5]
+prerequisites: [02-branching-and-repair]
+est_hours: 4
+concepts:                      # siblings: remotes and tracking, moving commits, fork workflow
+  - remotes-and-tracking
+  - push-pull-fetch
+  - forks-and-clones
+objectives:
+  - id: M3-1
+    text: Manage a repository's remotes, listing, adding, inspecting, and removing them, and read what origin means after a clone
+    bloom: apply
+  - id: M3-2
+    text: Move commits between local and remote with push, fetch, and pull, using remote-tracking branches and an upstream to know where each branch stands
+    bloom: apply
+  - id: M3-3
+    text: Set up the fork workflow, fork on the host, clone locally, add the original repository as an upstream remote, to propose changes without write access
+    bloom: apply
+sources:                       # 3, each fetched this session; see sourcing.md
+  - title: "Pro Git, ch. 2.5: Working with Remotes"
+    url: https://git-scm.com/book/en/v2/Git-Basics-Working-with-Remotes
+    archived_url: https://web.archive.org/web/20260805092458/https://git-scm.com/book/en/v2/Git-Basics-Working-with-Remotes
+    accessed: 2026-08-05
+    source_type: web
+    why: covers listing, adding, inspecting, renaming, and removing remotes plus the fetch/pull/push trio the remotes lessons practice
+  - title: "Pro Git, ch. 3.5: Remote Branches"
+    url: https://git-scm.com/book/en/v2/Git-Branching-Remote-Branches
+    archived_url: https://web.archive.org/web/20260805092628/https://git-scm.com/book/en/v2/Git-Branching-Remote-Branches
+    accessed: 2026-08-05
+    source_type: web
+    why: explains remote-tracking branches as unmovable local references and how tracking (upstream) branches make push and pull unambiguous
+  - title: "GitHub Docs: Fork a repository"
+    url: https://docs.github.com/en/pull-requests/how-tos/work-with-forks/fork-a-repo
+    archived_url: https://web.archive.org/web/20260805092810/https://docs.github.com/en/pull-requests/how-tos/work-with-forks/fork-a-repo
+    accessed: 2026-08-05
+    source_type: web
+    why: the fork-then-clone-then-add-upstream setup the fork-workflow lesson walks through, straight from the host's own docs
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-remotes-and-tracking.md
+    title: Remotes and remote-tracking branches
+    concept: remotes-and-tracking
+    status: planned
+  - file: 02-push-pull-fetch.md
+    title: Push, pull, and fetch
+    concept: push-pull-fetch
+    status: planned
+  - file: 03-forks-and-clones.md
+    title: Forks, clones, and the upstream remote
+    concept: forks-and-clones
+    status: planned
