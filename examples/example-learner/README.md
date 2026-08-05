@@ -4,8 +4,9 @@ This directory is the committed reference tenant: a complete, fake learner whose
 exercises every format Meno defines. It is both the living spec (see a real profile, manifest,
 lesson, and ledger side by side) and the fixture that tests, evals, and docs point at.
 
-It lives under `examples/`, outside `content/`, on purpose: `content/` is gitignored so real
-tenant material can never be committed, and no gitignore rule can ever hide this example or
+It lives under `examples/`, outside `content/`, on purpose: `content/tenants/` is gitignored
+so real tenant material can never be committed, and a committed fake tenant must never sit
+beside real gitignored ones - no gitignore negation rule to carve this example out, no way to
 leak a real tenant alongside it. Nothing in the base system reads real tenant content; this
 example is the only learner-shaped material base code and docs may reference.
 

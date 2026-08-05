@@ -36,13 +36,13 @@ field, its formula, its `min_n`) rather than approximating it in prose.
    bytes (records exactly which ledger state this report describes, so a later re-run over
    a longer ledger is never mistaken for the same report). `agent`: your own model
    identity string.
-3. **Write the note** at `content/<tenant>/insights/YYYY-MM-DD-insights.md` (today's date;
+3. **Write the note** at `content/tenants/<tenant>/insights/YYYY-MM-DD-insights.md` (today's date;
    if a note for today already exists, overwrite it - one report per day, not per
    invocation) following [references/narrative-format.md](references/narrative-format.md)
    exactly: frontmatter per `schemas/insights.schema.json` with the full snapshot JSON
    embedded as `metrics_snapshot`, then the six fixed body sections in order.
 4. **Weave it in**, per [second-brain conventions](../second-brain/references/vault-conventions.md):
-   update `content/<tenant>/insights/insights-hub.md` (create it on the first report) to
+   update `content/tenants/<tenant>/insights/insights-hub.md` (create it on the first report) to
    list every dated report newest-first inside its `meno:derived` markers, preserving any
    human prose below; link the hub from `home.md`'s derived block if it is not linked
    already. No orphans.

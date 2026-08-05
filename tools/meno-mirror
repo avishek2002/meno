@@ -2,11 +2,11 @@
 # meno-mirror - back a tenant's private vault up to a private repository you own,
 # and restore it on a fresh machine. Plain git plus optional gh; no daemons.
 #
-# Design (docs/specs/durability.md): content/<tenant>/ becomes an INDEPENDENT git
-# repository nested inside the gitignored path - the public meno repo never learns
-# the mirror exists. Mirror pushes run with hooks scoped off: a backup is
-# machine-managed, and a personal policy hook that blocks it is a backup that
-# silently stops happening.
+# Design (docs/specs/durability.md): content/tenants/<tenant>/ becomes an
+# INDEPENDENT git repository nested inside the gitignored path - the public meno
+# repo never learns the mirror exists. Mirror pushes run with hooks scoped off: a
+# backup is machine-managed, and a personal policy hook that blocks it is a
+# backup that silently stops happening.
 #
 # Usage:
 #   tools/meno-mirror init <tenant> [remote-url]   set up the mirror (creates a
@@ -19,7 +19,7 @@
 set -eu
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
-CONTENT="$ROOT/content"
+TENANTS="$ROOT/content/tenants"
 
 # git invocations inside the tenant repo: personal global hooks scoped off
 tgit() {
@@ -30,9 +30,9 @@ tgit() {
 die() { echo "meno-mirror: $*" >&2; exit 1; }
 
 need_tenant() {
-  [ -n "${1:-}" ] || die "which tenant? (directories under content/)"
-  TENANT_DIR="$CONTENT/$1"
-  [ -d "$TENANT_DIR" ] || die "no tenant at content/$1"
+  [ -n "${1:-}" ] || die "which tenant? (directories under content/tenants/)"
+  TENANT_DIR="$TENANTS/$1"
+  [ -d "$TENANT_DIR" ] || die "no tenant at content/tenants/$1"
 }
 
 verify_remote() {
@@ -67,7 +67,7 @@ case "$cmd" in
     need_tenant "${2:-}"
     if [ ! -d "$TENANT_DIR/.git" ]; then
       tgit "$TENANT_DIR" init -q
-      echo "initialized nested repository at content/$2/.git"
+      echo "initialized nested repository at content/tenants/$2/.git"
     fi
     url=${3:-}
     if [ -z "$url" ]; then
@@ -88,7 +88,7 @@ case "$cmd" in
     ;;
   push)
     need_tenant "${2:-}"
-    [ -d "$TENANT_DIR/.git" ] || die "content/$2 is not mirrored yet (run init first)"
+    [ -d "$TENANT_DIR/.git" ] || die "content/tenants/$2 is not mirrored yet (run init first)"
     verify_remote "$TENANT_DIR"
     tgit "$TENANT_DIR" add -A
     if ! tgit "$TENANT_DIR" diff --cached --quiet || ! tgit "$TENANT_DIR" rev-parse HEAD >/dev/null 2>&1; then
@@ -97,22 +97,22 @@ case "$cmd" in
     fi
     branch=$(tgit "$TENANT_DIR" symbolic-ref --short HEAD)
     tgit "$TENANT_DIR" push -q -u origin "$branch"
-    echo "pushed content/$2 to $(tgit "$TENANT_DIR" remote get-url origin)"
+    echo "pushed content/tenants/$2 to $(tgit "$TENANT_DIR" remote get-url origin)"
     ;;
   restore)
     url=${2:-}; tenant=${3:-}
     [ -n "$url" ] && [ -n "$tenant" ] || die "usage: meno-mirror restore <remote-url> <tenant>"
-    dest="$CONTENT/$tenant"
+    dest="$TENANTS/$tenant"
     if [ -d "$dest" ] && [ -n "$(ls -A "$dest" 2>/dev/null)" ]; then
-      die "content/$tenant exists and is not empty - refusing to overwrite; move it aside first"
+      die "content/tenants/$tenant exists and is not empty - refusing to overwrite; move it aside first"
     fi
-    mkdir -p "$CONTENT"
+    mkdir -p "$TENANTS"
     git -c core.hooksPath= clone -q "$url" "$dest"
-    echo "restored content/$tenant from $url"
+    echo "restored content/tenants/$tenant from $url"
     ;;
   status)
     need_tenant "${2:-}"
-    [ -d "$TENANT_DIR/.git" ] || die "content/$2 is not mirrored yet"
+    [ -d "$TENANT_DIR/.git" ] || die "content/tenants/$2 is not mirrored yet"
     echo "remote: $(tgit "$TENANT_DIR" remote get-url origin 2>/dev/null || echo none)"
     echo "last snapshot: $(tgit "$TENANT_DIR" log -1 --format='%ci %s' 2>/dev/null || echo none)"
     changes=$(tgit "$TENANT_DIR" status --porcelain | wc -l | tr -d ' ')

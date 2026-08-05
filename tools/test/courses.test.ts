@@ -170,10 +170,10 @@ test('serves naming an unknown objective is an error', () => {
 
 test('pack checks: layout, safety, notes, and overlap enforcement', async () => {
   const { checkPacks } = await import('../validate.ts');
-  // pack trees live under the REPO's topic-packs/, so checkPacks findings are
+  // pack trees live under the REPO's content/community/, so checkPacks findings are
   // exercised against synthetic file lists rooted there via direct calls
   const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
-  const real = `${repoRoot}topic-packs/software-engineering/git-fundamentals/course.yml`;
+  const real = `${repoRoot}content/community/software-engineering/git-fundamentals/course.yml`;
   const findings = checkPacks('', [real, real.replace('course.yml', 'PACK.md'), real.replace('course.yml', 'git-fundamentals-hub.md')]);
   assert.deepEqual(findings.filter((f) => f.level === 'error'), []);
 });

@@ -22,17 +22,28 @@ forks; without the tenancy boundary, one bad commit publishes someone's learning
 3. Skills resolve from `.agents/skills/<name>/SKILL.md`. Claude Code discovers them through
    `.claude/skills/` relative symlinks; any other CLI reads the SKILL.md files directly -
    each is written to work without native skill support.
-4. Anything under `content/` is invisible to git: creating tenant files changes nothing in
-   `git status`. The example learner lives under `examples/`, outside `content/`, so no
-   ignore rule can ever hide it or leak a real tenant alongside it.
-5. `content/` and `org/` are both reserved downstream-owned roots: this repository never
-   creates either directory and never commits a file under either path. `content/` stays
-   gitignored everywhere (invariant 3 below); `org/` is different in kind, not just in
-   name - it exists only inside an organization's own private deployment
-   ([docs/org-deployment.md](../org-deployment.md)), where it is meant to be committed to
-   that org's repository, not ignored. Upstream's contract is identical either way: it never
-   writes there, so `tools/org-sync.sh` can refuse an incoming merge that touches either path
-   as proof something has gone wrong, not as a routine check.
+4. All learning content lives under one root, `content/`, with exactly three allowed
+   top-level entries: `content/community/` (tracked, PR-gated topic packs -
+   [community.md](community.md)), `content/org/` (reserved, downstream-owned), and
+   `content/tenants/` (gitignored). Anything under `content/tenants/` is invisible to
+   git: creating tenant files changes nothing in `git status`. The leakage-guard
+   pre-commit hook (installed by `tools/meno-init` - [durability.md](durability.md)) is
+   default-deny under `content/`: it refuses any staged path there unless it is under
+   `content/community/` or `content/org/`, so an unexpected sibling like `content/alice/`
+   is blocked at commit time. The example learner lives under `examples/`, outside
+   `content/`, so no ignore rule (and no negation pattern - there are none) can ever hide
+   it or leak a real tenant alongside it.
+5. `content/tenants/` and `content/org/` are both reserved downstream-owned roots: this
+   repository never creates either directory and never commits a file under either path.
+   `content/tenants/` stays gitignored everywhere (invariant 3 below); `content/org/` is
+   different in kind, not just in name - it exists only inside an organization's own
+   private deployment ([docs/org-deployment.md](../org-deployment.md)), where it is meant
+   to be committed to that org's repository, not ignored. Upstream's contract is identical
+   either way: it never writes under either root, so `tools/org-sync.sh` can refuse an
+   incoming merge that touches `content/tenants/` or `content/org/` as proof something has
+   gone wrong, not as a routine check. `content/community/` is the exception by design:
+   community packs land upstream, so incoming changes there are legitimate and merge
+   normally.
 6. A fresh clone behaves identically on macOS and Linux: symlinks are committed as symlinks
    and resolve after checkout.
 7. Base content renders on GitHub (standard markdown links); tenant content is
@@ -43,12 +54,13 @@ forks; without the tenancy boundary, one bad commit publishes someone's learning
 
 Two nested worlds with one-way visibility:
 
-- **The base** (everything committed): skills, schemas, docs, app, tools, examples. Public,
-  MIT, shared by every clone.
-- **The tenant world** (`content/<tenant>/`): gitignored, one directory per learner,
-  each an Obsidian vault. Base code and docs may read the committed `examples/` fixtures
-  but never a real tenant's content; nothing under `content/` is ever committed, read into
-  shared artifacts, or referenced by base content.
+- **The base** (everything committed): skills, schemas, docs, app, tools, examples, and
+  the community tier at `content/community/` (tracked, PR-gated -
+  [community.md](community.md)). Public, MIT, shared by every clone.
+- **The tenant world** (`content/tenants/<tenant>/`): gitignored, one directory per
+  learner, each an Obsidian vault. Base code and docs may read the committed `examples/`
+  fixtures but never a real tenant's content; nothing under `content/tenants/` is ever
+  committed, read into shared artifacts, or referenced by base content.
 
 Entry-point chain: `CLAUDE.md` (shim) -> `AGENTS.md` (canonical) -> skills, guide, specs.
 
@@ -58,8 +70,8 @@ Entry-point chain: `CLAUDE.md` (shim) -> `AGENTS.md` (canonical) -> skills, guid
 |---|---|---|---|
 | `AGENTS.md`, `CLAUDE.md` | read | maintainer (via extend-meno rules) | prose |
 | `.agents/skills/**`, `.claude/skills/*` (symlinks) | read | maintainer | Agent Skills shape |
-| `.gitignore` (`content/` rule) | read | maintainer | git |
-| `content/<tenant>/**` | never touched by base | tenant | vault-conventions.md |
+| `.gitignore` (`content/tenants/` rule) | read | maintainer | git |
+| `content/tenants/<tenant>/**` | never touched by base | tenant | vault-conventions.md |
 | `examples/**` | read (fixtures) | maintainer | same schemas as tenant content |
 
 ## Invariants
@@ -67,8 +79,10 @@ Entry-point chain: `CLAUDE.md` (shim) -> `AGENTS.md` (canonical) -> skills, guid
 1. `CLAUDE.md` is exactly one line: `@AGENTS.md`.
 2. Every skill is listed in `AGENTS.md` and readable as plain markdown without native skill
    support.
-3. No committed file under `content/` or `org/` in this repository; no base file references
-   a path under either except as a pattern or example.
+3. No committed file under `content/tenants/` or `content/org/` in this repository, and
+   no top-level entry under `content/` other than `community/`, `org/`, and `tenants/`;
+   no base file references a path under `content/tenants/` or `content/org/` except as a
+   pattern or example.
 4. `.claude/skills/` entries are relative symlinks into `.agents/skills/` (relative, so
    they survive clone and directory moves).
 5. Every manifest and lesson carries `schema_version`; consumers tolerate stale versions

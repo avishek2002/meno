@@ -91,7 +91,7 @@ graph TD
 - Repository settings (not files): secret scanning + push protection, Dependabot alerts +
   security updates, private vulnerability reporting.
 - `tools/validate.ts`'s `pack-safety` - the only content scanner, scoped to
-  `topic-packs/` and `org/` ([validation.md](validation.md)).
+  `content/community/` and `content/org/` ([validation.md](validation.md)).
 - `tools/org-sync.sh` - the downstream amplifier: whatever lands on `main` is merged and
   executed by every org deployment that syncs.
 
@@ -102,7 +102,7 @@ graph TD
 | `.github/workflows/gate.yml` | read (executed by GitHub Actions) | this spec | workflow YAML |
 | `.github/CODEOWNERS` | read (GitHub) | this spec | CODEOWNERS syntax |
 | `package-lock.json` | read (`npm ci`) | npm | lockfile v3 |
-| `topic-packs/INDEX.md` | read (`--check` compares, never writes in CI) | `tools/packs.ts` | generated |
+| `content/community/INDEX.md` | read (`--check` compares, never writes in CI) | `tools/packs.ts` | generated |
 
 ## Invariants
 
@@ -140,7 +140,7 @@ graph TD
 - **Not verified, and named here so it is not mistaken for covered:**
   - `.agents/skills/**` is scanned by nothing. `pack-safety`'s error patterns
     (curl-pipe-to-shell, `process.env`, `~/.ssh`, credential shapes) apply only under
-    `topic-packs/` and `org/`. A malicious instruction added to a skill is caught by
+    `content/community/` and `content/org/`. A malicious instruction added to a skill is caught by
     human review or not at all. This is the largest open hole in the repository and is
     tracked as open question 1.
   - `pack-safety`'s instruction-shaped-phrase patterns are warnings, and `npm run gate`

@@ -16,7 +16,7 @@ This skill owns safe local modification: the difference between "Meno is a produ
 ## Invariants (survive every extension, verify before declaring done)
 
 1. `CLAUDE.md` stays a one-line `@AGENTS.md` shim; agent-facing guidance lives in `AGENTS.md`.
-2. `content/` stays gitignored; nothing under it is committed or referenced from base content.
+2. `content/tenants/` stays gitignored; nothing under it is committed or referenced from tracked content (base or pack).
 3. Schema changes bump `schema_version` and add a line to `docs/migrations.md`; consumers stay permissive with old versions.
 4. Canonical-format ownership stands (profile: elicit-needs; manifests and sourcing: generate-curriculum; lesson anatomy and checks: generate-module; vault and todos: second-brain). Extensions link to owners; they never fork a second copy of a spec.
 5. New skills follow the Agent Skills shape: `name` + `description` frontmatter, body under 5,000 tokens, depth in `references/`, load-bearing instructions in plain prose - and get a `.claude/skills/` symlink plus an `AGENTS.md` listing line.
@@ -29,12 +29,12 @@ Step-by-step versions with commands live in [references/recipes.md](references/r
 - **Amend an existing course** - add, retitle, or resequence lessons and modules in a course that already exists: manifest edits per the manifest spec, then `generate-module` for any new bodies. This recipe owns "add a lesson on X to my course" requests (including `#gen` todos of that shape).
 - **Add a custom skill** - scaffold under `.agents/skills/<name>/`, symlink, list in `AGENTS.md`, then cold-start test it: a fresh agent session must execute it from the SKILL.md alone.
 - **Adjust shipped behavior** (question menus, lesson template, conventions) - prefer an additive custom skill or reference note over editing a shipped skill; a shipped-skill edit is allowed but recorded in a local `docs/local-divergences.md`, because upstream pulls will conflict exactly there and future-you needs to know which side to keep.
-- **Draft a topic pack** - a pre-built course under `topic-packs/` following the same manifests; the full spec arrives in Phase 8, so mark drafts as such.
+- **Draft a topic pack** - a pre-built course under `content/community/` following the same manifests; the full spec arrives in Phase 8, so mark drafts as such.
 
 ## Pulling upstream updates
 
-`git pull` on main never touches `content/` (untracked by design). Conflicts can only land in base files - most likely in locally-edited shipped skills, which is what `docs/local-divergences.md` is for. After any pull: re-run validation if it exists, re-check invariant 1, and skim `docs/migrations.md` for schema notes affecting previously generated content (the tutor flags stale-schema content rather than choking, but regeneration decisions are the user's).
+`git pull` on main never touches `content/tenants/` (untracked by design). Conflicts can only land in tracked files - base files or `content/community/` packs - most likely in locally-edited shipped skills, which is what `docs/local-divergences.md` is for. After any pull: re-run validation if it exists, re-check invariant 1, and skim `docs/migrations.md` for schema notes affecting previously generated content (the tutor flags stale-schema content rather than choking, but regeneration decisions are the user's).
 
 ## Done means
 
-Every invariant above re-verified after the change; validation passes where tooling exists; new skills cold-start tested; divergences recorded; and anything deferred ("do this properly later") captured as a todo in `content/<tenant>/todos.md` per the second-brain todo format - not left in conversation.
+Every invariant above re-verified after the change; validation passes where tooling exists; new skills cold-start tested; divergences recorded; and anything deferred ("do this properly later") captured as a todo in `content/tenants/<tenant>/todos.md` per the second-brain todo format - not left in conversation.

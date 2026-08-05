@@ -8,7 +8,7 @@ The full spec for how tenant content hangs together as an Obsidian vault. Genera
 - The vault tree mirrors the course structure - no separate "notes folder"; lessons ARE the notes:
 
 ```
-content/<tenant>/
+content/tenants/<tenant>/
   home.md                      tenant home note (top of the graph)
   todos.md                     shared queue (see todo-format.md)
   sources/                     user-supplied materials (never rewritten by agents)

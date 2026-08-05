@@ -1,6 +1,6 @@
 # Sanitization catalog (canonical)
 
-What never leaves `content/` on the way into a pack, and why. Work this list top to bottom
+What never leaves `content/tenants/` on the way into a pack, and why. Work this list top to bottom
 against every file about to be transcribed - "I don't think this file has any" is not a pass.
 
 ## Whole files, no exceptions
@@ -57,7 +57,7 @@ the catch.
   [sourcing.md](../../generate-curriculum/references/sourcing.md) procedure) is part of
   the publish work. A pack cannot ship under-anchored, and fabricating a citation is
   never the fix - the gate staying red until a real source exists is the design working.
-- **Build the pack inside `topic-packs/<domain>/<slug>/` on your branch, not in a staging
+- **Build the pack inside `content/community/<domain>/<slug>/` on your branch, not in a staging
   directory.** The pack-layout, pack-notes, pack-safety, and pack-overlap checks are
   path-gated to the pack roots; a tree drafted elsewhere skips them and self-verification
   silently loses its teeth.

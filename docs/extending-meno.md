@@ -47,14 +47,14 @@ merged deliberately instead of clobbering your changes.
 ### Draft a topic pack
 
 A topic pack is a pre-vetted, shareable curriculum in the same schema as generated courses.
-Draft it locally under `topic-packs/`; if it is good, contribute it upstream.
+Draft it locally under `content/community/`; if it is good, contribute it upstream.
 
 ## Invariants that survive every extension
 
 Whatever you change, these hold (the `extend-meno` skill enforces them):
 
 1. `CLAUDE.md` stays a one-line `@AGENTS.md` shim - all agent guidance lives in AGENTS.md.
-2. `content/` stays gitignored - tenant material never becomes committable.
+2. `content/tenants/` stays gitignored - tenant material never becomes committable.
 3. Schema changes bump `schema_version` and get a note in [migrations.md](migrations.md).
 4. Each canonical format keeps exactly one owner - link to it, never fork a copy.
 5. New skills follow the Agent Skills shape and are listed in AGENTS.md.

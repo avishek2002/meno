@@ -10,7 +10,7 @@ An ordinary pull request against the existing pack's own files - `course.yml`, t
 `module.yml`, the hub, `notes/` - plus exactly one new line appended to that pack's `PACK.md`
 Amendment log. No new directory, no new slug, no second `PACK.md`. The pack's `maintainers`
 field (advisory, not veto -
-[topic-packs/README.md](../../../../topic-packs/README.md)) gets a mention in the pull request
+[content/community/README.md](../../../../content/community/README.md)) gets a mention in the pull request
 but does not gate merge.
 
 ## The amendment-log line
@@ -36,7 +36,7 @@ Two paths lead here:
 - **Step 1's search** in the main skill found existing coverage directly.
 - **A `derived_from` provenance trail.** If the tenant course being published has a
   `derived_from` block in its `course.yml` (recorded at adoption time -
-  [topic-packs/README.md](../../../../topic-packs/README.md)'s adoption section,
+  [content/community/README.md](../../../../content/community/README.md)'s adoption section,
   [extend-meno's adopt-a-pack recipe](../../extend-meno/references/recipes.md)), that names the
   exact pack (`domain/slug`) and the `pack_version` it was adopted from. Amend that pack - this
   is the whole point of recording provenance: publish-back always knows where to send changes
@@ -46,11 +46,11 @@ Two paths lead here:
 
 `derived_from` (`schemas/course.schema.json`) carries three fields, required together:
 
-- `pack` - `topic-packs/<domain>/<slug>` (or `org/packs/<domain>/<slug>`), the exact path.
+- `pack` - `content/community/<domain>/<slug>` (or `content/org/<domain>/<slug>`), the exact path.
 - `pack_version` - whatever the pack's `PACK.md` states as a version, if it states one
   (`additionalProperties: true` allows a maintainer-added `version` field); otherwise the git
   commit sha of the pack directory at adoption time
-  (`git log -1 --format=%H -- topic-packs/<domain>/<slug>`).
+  (`git log -1 --format=%H -- content/community/<domain>/<slug>`).
 - `adopted_at` - the date adoption happened.
 
 This block is written once, at adoption, by `extend-meno`'s adopt-a-pack recipe - not by this

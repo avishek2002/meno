@@ -1,6 +1,6 @@
 # todos.md format (canonical)
 
-One shared queue per tenant at `content/<tenant>/todos.md`. Three writers - the user (in the app or Obsidian), the app server, and agents - so the format is deliberately minimal: standard markdown checkboxes that Obsidian (and its Tasks plugin) render natively and the app parses without ambiguity.
+One shared queue per tenant at `content/tenants/<tenant>/todos.md`. Three writers - the user (in the app or Obsidian), the app server, and agents - so the format is deliberately minimal: standard markdown checkboxes that Obsidian (and its Tasks plugin) render natively and the app parses without ambiguity.
 
 ## Format
 

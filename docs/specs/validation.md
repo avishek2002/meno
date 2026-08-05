@@ -16,7 +16,7 @@ calls the network and never calls a model.
 
 1. `node tools/validate.ts [target ...] [--strict] [--json]` - targets default to
    `examples/`. Every course tree found under a target is checked; a real tenant is
-   checked by passing `content/<tenant>`.
+   checked by passing `content/tenants/<tenant>`.
 2. Findings are errors (the tree is broken) or warnings (the app will cope, but something
    deserves attention - permissive rendering is locked, so validate is deliberately
    stricter than the renderer).
@@ -43,13 +43,13 @@ validate and the renderer can never disagree about what a file says.
 | `refs` | derived-view drift (course.yml mirrors module.yml), prerequisites and serves resolve, lesson files exist for non-planned statuses, lesson concepts in module concepts, Bloom ceiling, budget sum, module sizing | 2 |
 | `citations` | source-record integrity: wayback-shaped archived_url for web sources, vault-relative paths for user sources, sane accessed dates | 2 |
 | `hub` | hub note exists, carries the mermaid dependency map, derived markers balanced | 2 |
-| `tenancy` | CLAUDE.md stays the one-line shim, content/ stays gitignored | 1 |
+| `tenancy` | CLAUDE.md stays the one-line shim, content/tenants/ is covered by a gitignore rule, and the only top-level entries under content/ are community/, org/, and tenants/ (anything else is an error) | 1 |
 | `lessons` | 9-part anatomy, frontmatter schema, id/path agreement, status drift | 3 |
 | `checks` | authored-id presence/uniqueness/shape, mcq ranges, cloze gaps, concepts resolve course-wide, interleaving warning | 3 |
 | `ledger` | per-line schema, strictly-increasing ts, write-authority at rest | 3 |
 | `mastery` | byte-identical rebuild vs committed mastery.yml | 3 |
 | `insights` | narrative insights-note frontmatter against schema, six required body sections, cite-your-numbers (every body number traces to the note's own `metrics_snapshot`) | v1.1 |
-| `pack-layout` | pack directory shape (`topic-packs\|org/packs`/domain/slug), domain in the closed vocabulary, `PACK.md` present and schema-valid with a matching `pack` field, `course.yml` is `status: draft` with no `profile` field | v1.2 |
+| `pack-layout` | pack directory shape (`content/community\|content/org`/domain/slug), domain in the closed vocabulary, `PACK.md` present and schema-valid with a matching `pack` field, `course.yml` is `status: draft` with no `profile` field | v1.2 |
 | `pack-notes` | `notes/*.md` frontmatter against `reference-note.schema.json`, source records, and the no-pedagogy rule (no check blocks, no transfer callouts, no lesson-anatomy headings) | v1.2 |
 | `pack-overlap` | no two packs in a domain share a slug; objective-text token overlap above 60 percent between packs in a domain is flagged | v1.2 |
 | `pack-safety` | community content is markdown/YAML only; error-level patterns (scripts, inline handlers, credential-shaped strings, private-key blocks, curl-pipe-to-shell, mermaid click/href) and warning-level patterns (instruction-shaped phrases, plain-http URLs) | v1.2 |
@@ -60,7 +60,7 @@ Planned: `vault` (wikilink resolution, orphan detection - needs the app's resolv
 
 | Path | Access | Owner | Format |
 |---|---|---|---|
-| target trees (examples/, content/<tenant>) | read | validate | all owned formats |
+| target trees (examples/, content/tenants/<tenant>) | read | validate | all owned formats |
 | `schemas/*.schema.json` | read | validate | JSON Schema 2020-12 |
 | repo root (`CLAUDE.md`, `.gitignore`) | read | validate | tenancy contract |
 

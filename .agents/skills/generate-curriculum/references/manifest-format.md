@@ -4,7 +4,7 @@ Course and module manifests, formalized in `schemas/course.schema.json` and `sch
 
 ## module.yml (the mutable truth)
 
-At `content/<tenant>/<course-slug>/modules/NN-slug/module.yml`:
+At `content/tenants/<tenant>/<course-slug>/modules/NN-slug/module.yml`:
 
 ```yaml
 schema_version: 1
@@ -44,7 +44,7 @@ lessons:                       # planned at skeleton time, default one per conce
 
 ## course.yml (the derived view)
 
-At `content/<tenant>/<course-slug>/course.yml`:
+At `content/tenants/<tenant>/<course-slug>/course.yml`:
 
 ```yaml
 schema_version: 1
@@ -74,4 +74,4 @@ modules:                       # ordered; every field here mirrors module.yml at
 - Status changes go to `module.yml` (or a lesson's entry there); then regenerate `course.yml`. Tools that only read can trust `course.yml`; tools that write never touch it directly.
 - A module with one concept is allowed when the material genuinely has no siblings; note why in a comment.
 - Estimates are honest medians, not paddings; the budget check in generate-curriculum uses them.
-- Topic packs (`topic-packs/`) use these same formats with `status: draft` and no `profile` field until adopted by a tenant.
+- Topic packs (`content/community/`) use these same formats with `status: draft` and no `profile` field until adopted by a tenant.

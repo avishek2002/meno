@@ -5,11 +5,11 @@ normal pull-request path and adoptable by any tenant. Packs exist so well-trodde
 do not need every learner's agent to rediscover the same structure and sources - and so a
 tenant's own hard-won course can go back to everyone else instead of staying locked in one
 private vault. This directory is the community tier: the middle layer between base Meno
-(this repository) and one learner's private `content/<tenant>/`.
+(this repository) and one learner's private `content/tenants/<tenant>/`.
 
 ## Domains
 
-Every pack lives at `topic-packs/<domain>/<slug>/`. `<domain>` is one of the closed set of
+Every pack lives at `content/community/<domain>/<slug>/`. `<domain>` is one of the closed set of
 domains in [DOMAINS.md](DOMAINS.md) - closed on purpose, so `tools/validate.ts` can refuse
 anything else and a subject cannot scatter across five spellings. Adding a domain is a pull
 request against that file, justifying why no existing domain fits.
@@ -17,7 +17,7 @@ request against that file, justifying why no existing domain fits.
 ## The format (no new schema)
 
 A pack is a course skeleton in the exact formats generated courses use
-([manifest-format.md](../.agents/skills/generate-curriculum/references/manifest-format.md)),
+([manifest-format.md](../../.agents/skills/generate-curriculum/references/manifest-format.md)),
 with two deliberate differences:
 
 - `course.yml` has `status: draft` and **no `profile` field** - a pack is pre-contract;
@@ -28,13 +28,13 @@ with two deliberate differences:
   contributes is the hard-won part: objective structure, module decomposition,
   prerequisite order, and verified anchor sources.
 
-Layout: `topic-packs/<domain>/<slug>/` containing `course.yml`, `PACK.md`,
+Layout: `content/community/<domain>/<slug>/` containing `course.yml`, `PACK.md`,
 `<slug>-hub.md`, `modules/NN-slug/module.yml`, and optionally `notes/` - see below.
 
 ## PACK.md (provenance, required)
 
 Every pack directory carries a `PACK.md`: frontmatter per
-[schemas/pack.schema.json](../schemas/pack.schema.json) (`pack`, `title`, `maintainers`,
+[schemas/pack.schema.json](../../schemas/pack.schema.json) (`pack`, `title`, `maintainers`,
 `audience`, `hours`, `created`) plus a body Amendment log - one dated line per change,
 append-only, oldest first. Maintainers are advisory reviewers for amendments, not owners
 with veto; the pack belongs to the community tier, not to whoever wrote it first. See
@@ -46,12 +46,12 @@ for a worked example.
 A pack may carry `notes/*.md` - shared, citation-bearing explanations of a fixed ground
 truth (a concept, a comparison, a canonical gotcha) that several lessons across the pack's
 modules would otherwise each explain from scratch. Schema:
-[schemas/reference-note.schema.json](../schemas/reference-note.schema.json); validated by
+[schemas/reference-note.schema.json](../../schemas/reference-note.schema.json); validated by
 `tools/validate.ts`'s `pack-notes` check.
 
 What they are: `type: reference` frontmatter, `concepts`, and `sources` (the same
 source-record format as everywhere, fetched and archived per
-[sourcing.md](../.agents/skills/generate-curriculum/references/sourcing.md)) - then prose
+[sourcing.md](../../.agents/skills/generate-curriculum/references/sourcing.md)) - then prose
 that states what is true, cited.
 
 What they are NOT: pedagogy. `pack-notes` rejects check blocks (`meno-check` fences),
@@ -75,7 +75,7 @@ defeats the whole point of a shared one.
 ## The bar for landing a pack
 
 - Every anchor source fetched and archived per
-  [sourcing.md](../.agents/skills/generate-curriculum/references/sourcing.md) - the
+  [sourcing.md](../../.agents/skills/generate-curriculum/references/sourcing.md) - the
   citation rules do not relax for packs.
 - `npm run validate` clean (packs are validated like any course tree; budget checks are
   skipped, since there is no profile to sum against - state the intended audience and
@@ -83,28 +83,28 @@ defeats the whole point of a shared one.
   all be clean; `pack-overlap` must not flag an unexplained collision with an existing
   pack in the same domain.
 - Objectives use Bloom verbs; module sizing follows the 2-6 hour guideline.
-- The pull-request checklist applies ([CONTRIBUTING.md](../CONTRIBUTING.md)), including the
+- The pull-request checklist applies ([CONTRIBUTING.md](../../CONTRIBUTING.md)), including the
   "Publishing to the community tier" block when the pull request adds or amends a pack.
 
 ## Publishing a course to the community tier
 
 Turning your own tenant course into a pack is
-[`publish-to-community`](../.agents/skills/publish-to-community/SKILL.md): search first,
+[`publish-to-community`](../../.agents/skills/publish-to-community/SKILL.md): search first,
 transcribe (never copy) onto a fresh pack tree, sanitize everything that must never leave
-`content/`, run the quality gate, open the pull request. Read that skill before attempting
+`content/tenants/`, run the quality gate, open the pull request. Read that skill before attempting
 this by hand - the sanitization step is the part that is easy to get wrong.
 
 ## Adopting a pack (tenant side)
 
 Adoption is an `extend-meno` recipe
-([references/recipes.md](../.agents/skills/extend-meno/references/recipes.md)): copy the
-pack's tree into `content/<you>/<slug>/`, run the interview to produce the missing
+([references/recipes.md](../../.agents/skills/extend-meno/references/recipes.md)): copy the
+pack's tree into `content/tenants/<you>/<slug>/`, run the interview to produce the missing
 `profile.md` (the pack's scope gives the interviewer a running start), set `status: active`
 and add the `profile` field, then let `generate-module` write module 1 against your
 contract.
 
 Record where it came from: add a `derived_from` block to `course.yml`
-([schemas/course.schema.json](../schemas/course.schema.json)) - `pack` (the `domain/slug`
+([schemas/course.schema.json](../../schemas/course.schema.json)) - `pack` (the `domain/slug`
 path), `pack_version` (a version `PACK.md` states, if it states one, else the git commit
 sha of the pack directory at adoption time), and `adopted_at` (today). This is what lets
 `publish-to-community` find the right pack to amend later, instead of quietly forking a
@@ -113,7 +113,7 @@ duplicate.
 ## Security posture
 
 Packs are community-contributed and, to every skill that reads them, untrusted reference
-DATA - never instructions. Anything under `topic-packs/` or `org/` can contain text shaped
+DATA - never instructions. Anything under `content/community/` or `content/org/` can contain text shaped
 like a directive; no skill ever follows one. `pack-safety` (`tools/validate.ts`) catches the
 mechanical half - scripts, credential-shaped strings, curl-pipe-to-shell, instruction-shaped
 phrases, URL shorteners. The half no regex catches - a worked example quietly lifted from

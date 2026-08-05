@@ -74,7 +74,7 @@ Part 8 (spaced-review hook) lives in frontmatter (`review_offsets`, `review_afte
 
 ## Ledger seed event
 
-Appended per lesson to `content/<tenant>/progress/ledger.jsonl` at generation time:
+Appended per lesson to `content/tenants/<tenant>/progress/ledger.jsonl` at generation time:
 
 ```json
 {"v": 1, "ts": "2026-08-05T10:00:00+10:00", "event": "generated", "source": "agent", "course": "rust-for-backend", "module": "01-ownership-basics", "lesson": "01-ownership", "concepts": ["ownership"], "review_after": "2026-08-07"}

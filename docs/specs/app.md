@@ -24,7 +24,9 @@ write-authority seam (decision 14) is enforced in code.
    (`--port` to override; a busy
    port fails loudly rather than silently hopping). `npm run dev` mounts Vite in
    middleware mode in the same process: one port, hot reload.
-2. Structure is derived by walking `content/` fresh on every request - new courses,
+2. Structure is derived by walking the content root (`content/tenants/` by default,
+   `--root` to override - the app browses tenants only, never the community or org
+   tiers) fresh on every request - new courses,
    modules, and lessons appear with no registration step. There is no watcher and no
    cache; a "Re-read files" action re-fetches, and files remain the only truth.
 3. With no tenant content, every screen shows the onboarding empty state pointing at the
@@ -100,10 +102,10 @@ both run before routing so they cover writes and unrouted paths equally.
 
 | Path or endpoint | Access | Owner | Format |
 |---|---|---|---|
-| `content/**` (tree, lessons, notes, manifests) | read | server | owned formats |
-| `content/<tenant>/progress/ledger.jsonl` | append (ui events only) | server via `appendUiEvent` | ledger.ui.schema.json |
-| `content/<tenant>/todos.md` | replace (atomic, If-Match) | server | todo-format.md |
-| `content/<tenant>/progress/mastery.yml` | never (derives in memory) | tutor only | progress.md |
+| `content/tenants/**` (tree, lessons, notes, manifests) | read | server | owned formats |
+| `content/tenants/<tenant>/progress/ledger.jsonl` | append (ui events only) | server via `appendUiEvent` | ledger.ui.schema.json |
+| `content/tenants/<tenant>/todos.md` | replace (atomic, If-Match) | server | todo-format.md |
+| `content/tenants/<tenant>/progress/mastery.yml` | never (derives in memory) | tutor only | progress.md |
 | `app/client/dist` | read (static) | build | - |
 
 ## Invariants

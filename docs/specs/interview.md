@@ -32,11 +32,11 @@ number-two ranked risk (scope mismatch, the MOOC killer).
    budget. It never silently accepts an infeasible contract.
 6. The interview always ends with a confirmation brief (not counted against the question
    budget) restating the whole contract; only explicit acceptance persists it.
-7. The confirmed contract lands at `content/<tenant>/<course-slug>/profile.md`. If the
+7. The confirmed contract lands at `content/tenants/<tenant>/<course-slug>/profile.md`. If the
    tenant vault does not exist yet, the skill bootstraps it (home note, todos, sources
    directory) before writing.
 8. Before handing off to `generate-curriculum`, the interviewer searches
-   `topic-packs/INDEX.md` for coverage of the confirmed subject. A match is presented as a
+   `content/community/INDEX.md` for coverage of the confirmed subject. A match is presented as a
    choice, never resolved silently in either direction: adopt the pack as the skeleton
    (recommended - `extend-meno`'s adopt-a-pack recipe) or generate fresh anyway.
    `generate-curriculum` runs the same search again as its own preflight backstop
@@ -66,8 +66,8 @@ learner uses. Deterministic code touches it only at the edges:
 
 | Path | Access | Owner | Format |
 |---|---|---|---|
-| `content/<tenant>/<course>/profile.md` | write (create, append to log) | agent | profile-format.md |
-| `content/<tenant>/{home.md, todos.md, sources/}` | write (bootstrap only if absent) | agent | vault-conventions.md |
+| `content/tenants/<tenant>/<course>/profile.md` | write (create, append to log) | agent | profile-format.md |
+| `content/tenants/<tenant>/{home.md, todos.md, sources/}` | write (bootstrap only if absent) | agent | vault-conventions.md |
 | `schemas/profile.schema.json` | read | validate | JSON Schema |
 | `examples/golden-personas/*.md` | read | evals and acceptance | persona card + expected brief |
 

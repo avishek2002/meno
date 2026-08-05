@@ -68,7 +68,7 @@ If one level down still does not clear its own floor, offer the nearest depth th
 
 ## Phase 4 - Format and own materials
 
-> "Default is text-first lessons with worked examples and practice, rendered in your Meno app and Obsidian. Fine? And do you have your own materials - notes, a textbook, docs from work - that the course should build on? If yes, drop them in `content/<tenant>/sources/` and I'll anchor lessons on them."
+> "Default is text-first lessons with worked examples and practice, rendered in your Meno app and Obsidian. Fine? And do you have your own materials - notes, a textbook, docs from work - that the course should build on? If yes, drop them in `content/tenants/<tenant>/sources/` and I'll anchor lessons on them."
 
 Skippable: if the interview is at its question cap, apply the default and mention it at confirmation.
 

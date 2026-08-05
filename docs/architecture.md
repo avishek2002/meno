@@ -9,7 +9,7 @@ criteria live in [PLAN.md](../PLAN.md).*
 
 Meno is one repository serving three surfaces over the same files:
 
-- **Obsidian, the second brain.** Each tenant's `content/<tenant>/` directory is itself an
+- **Obsidian, the second brain.** Each tenant's `content/tenants/<tenant>/` directory is itself an
   Obsidian vault: every lesson, hub note, and concept is connected markdown with wikilinks.
   Obsidian is the reflective view - the graph of what you know.
 - **The localhost app, the study surface.** A local web app (Vite + React client, small Node
@@ -73,14 +73,16 @@ accumulates in the ledger from two writers; everything else is a derived view.
 
 Orthogonal to the three pillars above (which are surfaces), content itself splits into three
 tiers: **base** (this repository - the skills, schemas, and docs every Meno instance starts
-with), **community** (`topic-packs/`, pre-vetted pack skeletons landed and amended through pull
-requests), and **tenant** (`content/<tenant>/`, one learner's private, gitignored vault).
+with), **community** (`content/community/`, pre-vetted pack skeletons landed and amended
+through pull requests), and **tenant** (`content/tenants/<tenant>/`, one learner's private,
+gitignored vault). Every non-base tier lives under the one `content/` root: `community/` and
+`org/` are tracked, `tenants/` is gitignored, and nothing else may appear there.
 Generation prefers adopting a matching pack over regenerating one from scratch (search-first,
 run before `elicit-needs` hands off and again as `generate-curriculum`'s own preflight), and a
 finished tenant course can publish back to the community tier through the same reviewed path
 (`publish-to-community`, search-first and sanitize-then-gate in the other direction). Full
 spec: [specs/community.md](specs/community.md). An organization's private deployment adds one
-more, optional tier at the same layer as community - **org-private** (`org/packs/`, the pack
+more, optional tier at the same layer as community - **org-private** (`content/org/`, the pack
 format verbatim, never created by this repository) - detailed in
 [org-deployment.md](org-deployment.md).
 
@@ -136,12 +138,13 @@ schemas/                     JSON Schema files - the machine-checkable format co
 examples/example-learner/    committed fake-persona tenant: living spec + test fixture
 app/                         localhost app: server/ (Node, no build) + client/ (Vite + React)
 tools/                       validate.ts, eval.ts, meno-mirror
-topic-packs/                 community tier: pre-vetted pack skeletons under <domain>/<slug>/,
-                             same schema as courses, plus PACK.md provenance and INDEX.md
-org/                         org deployments only (org-deployment.md); reserved,
-                             downstream-owned; org/packs/<domain>/<slug>/ in the same pack
+content/community/           community tier, tracked: pre-vetted pack skeletons under
+                             <domain>/<slug>/, same schema as courses, plus PACK.md
+                             provenance; INDEX.md, DOMAINS.md, and README.md live here
+content/org/                 org-private tier, org deployments only (org-deployment.md);
+                             reserved, downstream-owned; <domain>/<slug>/ in the same pack
                              format, never created by this repository
-content/<tenant>/            gitignored; a real learner's Obsidian vault
+content/tenants/<tenant>/    gitignored; a real learner's Obsidian vault
 ```
 
 ## Phase-to-spec table
@@ -164,7 +167,7 @@ spec row is stale.
 | [specs/quality.md](specs/quality.md) | evals, baselines, smoke protocol, topic packs | Phase 8 | - |
 | [specs/insights.md](specs/insights.md) | study-insights snapshot (`lib/insights.ts`), read-only endpoint, CLI, narrative reports | v1.1 | - |
 | [specs/community.md](specs/community.md) | topic-pack layout, search-first, publish-to-community, amend-over-fork | v1.2 | - |
-| [org-deployment.md](org-deployment.md) + [integration-surface.md](integration-surface.md) | org deployment: private mirror-clone, `org/` knowledge base, RBAC mapped to host primitives, the stable integration surface | v1.3 | - |
+| [org-deployment.md](org-deployment.md) + [integration-surface.md](integration-surface.md) | org deployment: private mirror-clone, `content/org/` knowledge base, RBAC mapped to host primitives, the stable integration surface | v1.3 | - |
 | [specs/supply-chain.md](specs/supply-chain.md) | the contribution trust boundary: CI enforcement, capability paths, what review executes | v1.4 | - |
 
 Vault conventions (wikilinks, hub notes, todos) deliberately have no spec file: the

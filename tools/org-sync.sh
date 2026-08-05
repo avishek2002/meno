@@ -1,11 +1,13 @@
 #!/bin/sh
 # org-sync - pull upstream Meno improvements into an org's private deployment
 # (docs/org-deployment.md) without ever touching the org's own content. The
-# refusal below is the tool's entire reason to exist: content/ and org/ are
-# reserved downstream-owned roots (docs/specs/repo-and-tenancy.md) that
-# upstream never creates or writes, so a legitimate upstream change can never
-# touch either path - if one somehow does, that is a signal to stop and look
-# by hand, not something to merge blind.
+# refusal below is the tool's entire reason to exist: content/tenants/ and
+# content/org/ are reserved downstream-owned roots
+# (docs/specs/repo-and-tenancy.md) that upstream never creates or writes, so a
+# legitimate upstream change can never touch either path - if one somehow does,
+# that is a signal to stop and look by hand, not something to merge blind.
+# content/community/ is different: community packs land upstream by design, so
+# upstream changes there are ordinary and merge normally.
 #
 # Usage: tools/org-sync.sh
 #   Requires a remote named "upstream" (docs/org-deployment.md section (a)
@@ -31,7 +33,9 @@ fi
 echo "incoming commits:"
 echo "$incoming" | sed 's/^/  /'
 
-touched=$(git diff --name-only HEAD...upstream/main | grep -E '^(content|org)/' || true)
+# -z keeps paths as raw bytes: core.quotePath would C-quote non-ASCII names in
+# surrounding double quotes and they would evade the refusal grep below.
+touched=$(git diff --name-only -z HEAD...upstream/main | tr '\0' '\n' | grep -E '^content/(tenants|org)/' || true)
 if [ -n "$touched" ]; then
   die "refusing to merge - upstream/main touches your reserved paths (should never happen; investigate by hand):
 $(echo "$touched" | sed 's/^/  /')"

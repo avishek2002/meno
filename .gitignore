@@ -8,9 +8,13 @@ CLAUDE.local.md
 .env
 
 # Tenant content: everything a user generates or supplies is theirs and stays local.
-# The committed example tenant lives under examples/, outside content/, on purpose:
-# no gitignore rule can ever hide it or leak a real tenant alongside it.
-content/
+# content/ is the single root for all learning material; only content/tenants/ is
+# private. The rule is one absolute prefix - never a negation (!) pattern - and the
+# leakage-guard hook (tools/meno-init) refuses anything under content/ that is not
+# explicitly community/ or org/. The committed example tenant lives under examples/,
+# outside content/, on purpose: no gitignore rule can ever hide it or leak a real
+# tenant alongside it.
+content/tenants/
 
 # Agent worktrees: `.claude/` is committed (the skill symlinks live there), so
 # without this rule a worktree checked out under it shows up as untracked in the

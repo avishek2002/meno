@@ -77,7 +77,7 @@ graph TD
     C --> CLI[tools/insights.ts]
     EP --> UI[InsightsPage.tsx]
     CLI --> SK[study-insights skill]
-    SK --> N[content/tenant/insights/YYYY-MM-DD-insights.md]
+    SK --> N[content/tenants/tenant/insights/YYYY-MM-DD-insights.md]
     N --> HUB[insights/insights-hub.md]
     HUB --> HOME[home.md]
     N -.checked by.-> VAL[validate's insights check]
@@ -133,13 +133,13 @@ metric considers meaningful; below it, the field is `null` rather than a fabrica
 
 | Path or endpoint | Access | Owner | Format |
 |---|---|---|---|
-| `content/<tenant>/progress/ledger.jsonl` | read | `lib/insights-io.ts` | ledger.schema.json |
-| `content/<tenant>/**` (vault files, `todos.md`, `course.yml`/`module.yml`/lessons) | read | `lib/insights-io.ts` | owned formats (vault-conventions.md, todo-format.md, manifest-format.md, lesson-format.md) |
+| `content/tenants/<tenant>/progress/ledger.jsonl` | read | `lib/insights-io.ts` | ledger.schema.json |
+| `content/tenants/<tenant>/**` (vault files, `todos.md`, `course.yml`/`module.yml`/lessons) | read | `lib/insights-io.ts` | owned formats (vault-conventions.md, todo-format.md, manifest-format.md, lesson-format.md) |
 | `GET /api/v1/:tenant/insights` | read | app server | this spec |
-| `content/<tenant>/insights/YYYY-MM-DD-insights.md` | write (agent, `study-insights` skill only) | `study-insights` skill | narrative-format.md |
-| `content/<tenant>/insights/insights-hub.md` | write (agent, `study-insights` skill only) | `study-insights` skill | vault-conventions.md hub anatomy |
-| `content/<tenant>/home.md` | amend derived block, link only | `study-insights` skill | vault-conventions.md |
-| `content/<tenant>/progress/ledger.jsonl`, `progress/mastery.yml` | never written by this subsystem | - | progress.md |
+| `content/tenants/<tenant>/insights/YYYY-MM-DD-insights.md` | write (agent, `study-insights` skill only) | `study-insights` skill | narrative-format.md |
+| `content/tenants/<tenant>/insights/insights-hub.md` | write (agent, `study-insights` skill only) | `study-insights` skill | vault-conventions.md hub anatomy |
+| `content/tenants/<tenant>/home.md` | amend derived block, link only | `study-insights` skill | vault-conventions.md |
+| `content/tenants/<tenant>/progress/ledger.jsonl`, `progress/mastery.yml` | never written by this subsystem | - | progress.md |
 
 ## Invariants
 

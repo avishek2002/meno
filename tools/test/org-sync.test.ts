@@ -43,18 +43,18 @@ function makePair(work: string): { upstream: string; downstream: string } {
   return { upstream, downstream };
 }
 
-test('org-sync.sh refuses a merge that would touch org/', () => {
+test('org-sync.sh refuses a merge that would touch content/org/', () => {
   const work = mkdtempSync(join(tmpdir(), 'meno-org-sync-refuse-'));
   const { upstream, downstream } = makePair(work);
 
-  mkdirSync(join(upstream, 'org'), { recursive: true });
-  writeFileSync(join(upstream, 'org', 'x.md'), 'private org content\n');
-  commit(upstream, 'add org/x.md upstream (should never happen)');
+  mkdirSync(join(upstream, 'content', 'org'), { recursive: true });
+  writeFileSync(join(upstream, 'content', 'org', 'x.md'), 'private org content\n');
+  commit(upstream, 'add content/org/x.md upstream (should never happen)');
 
   const beforeHead = sh(downstream, 'git', ['rev-parse', 'HEAD']).trim();
   assert.throws(
     () => sh(downstream, 'sh', ['tools/org-sync.sh'], { MENO_SYNC_SKIP_GATE: '1' }),
-    /refusing to merge.*org\/x\.md/s,
+    /refusing to merge.*content\/org\/x\.md/s,
   );
   const afterHead = sh(downstream, 'git', ['rev-parse', 'HEAD']).trim();
   assert.equal(afterHead, beforeHead, 'HEAD moved despite the refusal - a blind merge landed');
@@ -62,23 +62,59 @@ test('org-sync.sh refuses a merge that would touch org/', () => {
   rmSync(work, { recursive: true, force: true });
 });
 
-test('org-sync.sh refuses a merge that would touch content/', () => {
-  const work = mkdtempSync(join(tmpdir(), 'meno-org-sync-refuse-content-'));
+test('org-sync.sh refuses a merge that would touch content/tenants/', () => {
+  const work = mkdtempSync(join(tmpdir(), 'meno-org-sync-refuse-tenants-'));
   const { upstream, downstream } = makePair(work);
 
-  mkdirSync(join(upstream, 'content'), { recursive: true });
-  writeFileSync(join(upstream, 'content', 'y.md'), 'a tenant file (should never happen)\n');
-  commit(upstream, 'add content/y.md upstream (should never happen)');
+  mkdirSync(join(upstream, 'content', 'tenants'), { recursive: true });
+  writeFileSync(join(upstream, 'content', 'tenants', 'y.md'), 'a tenant file (should never happen)\n');
+  commit(upstream, 'add content/tenants/y.md upstream (should never happen)');
 
   assert.throws(
     () => sh(downstream, 'sh', ['tools/org-sync.sh'], { MENO_SYNC_SKIP_GATE: '1' }),
-    /refusing to merge.*content\/y\.md/s,
+    /refusing to merge.*content\/tenants\/y\.md/s,
   );
 
   rmSync(work, { recursive: true, force: true });
 });
 
-test('org-sync.sh merges an upstream change that touches neither content/ nor org/', () => {
+test('org-sync.sh refuses a reserved-path change with a non-ASCII filename', () => {
+  // core.quotePath C-quotes such paths in porcelain output, which would evade a
+  // plain grep - the script reads null-delimited raw bytes so this still refuses
+  const work = mkdtempSync(join(tmpdir(), 'meno-org-sync-refuse-unicode-'));
+  const { upstream, downstream } = makePair(work);
+
+  mkdirSync(join(upstream, 'content', 'tenants'), { recursive: true });
+  writeFileSync(join(upstream, 'content', 'tenants', 'josé.md'), 'a tenant file (should never happen)\n');
+  commit(upstream, 'add content/tenants/josé.md upstream (should never happen)');
+
+  assert.throws(
+    () => sh(downstream, 'sh', ['tools/org-sync.sh'], { MENO_SYNC_SKIP_GATE: '1' }),
+    /refusing to merge/,
+  );
+
+  rmSync(work, { recursive: true, force: true });
+});
+
+test('org-sync.sh merges an upstream change to content/community/ (community packs land upstream by design)', () => {
+  const work = mkdtempSync(join(tmpdir(), 'meno-org-sync-merge-community-'));
+  const { upstream, downstream } = makePair(work);
+
+  mkdirSync(join(upstream, 'content', 'community'), { recursive: true });
+  writeFileSync(join(upstream, 'content', 'community', 'INDEX.md'), '# packs\n');
+  commit(upstream, 'add a community pack upstream (legitimate)');
+  const upstreamHead = sh(upstream, 'git', ['rev-parse', 'HEAD']).trim();
+
+  const out = sh(downstream, 'sh', ['tools/org-sync.sh'], { MENO_SYNC_SKIP_GATE: '1' });
+  assert.match(out, /merging upstream\/main/);
+
+  const downstreamHead = sh(downstream, 'git', ['rev-parse', 'HEAD']).trim();
+  assert.equal(downstreamHead, upstreamHead, 'downstream did not advance to the merged commit');
+
+  rmSync(work, { recursive: true, force: true });
+});
+
+test('org-sync.sh merges an upstream change that touches neither content/tenants/ nor content/org/', () => {
   const work = mkdtempSync(join(tmpdir(), 'meno-org-sync-merge-'));
   const { upstream, downstream } = makePair(work);
 

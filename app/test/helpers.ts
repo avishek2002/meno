@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { makeHandler, type Ctx } from '../server/routes.ts';
 
 export interface TestApp {
-  root: string; // the content root
+  root: string; // the content root (content/tenants in a real clone)
   tenantDir: string; // root/example-learner
   base: string; // http://127.0.0.1:<port>
   server: Server;

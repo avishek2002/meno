@@ -15,7 +15,7 @@ The citation-integrity procedure for every generation skill. Hallucinated citati
 
 ## User sources
 
-Material under `content/<tenant>/sources/` is already trusted - the learner supplied it. Record with `source_type: user` and the path in the `url` field, always relative to the vault root (`content/<tenant>/`), so it always starts with `sources/` regardless of which file the record sits in; no archiving needed. Where user material covers a module, it outranks web sources: the course should feel built on their materials, not beside them.
+Material under `content/tenants/<tenant>/sources/` is already trusted - the learner supplied it. Record with `source_type: user` and the path in the `url` field, always relative to the vault root (`content/tenants/<tenant>/`), so it always starts with `sources/` regardless of which file the record sits in; no archiving needed. Where user material covers a module, it outranks web sources: the course should feel built on their materials, not beside them.
 
 ## Quality bar for anchor sources
 

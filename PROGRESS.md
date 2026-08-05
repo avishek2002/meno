@@ -15,6 +15,20 @@ _Last updated: 2026-08-05_
 
 ## Done
 
+- 2026-08-05 - **Content tier consolidation (decision 18): one root for all learning material.**
+  `topic-packs/` -> `content/community/`, `org/packs/` -> `content/org/`, tenant vaults
+  `content/<tenant>/` -> `content/tenants/<tenant>/`; the directory tree now mirrors the tier
+  model. The privacy boundary moved from `content/` to `content/tenants/` but stays a single
+  absolute gitignore prefix (never a negation pattern); the leakage-guard hook flipped to
+  default-deny under `content/` with an explicit `community|org` allowlist, so an unexpected
+  subdir like `content/alice/` is refused at commit time; the tenancy validate check errors on
+  unknown top-level entries under `content/`; `tools/org-sync.sh` now refuses only
+  `content/tenants/` + `content/org/` while legitimate upstream `content/community/` changes
+  merge normally (new positive test). Adversarial review found and fixed a `core.quotePath`
+  bypass (non-ASCII filenames were C-quoted and evaded the `^content/` greps in both the hook
+  and org-sync; both now read null-delimited raw bytes, with unicode drills in the tests).
+  `examples/` deliberately stays outside `content/`. 58 tracked files updated across tools,
+  app, skills, specs, and docs; migration steps for existing instances in `docs/migrations.md`.
 - 2026-08-05 - **Security policy and the repository-level checks (follow-on to v1.4).** The
   settings half of supply-chain hardening, which no file in the tree can show: secret scanning
   with push protection (a credential is blocked at `git push` rather than reported once it is
@@ -218,3 +232,6 @@ _Last updated: 2026-08-05_
 - **`actionlint` in the gate**, plus a check that no workflow other than `gate.yml` exists -
   supply-chain spec invariants 1, 2, and 5 are readable but not machine-verified.
 - **Turn on required code-owner review** on the `main` ruleset when a second maintainer exists.
+- `tools/meno-mirror`'s help fallback prints `sed -n '2,16p'` but the usage block runs to line
+  18, so the `status` and `verify` usage lines never appear in help output. Pre-existing
+  off-by-two spotted during the tier-consolidation review; should be `2,18p`.

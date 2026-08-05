@@ -1,6 +1,7 @@
 # Publish-fixture
 
-A deliberately compromising tenant for testing the `publish-to-community` skill. Unlike
+A deliberately compromising tenant - a stand-in for a real `content/tenants/<tenant>/` tree -
+for testing the `publish-to-community` skill. Unlike
 [../audit-fixture/](../audit-fixture/), which corrupts a pack's citations, this one corrupts
 nothing - every file here is a completely ordinary, `npm run validate`-clean tenant course. The
 compromise is what a naive publish would carry along with it: personal names and emails, an
@@ -21,12 +22,12 @@ get a second look before publishing:
   module manifest, exactly where a structure-only transcription would carry it along
   unnoticed.
 - **A credential-shaped string** (`sk-ant-fake...`) in the lesson body - would trip <!-- pragma: allowlist secret -->
-  `pack-safety` immediately if it ever reached `topic-packs/`, which is exactly why it must
-  never get that far.
+  `pack-safety` immediately if it ever reached `content/community/`, which is exactly why it
+  must never get that far.
 
-Plus the general categories `references/sanitization.md` names as never leaving `content/`
-wholesale: `profile.md`, everything under `progress/` (including this ledger's rubric string
-and override reason), `todos.md`, and everything under `sources/`.
+Plus the general categories `references/sanitization.md` names as never leaving
+`content/tenants/` wholesale: `profile.md`, everything under `progress/` (including this
+ledger's rubric string and override reason), `todos.md`, and everything under `sources/`.
 
 [ANSWER-KEY.md](ANSWER-KEY.md) holds every seeded leak, file and line - it exists for scoring
 blind publish drills (CONTRIBUTING.md requires one when `publish-to-community` changes). **A

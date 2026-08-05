@@ -1,0 +1,14 @@
+#!/bin/sh
+# meno-leakage-guard: default-deny under content/ - only community/ and org/ are
+# committable; tenant vaults and anything unexpected must never reach the public
+# repository. -z keeps paths as raw bytes: without it, core.quotePath C-quotes
+# non-ASCII names in surrounding double quotes and they evade the ^content/ grep.
+staged=$(git diff --cached --name-only -z | tr "\0" "\n" | grep "^content/" | grep -v -e "^content/community/" -e "^content/org/" || true)
+if [ -n "$staged" ]; then
+  echo "meno: refusing to commit content/ paths outside community/ and org/ (private by design):" >&2
+  echo "$staged" | sed "s/^/  /" >&2
+  echo "unstage with: git restore --staged <path>  (use tools/meno-mirror for backups)" >&2
+  exit 1
+fi
+[ -x "$0.pre-meno" ] && exec "$0.pre-meno"
+exit 0

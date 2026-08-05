@@ -18,7 +18,7 @@ import type { LessonResponse, PublicCheck, SubmitRequest, SubmitResponse, Insigh
 import { writeFileAtomic } from './atomic.ts';
 
 interface Ctx {
-  root: string; // the content root (content/ in a real clone)
+  root: string; // the content root (content/tenants/ in a real clone - the app browses tenants only)
   clientDist: string | null;
   version: number;
 }
