@@ -1,0 +1,314 @@
+// The whole HTTP surface. Writes are exactly four routes; none of them accepts
+// event, source, or level from the client - there is no generic ledger
+// endpoint, and that absence is the enforcement mechanism (decision 14).
+import type { IncomingMessage, ServerResponse } from 'node:http';
+import { readFileSync, existsSync, statSync } from 'node:fs';
+import { join, extname } from 'node:path';
+import { listTenants, safePath } from './tenant.ts';
+import { walkTenant, vaultIndex } from './tree.ts';
+import { renderMarkdown } from './markdown.ts';
+import { gradeCheck } from './checks.ts';
+import { appendUiEvent, readLedgerEvents } from './ledger.ts';
+import { parseTodos, addTodo, patchTodo, parkTodo, sha256 } from './todos.ts';
+import { parseLesson } from '../../lib/lesson.ts';
+import { deriveMastery } from '../../lib/mastery.ts';
+import type { LessonResponse, PublicCheck, SubmitRequest, SubmitResponse } from '../shared/types.ts';
+import { writeFileAtomic } from './atomic.ts';
+
+interface Ctx {
+  root: string; // the content root (content/ in a real clone)
+  clientDist: string | null;
+  version: number;
+}
+
+type Handler = (req: IncomingMessage, res: ServerResponse, params: Record<string, string>, ctx: Ctx) => Promise<void> | void;
+
+const json = (res: ServerResponse, status: number, body: unknown): void => {
+  const data = JSON.stringify(body);
+  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(data);
+};
+
+const httpError = (res: ServerResponse, e: unknown): void => {
+  const status = (e as { status?: number }).status ?? 500;
+  json(res, status, { error: (e as Error).message });
+};
+
+async function readBody(req: IncomingMessage): Promise<Record<string, unknown>> {
+  const chunks: Buffer[] = [];
+  let size = 0;
+  for await (const chunk of req) {
+    size += (chunk as Buffer).length;
+    if (size > 64 * 1024) throw Object.assign(new Error('body too large'), { status: 413 });
+    chunks.push(chunk as Buffer);
+  }
+  if (chunks.length === 0) return {};
+  try {
+    return JSON.parse(Buffer.concat(chunks).toString('utf8')) as Record<string, unknown>;
+  } catch {
+    throw Object.assign(new Error('invalid JSON body'), { status: 400 });
+  }
+}
+
+const str = (v: unknown, name: string): string => {
+  if (typeof v !== 'string' || v === '') throw Object.assign(new Error(`missing or invalid "${name}"`), { status: 400 });
+  return v;
+};
+
+// --- handlers ---
+
+const getTenants: Handler = (_req, res, _p, ctx) => {
+  const tenants = listTenants(ctx.root).map((id) => ({
+    id,
+    courses: walkTenant(join(ctx.root, id), id).courses.length,
+  }));
+  json(res, 200, { tenants });
+};
+
+const getTree: Handler = (_req, res, p, ctx) => {
+  json(res, 200, walkTenant(safePath(ctx.root, p.tenant), p.tenant));
+};
+
+const getCourse: Handler = (_req, res, p, ctx) => {
+  const tenantDir = safePath(ctx.root, p.tenant);
+  const tree = walkTenant(tenantDir, p.tenant);
+  const course = tree.courses.find((c) => c.slug === p.course);
+  if (!course) throw Object.assign(new Error(`no course "${p.course}"`), { status: 404 });
+  let hubHtml = '';
+  const hubPath = safePath(ctx.root, p.tenant, p.course, course.hub.replace(/^\.\//, ''));
+  if (course.hub && existsSync(hubPath)) {
+    hubHtml = renderMarkdown(readFileSync(hubPath, 'utf8'), vaultIndex(tenantDir)).html;
+  }
+  const events = readLedgerEvents(tenantDir);
+  const mastery = deriveMastery(events);
+  json(res, 200, { ...course, hubHtml, mastery: mastery.courses[p.course] ?? null });
+};
+
+const getLesson: Handler = (_req, res, p, ctx) => {
+  const tenantDir = safePath(ctx.root, p.tenant);
+  const file = safePath(ctx.root, p.tenant, p.course, 'modules', p.module, `${p.file}.md`);
+  if (!existsSync(file)) throw Object.assign(new Error('no such lesson'), { status: 404 });
+  const text = readFileSync(file, 'utf8');
+  const lesson = parseLesson(text);
+  const { html, links } = renderMarkdown(text, vaultIndex(tenantDir));
+  const checks: PublicCheck[] = lesson.checks
+    .filter((c) => c.id && c.type && c.concept && c.prompt)
+    .map((c) => ({
+      id: c.id!,
+      type: c.type as PublicCheck['type'],
+      concept: c.concept!,
+      prompt: c.prompt!,
+      ...(c.type === 'mcq' ? { options: c.options ?? [] } : {}),
+    }));
+  const payload: LessonResponse = {
+    frontmatter: lesson.frontmatter ?? {},
+    html,
+    checks,
+    transfers: lesson.transfers.map((t) => ({ title: t.title })),
+    links,
+    warnings: lesson.warnings,
+  };
+  json(res, 200, payload);
+};
+
+const getNote: Handler = (req, res, p, ctx) => {
+  const url = new URL(req.url ?? '/', 'http://x');
+  const notePath = str(url.searchParams.get('path'), 'path');
+  const file = safePath(ctx.root, p.tenant, notePath);
+  if (!existsSync(file) || !file.endsWith('.md')) throw Object.assign(new Error('no such note'), { status: 404 });
+  const tenantDir = safePath(ctx.root, p.tenant);
+  const { html, links } = renderMarkdown(readFileSync(file, 'utf8'), vaultIndex(tenantDir));
+  json(res, 200, { path: notePath, html, links });
+};
+
+const getTodos: Handler = (_req, res, p, ctx) => {
+  const file = safePath(ctx.root, p.tenant, 'todos.md');
+  const raw = existsSync(file) ? readFileSync(file, 'utf8') : '';
+  json(res, 200, parseTodos(raw));
+};
+
+const getProgress: Handler = (_req, res, p, ctx) => {
+  const tenantDir = safePath(ctx.root, p.tenant);
+  const events = readLedgerEvents(tenantDir);
+  const mastery = deriveMastery(events);
+  const today = new Date().toISOString().slice(0, 10);
+  const due: { course: string; concept: string; next_review: string }[] = [];
+  for (const [course, c] of Object.entries(mastery.courses)) {
+    for (const [concept, st] of Object.entries(c.concepts)) {
+      if (st.next_review && st.next_review <= today) due.push({ course, concept, next_review: st.next_review });
+    }
+  }
+  json(res, 200, { mastery, due, recent: events.slice(-20).reverse() });
+};
+
+const getLedger: Handler = (req, res, p, ctx) => {
+  const url = new URL(req.url ?? '/', 'http://x');
+  const since = url.searchParams.get('since');
+  const limit = Number(url.searchParams.get('limit') ?? 200);
+  let events = readLedgerEvents(safePath(ctx.root, p.tenant));
+  if (since) events = events.filter((e) => e.ts > since);
+  const truncated = events.length > limit;
+  json(res, 200, { events: events.slice(-limit), truncated });
+};
+
+// --- the write surface (all of it) ---
+
+const postCheckSubmit: Handler = async (req, res, p, ctx) => {
+  const body = (await readBody(req)) as unknown as SubmitRequest & Record<string, unknown>;
+  const course = str(body.course, 'course');
+  const module_ = str(body.module, 'module');
+  const lessonSlug = str(body.lesson, 'lesson');
+  const checkId = str(body.check_id, 'check_id');
+  const response = str(body.response, 'response');
+
+  const file = safePath(ctx.root, p.tenant, course, 'modules', module_, `${lessonSlug}.md`);
+  if (!existsSync(file)) throw Object.assign(new Error('no such lesson'), { status: 404 });
+  const lesson = parseLesson(readFileSync(file, 'utf8'));
+  const check = lesson.checks.find((c) => c.id === checkId);
+  if (!check) throw Object.assign(new Error(`no check "${checkId}" in this lesson`), { status: 404 });
+
+  const graded = gradeCheck(check, response);
+  const attempts = readLedgerEvents(safePath(ctx.root, p.tenant)).filter(
+    (e) => e.event === 'scored' && e.item === `${lesson.frontmatter?.id}#${checkId}`,
+  ).length;
+  const event = appendUiEvent(safePath(ctx.root, p.tenant), 'scored', {
+    course,
+    module: module_,
+    lesson: lessonSlug,
+    concepts: [check.concept ?? 'unknown'],
+    item: `${lesson.frontmatter?.id}#${checkId}`,
+    item_type: check.type as 'mcq' | 'cloze' | 'flashcard',
+    correct: graded.correct,
+    attempt: attempts + 1,
+  });
+  const payload: SubmitResponse = { ...graded, event_ts: event.ts };
+  json(res, 200, payload);
+};
+
+const postLessonRead: Handler = async (req, res, p, ctx) => {
+  const body = await readBody(req);
+  const event = appendUiEvent(safePath(ctx.root, p.tenant), 'read', {
+    course: str(body.course, 'course'),
+    module: str(body.module, 'module'),
+    lesson: str(body.lesson, 'lesson'),
+    ...(typeof body.seconds === 'number' ? { seconds: body.seconds } : {}),
+  });
+  json(res, 200, { event_ts: event.ts });
+};
+
+function withTodosFile(
+  ctx: Ctx,
+  tenant: string,
+  req: IncomingMessage,
+  mutate: (raw: string) => string,
+): { raw_sha256: string } {
+  const file = safePath(ctx.root, tenant, 'todos.md');
+  const raw = existsSync(file) ? readFileSync(file, 'utf8') : '# Todos\n';
+  const ifMatch = req.headers['if-match'];
+  if (typeof ifMatch === 'string' && ifMatch !== '' && ifMatch !== sha256(raw)) {
+    throw Object.assign(new Error('todos.md changed since you read it (409)'), { status: 409 });
+  }
+  const next = mutate(raw);
+  writeFileAtomic(file, next);
+  return { raw_sha256: sha256(next) };
+}
+
+const postTodos: Handler = async (req, res, p, ctx) => {
+  const body = await readBody(req);
+  const text = str(body.text, 'text');
+  const type = str(body.type, 'type');
+  if (!['gen', 'repo', 'note'].includes(type)) throw Object.assign(new Error('type must be gen|repo|note'), { status: 400 });
+  const result = withTodosFile(ctx, p.tenant, req, (raw) =>
+    addTodo(raw, text, type as 'gen' | 'repo' | 'note', typeof body.section === 'string' ? body.section : undefined),
+  );
+  json(res, 200, result);
+};
+
+const patchTodoRoute: Handler = async (req, res, p, ctx) => {
+  const body = await readBody(req);
+  const today = new Date().toISOString().slice(0, 10);
+  const result = withTodosFile(ctx, p.tenant, req, (raw) =>
+    patchTodo(raw, Number(p.line), { done: body.done as boolean | undefined, text: body.text as string | undefined }, today),
+  );
+  json(res, 200, result);
+};
+
+const postTodoPark: Handler = async (req, res, p, ctx) => {
+  const result = withTodosFile(ctx, p.tenant, req, (raw) => parkTodo(raw, Number(p.line)));
+  json(res, 200, result);
+};
+
+const getHealth: Handler = (_req, res, _p, ctx) => {
+  json(res, 200, { ok: true, version: ctx.version, root: ctx.root, node: process.version });
+};
+
+// --- router ---
+
+const ROUTES: [string, RegExp, Handler][] = [
+  ['GET', /^\/api\/v1\/health$/, getHealth],
+  ['GET', /^\/api\/v1\/tenants$/, getTenants],
+  ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/tree$/, getTree],
+  ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/course\/(?<course>[^/]+)$/, getCourse],
+  ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/lesson\/(?<course>[^/]+)\/(?<module>[^/]+)\/(?<file>[^/]+)$/, getLesson],
+  ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/note$/, getNote],
+  ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/todos$/, getTodos],
+  ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/progress$/, getProgress],
+  ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/ledger$/, getLedger],
+  ['POST', /^\/api\/v1\/(?<tenant>[^/]+)\/check\/submit$/, postCheckSubmit],
+  ['POST', /^\/api\/v1\/(?<tenant>[^/]+)\/lesson\/read$/, postLessonRead],
+  ['POST', /^\/api\/v1\/(?<tenant>[^/]+)\/todos$/, postTodos],
+  ['PATCH', /^\/api\/v1\/(?<tenant>[^/]+)\/todos\/(?<line>\d+)$/, patchTodoRoute],
+  ['POST', /^\/api\/v1\/(?<tenant>[^/]+)\/todos\/(?<line>\d+)\/park$/, postTodoPark],
+];
+
+const MIME: Record<string, string> = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.woff2': 'font/woff2',
+  '.map': 'application/json',
+};
+
+export function makeHandler(ctx: Ctx) {
+  return async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
+    try {
+      // drive-by / DNS-rebinding guard: a foreign Origin is rejected outright
+      const origin = req.headers.origin;
+      if (origin && !/^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(origin)) {
+        return json(res, 403, { error: 'foreign origin rejected' });
+      }
+      const path = decodeURIComponent((req.url ?? '/').split('?')[0]);
+      for (const [method, pattern, handler] of ROUTES) {
+        if (req.method !== method) continue;
+        const m = path.match(pattern);
+        if (!m) continue;
+        await handler(req, res, (m.groups ?? {}) as Record<string, string>, ctx);
+        return;
+      }
+      if (path.startsWith('/api/')) return json(res, 404, { error: 'no such endpoint' });
+
+      // static client
+      if (ctx.clientDist && req.method === 'GET') {
+        const rel = path === '/' ? 'index.html' : path.slice(1);
+        let file: string;
+        try {
+          file = safePath(ctx.clientDist, rel);
+        } catch {
+          return json(res, 400, { error: 'bad path' });
+        }
+        if (!existsSync(file) || statSync(file).isDirectory()) file = join(ctx.clientDist, 'index.html');
+        if (existsSync(file)) {
+          res.writeHead(200, { 'content-type': MIME[extname(file)] ?? 'application/octet-stream' });
+          return void res.end(readFileSync(file));
+        }
+      }
+      json(res, 404, { error: 'not found' });
+    } catch (e) {
+      httpError(res, e);
+    }
+  };
+}
+
+export type { Ctx };

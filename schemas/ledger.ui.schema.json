@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/avishek2002/meno/schemas/ledger.ui.schema.json",
+  "title": "UI-writable ledger event (narrowed)",
+  "description": "The only shapes the app server may append on the UI's behalf: read events and recognition-level scored events. A widening of ledger.schema.json can never widen this file by accident - the narrowing is explicit.",
+  "allOf": [
+    { "$ref": "https://github.com/avishek2002/meno/schemas/ledger.schema.json" },
+    {
+      "type": "object",
+      "properties": { "source": { "const": "ui" } },
+      "oneOf": [
+        { "properties": { "event": { "const": "read" } } },
+        {
+          "properties": { "event": { "const": "scored" }, "level": { "const": "recognition" } },
+          "required": ["level"]
+        }
+      ]
+    }
+  ]
+}
