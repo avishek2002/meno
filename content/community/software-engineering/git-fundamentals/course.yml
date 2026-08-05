@@ -21,6 +21,18 @@ objectives:
     text: Apply reset, revert, and reflog to undo a mistake without losing work
     bloom: apply
     assessed_by: recovery of a deliberately broken repository state to a known-good point using the matching undo tool
+  - id: O5
+    text: Apply remotes, clones, and forks to move commits between repositories and keep a local copy in sync
+    bloom: apply
+    assessed_by: a local repository wired to both a fork (origin) and its upstream, with a branch pushed, pulled, and synced across them
+  - id: O6
+    text: Apply the pull request flow, branch, push, open, review, squash-merge, to land a change through code review
+    bloom: apply
+    assessed_by: a merged pull request built from a provided change, carrying at least one line-level review comment addressed before the squash merge
+  - id: O7
+    text: Apply repository hygiene settings, ignore rules, protected branches, branch auto-delete, to keep a shared repository clean
+    bloom: apply
+    assessed_by: a repository configured with a working ignore file, a protected default branch, and auto-delete of merged branches, each choice explained in one line
 modules:                       # ordered; every field here mirrors module.yml at regen time
   - n: 1
     slug: 01-commits-and-history
@@ -34,3 +46,21 @@ modules:                       # ordered; every field here mirrors module.yml at
     status: skeleton
     est_hours: 6
     serves: [O3, O4]
+  - n: 3
+    slug: 03-remotes-and-forks
+    title: Remotes, clones, and forks
+    status: skeleton
+    est_hours: 4
+    serves: [O5]
+  - n: 4
+    slug: 04-pull-request-flow
+    title: The pull request flow
+    status: skeleton
+    est_hours: 5
+    serves: [O6]
+  - n: 5
+    slug: 05-repo-hygiene
+    title: Repository hygiene
+    status: skeleton
+    est_hours: 2
+    serves: [O7]

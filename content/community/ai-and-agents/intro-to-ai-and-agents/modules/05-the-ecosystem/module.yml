@@ -1,0 +1,59 @@
+schema_version: 1
+module: 05-the-ecosystem
+title: The ecosystem
+status: skeleton
+serves: [O5]
+prerequisites: [04-from-model-to-agent]
+est_hours: 3
+concepts:                      # siblings: access, sourcing, integration
+  - model-apis
+  - open-vs-hosted-models
+  - agents-in-workflows
+objectives:
+  - id: M5-1
+    text: Call a hosted model API (application programming interface) from a script, covering authentication, the messages request shape, and token-based billing
+    bloom: apply
+  - id: M5-2
+    text: Evaluate open-weight against hosted models for a concrete use case on capability, cost, privacy, and operational burden
+    bloom: evaluate
+  - id: M5-3
+    text: Analyze where agents fit in a developer workflow and which integration surfaces apply, from command-line agents to Model Context Protocol servers
+    bloom: analyze
+sources:                       # 4, each fetched this session; see sourcing.md
+  - title: "Anthropic docs: API overview"
+    url: https://platform.claude.com/docs/en/api/overview
+    archived_url: https://web.archive.org/web/20260805094040/https://platform.claude.com/docs/en/api/overview
+    accessed: 2026-08-05
+    source_type: web
+    why: the canonical record of how a hosted model API is consumed - API keys, required headers, the Messages endpoint, SDKs, rate limits - for the model-APIs lesson
+  - title: "The Llama 3 Herd of Models (Grattafiori et al.)"
+    url: https://arxiv.org/abs/2407.21783
+    archived_url: https://web.archive.org/web/20260731092016/https://arxiv.org/abs/2407.21783
+    accessed: 2026-08-05
+    source_type: web
+    why: documents a flagship openly released model family, pre-trained and post-trained weights included, the concrete open-weight half of the open-vs-hosted comparison
+  - title: "Model Context Protocol: What is MCP?"
+    url: https://modelcontextprotocol.io/docs/2026-07-28/getting-started/intro
+    archived_url: https://web.archive.org/web/20260805094239/https://modelcontextprotocol.io/docs/2026-07-28/getting-started/intro
+    accessed: 2026-08-05
+    source_type: web
+    why: the open standard for connecting AI applications to external tools and data, the integration surface the agents-in-workflows lesson maps
+  - title: "Anthropic engineering: Building effective agents"
+    url: https://www.anthropic.com/engineering/building-effective-agents
+    archived_url: https://web.archive.org/web/20260805092535/https://www.anthropic.com/engineering/building-effective-agents
+    accessed: 2026-08-05
+    source_type: web
+    why: guidance on when a workflow suffices and when an agent is warranted, grounding the where-agents-fit lesson's placement decisions
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-model-apis.md
+    title: Calling a model API
+    concept: model-apis
+    status: planned
+  - file: 02-open-vs-hosted.md
+    title: Open-weight vs hosted models
+    concept: open-vs-hosted-models
+    status: planned
+  - file: 03-agents-in-workflows.md
+    title: Where agents fit in real workflows
+    concept: agents-in-workflows
+    status: planned

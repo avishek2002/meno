@@ -1,0 +1,58 @@
+schema_version: 1
+slug: intro-to-ai-and-agents
+title: Intro to AI and agents
+created: 2026-08-05
+status: draft                  # topic pack: pre-contract, not yet adopted by a tenant
+hub: ./intro-to-ai-and-agents-hub.md
+objectives:
+  - id: O1
+    text: Explain how a large language model works - tokenization, training vs inference, and why next-token prediction over vast text yields broad capability
+    bloom: understand
+    assessed_by: a written explanation, in the learner's own words, tracing one prompt from raw text through tokens to sampled output, clear enough for a fellow developer to follow
+  - id: O2
+    text: Apply prompting, context-window management, sampling settings, and structured output to get reliable results from a model
+    bloom: apply
+    assessed_by: a working prompt-plus-settings recipe that turns messy free text into valid JSON (JavaScript Object Notation) across repeated runs
+  - id: O3
+    text: Analyze model output for the main failure modes - hallucination, stale knowledge, jagged capability - and choose a matching mitigation for each
+    bloom: analyze
+    assessed_by: a written failure review of a real model transcript naming each failure found and the mitigation applied
+  - id: O4
+    text: Analyze how tool use and the agent loop turn a text predictor into a system that completes multi-step work
+    bloom: analyze
+    assessed_by: a written agent-loop trace for one concrete task naming each tool call, its observation, the plan revision, and the stopping condition
+  - id: O5
+    text: Evaluate model and deployment choices - hosted API (application programming interface) against open weights, and where agents belong in a workflow - for a concrete use case
+    bloom: evaluate
+    assessed_by: a written recommendation for one real use case comparing hosted and open-weight options on capability, cost, privacy, and operational burden
+modules:                       # ordered; every field here mirrors module.yml at regen time
+  - n: 1
+    slug: 01-what-is-a-language-model
+    title: What a large language model is
+    status: skeleton
+    est_hours: 3
+    serves: [O1]
+  - n: 2
+    slug: 02-working-with-models
+    title: Working with models
+    status: skeleton
+    est_hours: 4
+    serves: [O2]
+  - n: 3
+    slug: 03-capabilities-and-failure-modes
+    title: Capabilities and failure modes
+    status: skeleton
+    est_hours: 3
+    serves: [O3]
+  - n: 4
+    slug: 04-from-model-to-agent
+    title: From model to agent
+    status: skeleton
+    est_hours: 3
+    serves: [O4]
+  - n: 5
+    slug: 05-the-ecosystem
+    title: The ecosystem
+    status: skeleton
+    est_hours: 3
+    serves: [O5]

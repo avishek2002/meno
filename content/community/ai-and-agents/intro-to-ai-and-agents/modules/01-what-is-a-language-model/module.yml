@@ -1,0 +1,59 @@
+schema_version: 1
+module: 01-what-is-a-language-model
+title: What a large language model is
+status: skeleton
+serves: [O1]
+prerequisites: []
+est_hours: 3
+concepts:                      # siblings: the raw material, the two phases, the objective
+  - tokens-and-tokenization
+  - training-vs-inference
+  - next-token-prediction
+objectives:
+  - id: M1-1
+    text: Explain how text becomes tokens and why token boundaries drive cost, context limits, and model quirks
+    bloom: understand
+  - id: M1-2
+    text: Distinguish training from inference, and pretraining from fine-tuning and preference training, in terms of what changes and when
+    bloom: understand
+  - id: M1-3
+    text: Explain why training a model to predict the next token over vast text produces broad capability nobody explicitly programmed
+    bloom: understand
+sources:                       # 4, each fetched this session; see sourcing.md
+  - title: "Attention Is All You Need (Vaswani et al., 2017)"
+    url: https://arxiv.org/abs/1706.03762
+    archived_url: https://web.archive.org/web/20260804124739/https://arxiv.org/abs/1706.03762
+    accessed: 2026-08-05
+    source_type: web
+    why: the original transformer paper - the attention-only architecture every modern large language model builds on, anchoring the architecture lesson
+  - title: "3Blue1Brown: Transformers, the tech behind LLMs"
+    url: https://www.3blue1brown.com/lessons/gpt
+    archived_url: https://web.archive.org/web/20260805094409/https://www.3blue1brown.com/lessons/gpt/
+    accessed: 2026-08-05
+    source_type: web
+    why: visual walkthrough of tokens becoming vectors, attention plus multilayer-perceptron blocks, and the final probability distribution the next-token lesson traces
+  - title: "A Survey of Large Language Models (Zhao et al.)"
+    url: https://arxiv.org/abs/2303.18223
+    archived_url: https://web.archive.org/web/20260805093007/https://arxiv.org/abs/2303.18223
+    accessed: 2026-08-05
+    source_type: web
+    why: surveys pretraining and adaptation tuning and documents abilities that appear only past a certain parameter scale, grounding the why-capability-emerges lesson
+  - title: "Anthropic docs: Glossary"
+    url: https://platform.claude.com/docs/en/about-claude/glossary
+    archived_url: https://web.archive.org/web/20260805093519/https://platform.claude.com/docs/en/about-claude/glossary
+    accessed: 2026-08-05
+    source_type: web
+    why: working definitions of token, pretraining, fine-tuning, and RLHF (reinforcement learning from human feedback) that the tokens and training-vs-inference lessons build on
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-tokens.md
+    title: "Tokens: how text becomes numbers"
+    concept: tokens-and-tokenization
+    status: planned
+  - file: 02-training-vs-inference.md
+    title: Training vs inference
+    concept: training-vs-inference
+    status: planned
+  - file: 03-next-token-prediction.md
+    title: Why next-token prediction produces capability
+    concept: next-token-prediction
+    status: planned

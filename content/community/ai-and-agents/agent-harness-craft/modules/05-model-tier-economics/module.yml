@@ -1,0 +1,53 @@
+schema_version: 1
+module: 05-model-tier-economics
+title: Model-tier economics
+status: skeleton
+serves: [O5]
+prerequisites: [01-harness-anatomy, 02-memory-and-context]
+est_hours: 4
+concepts:                      # siblings: the tier trade-off, routing tasks, measuring spend
+  - tier-selection
+  - task-routing
+  - cost-instrumentation
+objectives:
+  - id: M5-1
+    text: Explain the capability, speed, and cost trade-off across model tiers, and the efficiency-first and capability-first starting strategies
+    bloom: understand
+  - id: M5-2
+    text: Choose a model tier per task, routing mechanical subagent work to cheaper tiers and reserving the top tier for reasoning-heavy steps
+    bloom: evaluate
+  - id: M5-3
+    text: Track where a session's tokens go and attribute spend to long context, cache misses, and model choice
+    bloom: apply
+sources:                       # 3, each fetched this session; see sourcing.md
+  - title: "Choosing the right model (Claude API docs)"
+    url: https://platform.claude.com/docs/en/about-claude/models/choosing-a-model
+    archived_url: https://web.archive.org/web/20260805093823/https://platform.claude.com/docs/en/about-claude/models/choosing-a-model
+    accessed: 2026-08-05
+    source_type: web
+    why: frames tier choice as capability vs speed vs cost with efficiency-first and capability-first starting strategies, and puts evals at the center of upgrade decisions
+  - title: "Manage costs effectively (Claude Code docs)"
+    url: https://code.claude.com/docs/en/costs
+    archived_url: https://web.archive.org/web/20260805093714/https://code.claude.com/docs/en/costs
+    accessed: 2026-08-05
+    source_type: web
+    why: explains what drives token spend (context length, cache misses, model choice, background tasks) and the usage tooling the instrumentation lesson reads
+  - title: "Create custom subagents (Claude Code docs)"
+    url: https://code.claude.com/docs/en/sub-agents
+    archived_url: https://web.archive.org/web/20260805094101/https://code.claude.com/docs/en/sub-agents
+    accessed: 2026-08-05
+    source_type: web
+    why: shows per-subagent model overrides, the concrete mechanism for routing delegated tasks to a cheaper tier
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-the-tier-trade-off.md
+    title: The tier trade-off
+    concept: tier-selection
+    status: planned
+  - file: 02-routing-to-the-cheapest-capable-model.md
+    title: Routing to the cheapest capable model
+    concept: task-routing
+    status: planned
+  - file: 03-instrumenting-cost.md
+    title: Instrumenting cost
+    concept: cost-instrumentation
+    status: planned

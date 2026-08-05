@@ -1,0 +1,53 @@
+schema_version: 1
+module: 04-dunning-kruger-and-calibration
+title: Dunning-Kruger and calibration
+status: skeleton
+serves: [O4]
+prerequisites: []
+est_hours: 3
+concepts:                      # siblings: the effect, overconfidence's separate forms, measuring your own gap
+  - dunning-kruger-effect
+  - overconfidence-forms
+  - calibration-practice
+objectives:
+  - id: M4-1
+    text: Explain the dual-burden account - the skills needed to perform well are the same skills needed to judge performance, so the unskilled cannot see the gap
+    bloom: understand
+  - id: M4-2
+    text: Distinguish overestimation, overplacement, and overprecision as separate overconfidence findings that occur under different conditions
+    bloom: understand
+  - id: M4-3
+    text: Evaluate their own calibration by logging confidence predictions, checking them against outcomes, and interpreting the gap with the research
+    bloom: evaluate
+sources:                       # 3, each fetched this session; see sourcing.md
+  - title: "Unskilled and Unaware of It (Kruger and Dunning, Journal of Personality and Social Psychology) - PubMed record"
+    url: https://pubmed.ncbi.nlm.nih.gov/10626367/
+    archived_url: https://web.archive.org/web/20260805095951/https://pubmed.ncbi.nlm.nih.gov/10626367/
+    accessed: 2026-08-05
+    source_type: web
+    why: the original study - bottom-quartile performers estimated themselves far above their actual percentile, and improving the skill improved the self-assessment; the American Psychological Association's own record page blocks automated access, so the National Library of Medicine record is the cited copy
+  - title: "Why the Unskilled Are Unaware (Ehrlinger, Johnson, Banner, Dunning, and Kruger, Organizational Behavior and Human Decision Processes)"
+    url: https://pmc.ncbi.nlm.nih.gov/articles/PMC2702783/
+    archived_url: https://web.archive.org/web/20260717030943/https://pmc.ncbi.nlm.nih.gov/articles/PMC2702783/
+    accessed: 2026-08-05
+    source_type: web
+    why: follow-up studies showing the overestimation survives statistical corrections and monetary or social incentives for accuracy, supporting the metacognitive-deficit explanation
+  - title: "The Trouble with Overconfidence (Moore and Healy, Psychological Review) - PubMed record"
+    url: https://pubmed.ncbi.nlm.nih.gov/18426301/
+    archived_url: https://web.archive.org/web/20251116162933/https://pubmed.ncbi.nlm.nih.gov/18426301/
+    accessed: 2026-08-05
+    source_type: web
+    why: separates overestimation, overplacement, and overprecision and shows they pattern differently by task difficulty - the conceptual toolkit the calibration lesson uses; publisher record blocks automated access, so the National Library of Medicine record is the cited copy
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-dunning-kruger-effect.md
+    title: The Dunning-Kruger effect and its dual burden
+    concept: dunning-kruger-effect
+    status: planned
+  - file: 02-overconfidence-forms.md
+    title: Three distinct forms of overconfidence
+    concept: overconfidence-forms
+    status: planned
+  - file: 03-calibration-practice.md
+    title: Practical calibration - predict, check, log
+    concept: calibration-practice
+    status: planned

@@ -1,0 +1,47 @@
+schema_version: 1
+module: 03-skills-and-procedures
+title: Skills and repeatable procedures
+status: skeleton
+serves: [O3]
+prerequisites: [01-harness-anatomy]
+est_hours: 4
+concepts:                      # siblings: skill anatomy, progressive disclosure, capture decision
+  - skill-anatomy
+  - progressive-disclosure
+  - capture-decision
+objectives:
+  - id: M3-1
+    text: Describe how a skill packages a repeatable procedure as a discoverable folder of instructions, supporting files, and scripts
+    bloom: understand
+  - id: M3-2
+    text: Explain progressive disclosure, where a skill's metadata loads at startup, its body on invocation, and its linked files only when needed
+    bloom: understand
+  - id: M3-3
+    text: Judge whether a recurring workflow belongs in a skill, an always-loaded instruction file, or a one-off prompt
+    bloom: evaluate
+sources:                       # 2, each fetched this session; see sourcing.md
+  - title: "Extend Claude with skills (Claude Code docs)"
+    url: https://code.claude.com/docs/en/skills
+    archived_url: https://web.archive.org/web/20260805084519/https://code.claude.com/docs/en/skills
+    accessed: 2026-08-05
+    source_type: web
+    why: defines the SKILL.md format, on-demand loading, and the create-a-skill trigger (repeated pasted instructions, an instruction-file section grown into a procedure) the capture lesson turns into a decision rule
+  - title: "Equipping agents for the real world with Agent Skills (Anthropic engineering)"
+    url: https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills
+    archived_url: https://web.archive.org/web/20260805093413/https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills
+    accessed: 2026-08-05
+    source_type: web
+    why: describes skills as folders of instructions, scripts, and resources loaded by three-tier progressive disclosure, plus the design principles the anatomy lesson teaches
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-what-a-skill-is.md
+    title: What a skill is
+    concept: skill-anatomy
+    status: planned
+  - file: 02-progressive-disclosure.md
+    title: Progressive disclosure
+    concept: progressive-disclosure
+    status: planned
+  - file: 03-when-to-capture-a-workflow.md
+    title: When to capture a workflow as a skill
+    concept: capture-decision
+    status: planned

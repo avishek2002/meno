@@ -1,0 +1,53 @@
+schema_version: 1
+module: 03-what-a-pack-is
+title: What a pack is
+status: skeleton
+serves: [O3]
+prerequisites: [01-repo-shape-and-rules]
+est_hours: 2
+concepts:                      # stream B (authoring community content), part 1
+  - pack-anatomy
+  - draft-a-pack-recipe
+  - reference-notes
+objectives:
+  - id: M3-1
+    text: Choose a domain and slug for a new pack against the closed domain vocabulary and the existing index, justifying the fit in one sentence
+    bloom: apply
+  - id: M3-2
+    text: Draft a one-module pack skeleton (PACK.md, course.yml, hub, module manifest) following the draft-a-pack recipe
+    bloom: create
+  - id: M3-3
+    text: Write one reference note that cites fetched, archived sources and links to owning files instead of restating them
+    bloom: create
+sources:                       # 3, each fetched this session; see sourcing.md
+  - title: "content/community/README.md (the topic-pack spec)"
+    url: https://github.com/avishek2002/meno/blob/main/content/community/README.md
+    archived_url: https://web.archive.org/web/20260805102347/https://github.com/avishek2002/meno/blob/main/content/community/README.md
+    accessed: 2026-08-05
+    source_type: web
+    why: the canonical definition of a pack - pre-contract, no lesson bodies, notes without pedagogy - that every drafting decision in this module answers to
+  - title: "extend-meno recipes.md (the draft-a-pack recipe)"
+    url: https://github.com/avishek2002/meno/blob/main/.agents/skills/extend-meno/references/recipes.md
+    archived_url: https://web.archive.org/web/20260805102420/https://github.com/avishek2002/meno/blob/main/.agents/skills/extend-meno/references/recipes.md
+    accessed: 2026-08-05
+    source_type: web
+    why: the ordered steps for hand-authoring a pack from nothing, which the M3-2 skeleton exercise follows end to end
+  - title: "content/community/DOMAINS.md (closed domain vocabulary)"
+    url: https://github.com/avishek2002/meno/blob/main/content/community/DOMAINS.md
+    archived_url: https://web.archive.org/web/20260805102124/https://github.com/avishek2002/meno/blob/main/content/community/DOMAINS.md
+    accessed: 2026-08-05
+    source_type: web
+    why: the closed list a pack's domain must come from, and the rationale for keeping it closed that the M3-1 placement exercise argues against
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-pack-anatomy.md
+    title: What a pack is and is not
+    concept: pack-anatomy
+    status: planned
+  - file: 02-drafting-a-skeleton.md
+    title: Drafting a skeleton
+    concept: draft-a-pack-recipe
+    status: planned
+  - file: 03-reference-notes.md
+    title: Reference notes without pedagogy
+    concept: reference-notes
+    status: planned

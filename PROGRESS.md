@@ -15,6 +15,27 @@ _Last updated: 2026-08-05_
 
 ## Done
 
+- 2026-08-05 - **Community pack slate (decision 19, workstream 3): five packs live.** The tier goes
+  from one pack to a full intern-onboarding slate, every source fetched live and Wayback-archived
+  this session, each pack independently citation-audited and sanitization-swept (zero hits for
+  workplace identifiers), INDEX regenerated, gate green. `git-fundamentals` was AMENDED (modules
+  03-05: remotes/forks, pull-request flow, repo hygiene) rather than forked into a competing pack -
+  the search-first rule applied to ourselves. New: `ai-and-agents/intro-to-ai-and-agents`,
+  `ai-and-agents/agent-harness-craft` (the maintainer's craft re-derived from public sources only),
+  `ai-and-agents/limits-of-agent-generated-content` (hallucination, sycophancy, cognitive
+  offloading, Dunning-Kruger, the compounding loop - every empirical claim cites the actual paper),
+  `meta/contributing-to-meno` (exercise-driven, links to canonical owners, never restates).
+- 2026-08-05 - **Accuracy guardrail + drill pair (decision 19, workstream 1; PR #21).**
+  `generate-module` gains a blocking per-lesson self-audit: claim audit (trace to a cited source,
+  level-appropriate common knowledge - never anything surprising, quantitative, version-specific,
+  or safety-relevant - or fix/cite/remove) and check re-solve (fresh answer before reading the
+  authored key; disagreement blocks). Kept honest by the auditor drill:
+  `examples/seeded-faults/accuracy-fixture/` (4 planted uncited falsehoods, 3 wrong keys, 1 clean
+  control) scored by `tools/eval.ts` via the pinned claude CLI under judged-half discipline.
+  Baseline established: recall 1.0 observed, `recall_min` 0.9. Adversarial review hardened the
+  quote matcher (three-token containment minimum). Specs: `lessons.md` invariant 7, `quality.md`
+  drill contract stated honestly (measures the audit prompt, not a live run).
+
 - 2026-08-05 - **Post-consolidation reconcile: the one constraint decision 18 narrowed.** Follow-up
   to the v1.4 security review. Two of its three items had already been absorbed by #18 (the stale
   `topic-packs/`/`org/` paths in `docs/specs/supply-chain.md`, and `SECURITY.md`, which was written

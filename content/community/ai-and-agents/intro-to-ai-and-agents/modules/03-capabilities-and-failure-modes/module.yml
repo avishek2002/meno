@@ -1,0 +1,59 @@
+schema_version: 1
+module: 03-capabilities-and-failure-modes
+title: Capabilities and failure modes
+status: skeleton
+serves: [O3]
+prerequisites: [02-working-with-models]
+est_hours: 3
+concepts:                      # siblings: the three failure modes a caller must anticipate
+  - hallucination
+  - knowledge-cutoffs
+  - jagged-capabilities
+objectives:
+  - id: M3-1
+    text: Explain why a fluent text predictor produces confident falsehoods, and why hallucination is a property of the method rather than an occasional bug
+    bloom: understand
+  - id: M3-2
+    text: Apply hallucination mitigations, grounding in provided documents, permission to admit uncertainty, and citation checking, to a real task
+    bloom: apply
+  - id: M3-3
+    text: Analyze a task for jagged-capability risk, predicting where the model is likely strong or weak and checking the prediction against reality
+    bloom: analyze
+sources:                       # 4, each fetched this session; see sourcing.md
+  - title: "A Survey on Hallucination in Large Language Models (Huang et al.)"
+    url: https://arxiv.org/abs/2311.05232
+    archived_url: https://web.archive.org/web/20260805093131/https://arxiv.org/abs/2311.05232
+    accessed: 2026-08-05
+    source_type: web
+    why: peer-reviewed taxonomy of hallucination with its contributing factors, detection benchmarks, and mitigation families - the evidence base for the hallucination lesson
+  - title: "Anthropic docs: Reduce hallucinations"
+    url: https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/reduce-hallucinations
+    archived_url: https://web.archive.org/web/20260805093817/https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/reduce-hallucinations
+    accessed: 2026-08-05
+    source_type: web
+    why: the practical mitigation playbook - allow uncertainty, ground in direct quotes, verify with citations - the mitigation lesson applies
+  - title: "Anthropic docs: Models overview"
+    url: https://platform.claude.com/docs/en/about-claude/models/overview
+    archived_url: https://web.archive.org/web/20260805094120/https://platform.claude.com/docs/en/about-claude/models/overview
+    accessed: 2026-08-05
+    source_type: web
+    why: publishes per-model training data cutoffs and reliable knowledge cutoffs, the primary record the knowledge-cutoff lesson reads
+  - title: "Embers of Autoregression (McCoy et al.)"
+    url: https://arxiv.org/abs/2309.13638
+    archived_url: https://web.archive.org/web/20260711050822/https://arxiv.org/abs/2309.13638
+    accessed: 2026-08-05
+    source_type: web
+    why: shows accuracy swinging with task and output probability in training data (51 percent vs 13 percent on the same cipher), the mechanism behind the jagged-capability lesson
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-hallucination.md
+    title: "Hallucination: confident and wrong"
+    concept: hallucination
+    status: planned
+  - file: 02-knowledge-cutoffs.md
+    title: Knowledge cutoffs and stale facts
+    concept: knowledge-cutoffs
+    status: planned
+  - file: 03-jagged-capabilities.md
+    title: The jagged capability profile
+    concept: jagged-capabilities
+    status: planned

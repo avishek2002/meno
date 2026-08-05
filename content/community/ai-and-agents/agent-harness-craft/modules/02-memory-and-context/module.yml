@@ -1,0 +1,59 @@
+schema_version: 1
+module: 02-memory-and-context
+title: Memory and context discipline
+status: skeleton
+serves: [O2]
+prerequisites: [01-harness-anatomy]
+est_hours: 5
+concepts:                      # siblings: instruction tiers, lean context, subagent isolation
+  - instruction-tiers
+  - context-hygiene
+  - subagent-isolation
+objectives:
+  - id: M2-1
+    text: Organize standing instructions across tiers (organization, user, project, local) so each fact lives at the broadest scope it applies to and nowhere else
+    bloom: apply
+  - id: M2-2
+    text: Keep a session's context lean by clearing between unrelated tasks, keeping instruction files short and specific, and moving procedures out of always-loaded files
+    bloom: apply
+  - id: M2-3
+    text: Delegate context-heavy side work to a subagent so only its conclusion enters the main conversation
+    bloom: apply
+sources:                       # 4, each fetched this session; see sourcing.md
+  - title: "How Claude remembers your project (Claude Code docs)"
+    url: https://code.claude.com/docs/en/memory
+    archived_url: https://web.archive.org/web/20260803184145/https://code.claude.com/docs/en/memory
+    accessed: 2026-08-05
+    source_type: web
+    why: specifies the instruction-file tiers (managed policy, user, project, local), their load order, and the under-200-lines size guidance the tiering lessons apply
+  - title: "Create custom subagents (Claude Code docs)"
+    url: https://code.claude.com/docs/en/sub-agents
+    archived_url: https://web.archive.org/web/20260805094101/https://code.claude.com/docs/en/sub-agents
+    accessed: 2026-08-05
+    source_type: web
+    why: documents subagents as separate context windows with their own instructions, tool access, and model, returning only a summary - the isolation mechanism the delegation lesson applies
+  - title: "Effective context engineering for AI agents (Anthropic engineering)"
+    url: https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents
+    archived_url: https://web.archive.org/web/20260805034214/https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents
+    accessed: 2026-08-05
+    source_type: web
+    why: establishes context as a finite attention budget subject to context rot, and names compaction, note-taking, and sub-agent isolation as countermeasures
+  - title: "How we built our multi-agent research system (Anthropic engineering)"
+    url: https://www.anthropic.com/engineering/multi-agent-research-system
+    archived_url: https://web.archive.org/web/20260805090309/https://www.anthropic.com/engineering/multi-agent-research-system
+    accessed: 2026-08-05
+    source_type: web
+    why: shows subagent isolation at production scale - parallel workers with separate context windows compressing findings for a lead agent
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-tiered-instruction-files.md
+    title: Tiered instruction files
+    concept: instruction-tiers
+    status: planned
+  - file: 02-keeping-context-lean.md
+    title: Keeping context lean
+    concept: context-hygiene
+    status: planned
+  - file: 03-delegating-to-subagents.md
+    title: Delegating to subagents
+    concept: subagent-isolation
+    status: planned

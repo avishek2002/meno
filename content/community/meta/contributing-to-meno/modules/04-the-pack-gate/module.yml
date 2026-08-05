@@ -1,0 +1,59 @@
+schema_version: 1
+module: 04-the-pack-gate
+title: The pack gate
+status: skeleton
+serves: [O4]
+prerequisites: [03-what-a-pack-is]
+est_hours: 3
+concepts:                      # stream B (authoring community content), part 2
+  - pack-validation
+  - citation-audit
+  - sanitization-attestation
+objectives:
+  - id: M4-1
+    text: Run the validate gate on a draft pack and resolve every finding that names it, attributing each to its check
+    bloom: apply
+  - id: M4-2
+    text: Audit one of the draft pack's own citations adversarially - fetch the live source, check claim support, check the archive snapshot matches
+    bloom: apply
+  - id: M4-3
+    text: Complete the pull-request template's community-tier attestations honestly for the drafted pack, flagging anything a human reviewer must judge
+    bloom: apply
+sources:                       # 4, each fetched this session; see sourcing.md
+  - title: "content/community/README.md (the bar for landing a pack)"
+    url: https://github.com/avishek2002/meno/blob/main/content/community/README.md
+    archived_url: https://web.archive.org/web/20260805102347/https://github.com/avishek2002/meno/blob/main/content/community/README.md
+    accessed: 2026-08-05
+    source_type: web
+    why: names the four pack checks and the security posture - the definition of green this module's gate exercise iterates toward
+  - title: "publish-to-community sanitization.md (the sanitization catalog)"
+    url: https://github.com/avishek2002/meno/blob/main/.agents/skills/publish-to-community/references/sanitization.md
+    archived_url: https://web.archive.org/web/20260805102125/https://github.com/avishek2002/meno/blob/main/.agents/skills/publish-to-community/references/sanitization.md
+    accessed: 2026-08-05
+    source_type: web
+    why: the canonical list of what never leaves a private tenant tree, including the class of leak no regex catches - what the attestation exercise attests to
+  - title: "generate-curriculum sourcing.md (fetch-before-cite)"
+    url: https://github.com/avishek2002/meno/blob/main/.agents/skills/generate-curriculum/references/sourcing.md
+    archived_url: https://web.archive.org/web/20260805102125/https://github.com/avishek2002/meno/blob/main/.agents/skills/generate-curriculum/references/sourcing.md
+    accessed: 2026-08-05
+    source_type: web
+    why: the citation-integrity procedure pack sources must follow - fetched this session, archived, never from memory - that the audit exercise verifies was actually done
+  - title: "audit-citations SKILL.md (the adversarial re-check)"
+    url: https://github.com/avishek2002/meno/blob/main/.agents/skills/audit-citations/SKILL.md
+    archived_url: https://web.archive.org/web/20260805102452/https://github.com/avishek2002/meno/blob/main/.agents/skills/audit-citations/SKILL.md
+    accessed: 2026-08-05
+    source_type: web
+    why: the existence, claim-support, and archive-liveness checks the M4-2 audit exercise runs against the pack's own source records
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-validation-checks.md
+    title: The four pack checks
+    concept: pack-validation
+    status: planned
+  - file: 02-citation-audit.md
+    title: Auditing your own citations
+    concept: citation-audit
+    status: planned
+  - file: 03-sanitization-and-the-human-gate.md
+    title: Sanitization and the human gate
+    concept: sanitization-attestation
+    status: planned

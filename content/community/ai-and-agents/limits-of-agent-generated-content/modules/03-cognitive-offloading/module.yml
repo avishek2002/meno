@@ -1,0 +1,53 @@
+schema_version: 1
+module: 03-cognitive-offloading
+title: The cost of offloading thinking
+status: skeleton
+serves: [O3]
+prerequisites: []
+est_hours: 3
+concepts:                      # siblings: offloading in general, memory for sources, trusting automation
+  - cognitive-offloading
+  - google-effect
+  - automation-bias
+objectives:
+  - id: M3-1
+    text: Explain cognitive offloading as using physical action or external tools to reduce cognitive demand, and the trade-offs the metacognitive framework predicts
+    bloom: understand
+  - id: M3-2
+    text: Explain the Google effect - expecting future access to information lowers recall of the information itself while improving memory for where to find it
+    bloom: understand
+  - id: M3-3
+    text: Identify commission and omission errors from automation bias in a workflow that leans on automated advice
+    bloom: apply
+sources:                       # 3, each fetched this session; see sourcing.md
+  - title: "Cognitive Offloading (Risko and Gilbert, Trends in Cognitive Sciences) - PubMed record"
+    url: https://pubmed.ncbi.nlm.nih.gov/27542527/
+    archived_url: https://web.archive.org/web/20260805095710/https://pubmed.ncbi.nlm.nih.gov/27542527/
+    accessed: 2026-08-05
+    source_type: web
+    why: defines cognitive offloading and frames its triggers and consequences metacognitively; the publisher's page blocks automated access, so this National Library of Medicine record with the abstract is the cited copy
+  - title: "Google Effects on Memory (Sparrow, Liu, and Wegner, Science) - PubMed record"
+    url: https://pubmed.ncbi.nlm.nih.gov/21764755/
+    archived_url: https://web.archive.org/web/20260805095801/https://pubmed.ncbi.nlm.nih.gov/21764755/
+    accessed: 2026-08-05
+    source_type: web
+    why: the four-study source for the Google effect - lower recall for information people expect to be able to look up, better memory for where it lives; publisher page blocks automated access, so the National Library of Medicine record is the cited copy
+  - title: "Automation Bias - a Systematic Review (Goddard, Roudsari, and Wyatt, Journal of the American Medical Informatics Association)"
+    url: https://pmc.ncbi.nlm.nih.gov/articles/PMC3240751/
+    archived_url: https://web.archive.org/web/20260805093311/https://pmc.ncbi.nlm.nih.gov/articles/PMC3240751/
+    accessed: 2026-08-05
+    source_type: web
+    why: systematic review defining automation bias, its commission and omission error forms, and its mediators; source of the finding that wrong automated advice measurably flips previously correct decisions
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-cognitive-offloading.md
+    title: Cognitive offloading and its trade-offs
+    concept: cognitive-offloading
+    status: planned
+  - file: 02-google-effect.md
+    title: The Google effect on memory
+    concept: google-effect
+    status: planned
+  - file: 03-automation-bias.md
+    title: Automation bias - over-trusting the tool
+    concept: automation-bias
+    status: planned
