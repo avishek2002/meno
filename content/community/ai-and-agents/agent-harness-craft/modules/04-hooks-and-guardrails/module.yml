@@ -19,7 +19,7 @@ objectives:
   - id: M4-3
     text: Design a guardrail that fails closed, so a check that errors or cannot run blocks the gated action instead of waving it through
     bloom: create
-sources:                       # 2, each fetched this session; see sourcing.md
+sources:                       # 2, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
   - title: "Hooks reference (Claude Code docs)"
     url: https://code.claude.com/docs/en/hooks
     archived_url: https://web.archive.org/web/20260805093521/https://code.claude.com/docs/en/hooks

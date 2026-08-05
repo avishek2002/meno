@@ -1,0 +1,47 @@
+schema_version: 1
+module: 02-testing-and-documentation
+title: Testing and documenting models
+status: skeleton
+serves: [O2]
+prerequisites: [01-models-and-the-dag]
+est_hours: 3
+concepts:                      # siblings: the one-off assertion, the reusable one, the paper trail
+  - singular-tests
+  - generic-tests
+  - schema-yml-documentation
+objectives:
+  - id: M2-1
+    text: Explain how dbt data tests work - SELECT statements that return failing rows - and when a one-off singular test is the right tool
+    bloom: understand
+  - id: M2-2
+    text: Apply the four built-in generic tests - unique, not_null, accepted_values, relationships - to models and columns through schema.yml
+    bloom: apply
+  - id: M2-3
+    text: Apply YAML descriptions and doc blocks, then generate the documentation site and read a model's lineage in it
+    bloom: apply
+sources:                       # fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "Add data tests to your DAG (dbt Developer Hub)"
+    url: https://docs.getdbt.com/docs/build/data-tests
+    archived_url: https://web.archive.org/web/20260709152546/https://docs.getdbt.com/docs/build/data-tests
+    accessed: 2026-08-05
+    source_type: web
+    why: defines singular versus generic tests, tests as failing-row SELECT statements, and the four built-in generic tests the module drills
+  - title: "About documentation (dbt Developer Hub)"
+    url: https://docs.getdbt.com/docs/build/documentation
+    archived_url: https://web.archive.org/web/20260709152551/https://docs.getdbt.com/docs/build/documentation
+    accessed: 2026-08-05
+    source_type: web
+    why: YAML descriptions, doc blocks, and documentation generation - the documentation half of the module
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-tests-return-failing-rows.md
+    title: Tests are SELECTs that return failing rows
+    concept: singular-tests
+    status: planned
+  - file: 02-generic-tests.md
+    title: The four built-in generic tests
+    concept: generic-tests
+    status: planned
+  - file: 03-descriptions-and-docs.md
+    title: Descriptions, doc blocks, and the docs site
+    concept: schema-yml-documentation
+    status: planned

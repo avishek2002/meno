@@ -1,0 +1,47 @@
+schema_version: 1
+module: 01-models-and-the-dag
+title: Models, ref(), and the DAG
+status: skeleton
+serves: [O1]
+prerequisites: []
+est_hours: 3
+concepts:                      # siblings: the file, the function that links files, the raw edge
+  - models-as-selects
+  - ref-and-the-dag
+  - source-declarations
+objectives:
+  - id: M1-1
+    text: Explain what a dbt model is - one SELECT statement per file that dbt wraps in create view as or create table as at run time
+    bloom: understand
+  - id: M1-2
+    text: Explain how ref() both resolves a model name to the right environment's schema and hands dbt the edges of its dependency graph
+    bloom: understand
+  - id: M1-3
+    text: Apply source declarations and the source() function so raw loaded tables enter the graph named, described, and freshness-checked
+    bloom: apply
+sources:                       # fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "SQL models (dbt Developer Hub)"
+    url: https://docs.getdbt.com/docs/build/sql-models
+    archived_url: https://web.archive.org/web/20260715105350/https://docs.getdbt.com/docs/build/sql-models
+    accessed: 2026-08-05
+    source_type: web
+    why: the canonical statement that a model is a select statement dbt wraps in DDL, and that ref() builds the dependency graph that orders runs
+  - title: "Add sources to your DAG (dbt Developer Hub)"
+    url: https://docs.getdbt.com/docs/build/sources
+    archived_url: https://web.archive.org/web/20260715105349/https://docs.getdbt.com/docs/build/sources
+    accessed: 2026-08-05
+    source_type: web
+    why: declaring sources in YAML, the dependency edge the source() function creates, and freshness checks - the raw edge of the graph this module teaches
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-models-as-selects.md
+    title: A model is a SELECT statement
+    concept: models-as-selects
+    status: planned
+  - file: 02-ref-and-the-dag.md
+    title: ref() and the dependency graph
+    concept: ref-and-the-dag
+    status: planned
+  - file: 03-declaring-sources.md
+    title: Declaring sources for raw tables
+    concept: source-declarations
+    status: planned

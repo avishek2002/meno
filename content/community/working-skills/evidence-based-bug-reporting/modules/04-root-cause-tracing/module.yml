@@ -1,0 +1,53 @@
+schema_version: 1
+module: 04-root-cause-tracing
+title: Root-cause tracing - from symptom to failing layer
+status: skeleton
+serves: [O4]
+prerequisites: [02-evidence-discipline]
+est_hours: 3
+concepts:                      # siblings: why symptom and cause differ, how to narrow, when to hand over
+  - symptom-vs-cause
+  - failure-localization
+  - tracing-stop-rule
+objectives:
+  - id: M4-1
+    text: Explain why the surface symptom and the failing layer usually differ, and what a reduced reproduction buys the person who has to fix it
+    bloom: understand
+  - id: M4-2
+    text: Apply localization techniques - test-case reduction and history bisection - to narrow a failure to the component or the change that triggers it
+    bloom: apply
+  - id: M4-3
+    text: Evaluate when to stop tracing and file - the point where the report localizes the failure well enough for the fixer to take over
+    bloom: evaluate
+sources:                       # 3, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "How to submit an LLVM bug report (LLVM documentation)"
+    url: https://llvm.org/docs/HowToSubmitABug.html
+    archived_url: https://web.archive.org/web/20260803010252/https://llvm.org/docs/HowToSubmitABug.html
+    accessed: 2026-08-05
+    source_type: web
+    why: a worked doctrine of localization before filing - use diagnostic flags to pinpoint whether the front end, middle end, or back end is failing, reduce the test case to the smallest amount of code that still replicates the problem, and file with everything necessary to reproduce
+  - title: "git-bisect - use binary search to find the commit that introduced a bug (Git documentation)"
+    url: https://git-scm.com/docs/git-bisect
+    archived_url: https://web.archive.org/web/20260801155900/https://git-scm.com/docs/git-bisect
+    accessed: 2026-08-05
+    source_type: web
+    why: the canonical tool reference for localizing in history rather than in code - binary search between a known-good and known-bad commit until the exact change that introduced the failure is found
+  - title: "How to Report Bugs Effectively (Simon Tatham)"
+    url: https://www.chiark.greenend.org.uk/~sgtatham/bugs.html
+    archived_url: https://web.archive.org/web/20260803213444/https://www.chiark.greenend.org.uk/~sgtatham/bugs.html
+    accessed: 2026-08-05
+    source_type: web
+    why: the stop rule's guardrail - however far you traced, report the symptoms you observed and keep your diagnosis clearly marked as speculation, so a wrong theory does not send the fixer down the wrong path
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-symptom-vs-cause.md
+    title: Symptom versus failing layer
+    concept: symptom-vs-cause
+    status: planned
+  - file: 02-failure-localization.md
+    title: Localization - reduce the case, bisect the history
+    concept: failure-localization
+    status: planned
+  - file: 03-when-to-stop.md
+    title: When to stop tracing and file
+    concept: tracing-stop-rule
+    status: planned

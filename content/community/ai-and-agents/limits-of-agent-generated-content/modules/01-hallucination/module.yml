@@ -19,7 +19,7 @@ objectives:
   - id: M1-3
     text: Explain why training and evaluation procedures that reward guessing over acknowledging uncertainty keep hallucination persistent
     bloom: understand
-sources:                       # 3, each fetched this session; see sourcing.md
+sources:                       # 3, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
   - title: "Survey of Hallucination in Natural Language Generation (Ji et al., ACM Computing Surveys)"
     url: https://arxiv.org/abs/2202.03629
     archived_url: https://web.archive.org/web/20260805092703/https://arxiv.org/abs/2202.03629

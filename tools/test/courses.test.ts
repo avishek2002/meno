@@ -153,6 +153,32 @@ test('web source with a non-wayback archived_url is an error', () => {
   assert.ok(findings.some((f) => f.check === 'citations' && f.message.includes('web.archive.org')));
 });
 
+test('archived_url snapshotting a different page than url is an error', () => {
+  // Archiving follows redirects and records where it landed; url keeps what was typed.
+  // A moved source therefore yields a well-formed pair pointing at two different pages.
+  const findings = run(
+    makeCourse({
+      module: MODULE.replace(
+        'https://web.archive.org/web/20260805000000/https://example.org/docs',
+        'https://web.archive.org/web/20260805000000/https://example.org/moved-docs',
+      ),
+    }),
+  );
+  assert.ok(findings.some((f) => f.check === 'citations' && f.message.includes('but url is')));
+});
+
+test('archived_url differing from url only by scheme or trailing slash is fine', () => {
+  const findings = run(
+    makeCourse({
+      module: MODULE.replace(
+        'https://web.archive.org/web/20260805000000/https://example.org/docs',
+        'https://web.archive.org/web/20260805000000/http://example.org/docs/',
+      ),
+    }),
+  );
+  assert.deepEqual(findings.filter((f) => f.check === 'citations' && f.level === 'error'), []);
+});
+
 test('generated lesson whose file is missing is an error', () => {
   const findings = run(makeCourse({ module: MODULE.replace('status: planned', 'status: generated') }));
   assert.ok(findings.some((f) => f.message.includes('does not exist')));

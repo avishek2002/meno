@@ -19,7 +19,7 @@ objectives:
   - id: M1-3
     text: Distinguish a predefined workflow from an agent directing its own tool use, and identify which a given task calls for
     bloom: analyze
-sources:                       # 4, each fetched this session; see sourcing.md
+sources:                       # 4, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
   - title: "Building effective agents (Anthropic engineering)"
     url: https://www.anthropic.com/engineering/building-effective-agents
     archived_url: https://web.archive.org/web/20260805092535/https://www.anthropic.com/engineering/building-effective-agents

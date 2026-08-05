@@ -31,11 +31,22 @@ acceptance or eval). For each record:
    page must support the specific claims, not the general topic. A source that exists but
    does not say what the lesson says it says -> MISATTRIBUTED. This is the subtle one -
    check the direction of claims, recommendations, and numbers, not just topic overlap.
-3. **Archive liveness.** Fetch `archived_url`. Must resolve (HTTP 200 after redirects)
-   -> otherwise DEAD-ARCHIVE.
-4. **Archive match.** The snapshot must be a capture of `url` (the original URL is
-   embedded in the wayback URL after the timestamp - compare canonically, and eyeball
-   the fetched content matches the live page's subject) -> otherwise MISMATCHED-ARCHIVE.
+3. **Archive liveness.** Request `archived_url`. Must resolve (HTTP 200 after redirects)
+   -> otherwise DEAD-ARCHIVE. **Do not use a page-fetching tool for this step** - several
+   agent harnesses (Claude Code's WebFetch among them) refuse `web.archive.org` outright,
+   and the refusal looks exactly like a dead snapshot. Use an HTTP client instead:
+   `curl -s -I -L "$archived_url"`.
+4. **Archive match.** The snapshot must be a capture of `url`. Read the archive's own
+   `link: <...>; rel="original"` response header, which is the Wayback Machine stating
+   which URL it captured, and compare it canonically against `url`. That beats eyeballing
+   rendered content, and it is why step 3 wants headers. A `memento-datetime` header
+   confirms a real capture. Mismatch -> MISMATCHED-ARCHIVE.
+
+**Rate limiting reads as failure, and it is not.** archive.org throttles concurrency
+hard: a batch of parallel requests returns connection refusals and empty responses for
+snapshots that are perfectly healthy. Never record DEAD-ARCHIVE from a run that saw
+several failures at once - go serial, back off, and retry before believing any of them.
+Only a real status code or a real header mismatch is evidence.
 5. **User sources** (`source_type: user`): the path under `sources/` exists and the
    material covers what `why` claims. No network involved.
 

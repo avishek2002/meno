@@ -19,7 +19,7 @@ objectives:
   - id: M1-3
     text: Explain why training a model to predict the next token over vast text produces broad capability nobody explicitly programmed
     bloom: understand
-sources:                       # 4, each fetched this session; see sourcing.md
+sources:                       # 4, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
   - title: "Attention Is All You Need (Vaswani et al., 2017)"
     url: https://arxiv.org/abs/1706.03762
     archived_url: https://web.archive.org/web/20260804124739/https://arxiv.org/abs/1706.03762

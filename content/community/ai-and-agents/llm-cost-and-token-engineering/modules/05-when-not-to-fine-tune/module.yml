@@ -1,0 +1,53 @@
+schema_version: 1
+module: 05-when-not-to-fine-tune
+title: When not to fine-tune
+status: skeleton
+serves: [O5]
+prerequisites: [02-routing-by-task-shape, 03-context-discipline]
+est_hours: 4
+concepts:                      # siblings: what tuning buys, what it does not, the iteration-speed argument
+  - fine-tuning-economics
+  - knowledge-injection-tradeoff
+  - prompting-first-iteration
+objectives:
+  - id: M5-1
+    text: Explain what fine-tuning actually buys - consistent behavior on a narrow task, not new knowledge - and what a tuned model costs to build and keep current
+    bloom: understand
+  - id: M5-2
+    text: Analyze a knowledge-injection need and show why retrieval usually beats tuned-in facts on accuracy and freshness
+    bloom: analyze
+  - id: M5-3
+    text: Evaluate a fine-tuning proposal against a prompting-plus-retrieval baseline, routing the upgrade decision through evals rather than intuition
+    bloom: evaluate
+sources:                       # 3, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "Fine-Tuning or Retrieval? Comparing Knowledge Injection in LLMs (Ovadia, Brief, Mishaeli, and Elisha)"
+    url: https://arxiv.org/abs/2312.05934
+    archived_url: https://web.archive.org/web/20260805110254/https://arxiv.org/abs/2312.05934
+    accessed: 2026-08-05
+    source_type: web
+    why: the head-to-head result - retrieval-augmented generation consistently outperformed unsupervised fine-tuning for injecting both seen and novel factual knowledge - the module's central evidence
+  - title: "Optimizing LLM Accuracy (OpenAI docs)"
+    url: https://developers.openai.com/api/docs/guides/optimizing-llm-accuracy
+    archived_url: https://web.archive.org/web/20260805110533/https://developers.openai.com/api/docs/guides/optimizing-llm-accuracy
+    accessed: 2026-08-05
+    source_type: web
+    why: the provider's own ordering - prompt engineering first, retrieval for context gaps, fine-tuning only for behavior-consistency problems - including a case where adding retrieval to a tuned model reduced accuracy
+  - title: "Introducing Contextual Retrieval (Anthropic)"
+    url: https://www.anthropic.com/engineering/contextual-retrieval
+    archived_url: https://web.archive.org/web/20260805105542/https://www.anthropic.com/engineering/contextual-retrieval
+    accessed: 2026-08-05
+    source_type: web
+    why: shows the prompting-plus-retrieval baseline is cheap to stand up - small knowledge bases ride along in a cached prompt, larger ones get contextualized chunks at about a dollar per million document tokens
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-what-tuning-buys.md
+    title: What fine-tuning buys, and its carrying cost
+    concept: fine-tuning-economics
+    status: planned
+  - file: 02-knowledge-goes-in-context.md
+    title: Knowledge belongs in context, not in weights
+    concept: knowledge-injection-tradeoff
+    status: planned
+  - file: 03-the-iteration-speed-argument.md
+    title: The iteration-speed argument
+    concept: prompting-first-iteration
+    status: planned

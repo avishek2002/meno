@@ -1,0 +1,47 @@
+schema_version: 1
+module: 05-evals-in-the-loop
+title: Evals in the loop
+status: skeleton
+serves: [O5]
+prerequisites: [03-judge-biases, 04-baselines-and-gates]
+est_hours: 3
+concepts:                      # the iteration loop, the upgrade decision, the suite's own upkeep
+  - eval-driven-iteration
+  - model-upgrade-evals
+  - suite-maintenance
+objectives:
+  - id: M5-1
+    text: Apply the eval-first loop to prompt work - success criteria and empirical tests defined before touching the prompt, suite scores judging every revision
+    bloom: apply
+  - id: M5-2
+    text: Evaluate a model upgrade by rerunning the suite and reading capability and regression movement, instead of re-testing behavior by hand
+    bloom: evaluate
+  - id: M5-3
+    text: Evaluate the suite itself over time - saturation, stale examples, graders drifting from intent - and refresh it deliberately
+    bloom: evaluate
+sources:                       # fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "Prompt engineering overview (Anthropic documentation)"
+    url: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/overview
+    archived_url: https://web.archive.org/web/20260805093625/https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/overview
+    accessed: 2026-08-05
+    source_type: web
+    why: makes evals the stated prerequisite for prompt work - clear success criteria and a way to empirically test against them come before improving any prompt - and notes a failing eval is sometimes solved by a different model, not more prompting
+  - title: "Demystifying evals for AI agents (Anthropic engineering)"
+    url: https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents
+    archived_url: https://web.archive.org/web/20260728233804/https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents
+    accessed: 2026-08-05
+    source_type: web
+    why: grounds the loop lessons - eval-equipped teams assess a new model in days rather than weeks, monitor suites for saturation and refresh them, and read transcripts regularly to verify graders still measure what was intended
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-eval-driven-prompt-iteration.md
+    title: Prompt iteration against a suite
+    concept: eval-driven-iteration
+    status: planned
+  - file: 02-model-upgrades-with-evals.md
+    title: Model upgrades measured, not guessed
+    concept: model-upgrade-evals
+    status: planned
+  - file: 03-keeping-the-suite-honest.md
+    title: Keeping the suite honest
+    concept: suite-maintenance
+    status: planned

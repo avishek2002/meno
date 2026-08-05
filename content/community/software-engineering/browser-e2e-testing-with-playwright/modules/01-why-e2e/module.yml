@@ -1,0 +1,53 @@
+schema_version: 1
+module: 01-why-e2e
+title: Why end-to-end tests, and where they sit
+status: skeleton
+serves: [O1]
+prerequisites: []
+est_hours: 3
+concepts:                      # siblings: the strategy, the unique value, the running cost
+  - testing-pyramid
+  - browser-only-failures
+  - flakiness-economics
+objectives:
+  - id: M1-1
+    text: Explain the test pyramid's layers and why a healthy suite keeps many fast unit tests and only a few browser tests
+    bloom: understand
+  - id: M1-2
+    text: Explain which failures only a full-browser test can catch, and which belong further down the pyramid
+    bloom: understand
+  - id: M1-3
+    text: Explain how non-deterministic tests drain a suite's value, and why quarantine plus prompt fixes beat ignoring red runs
+    bloom: understand
+sources:                       # 3, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "The Practical Test Pyramid (Ham Vocke, martinfowler.com)"
+    url: https://martinfowler.com/articles/practical-test-pyramid.html
+    archived_url: https://web.archive.org/web/20260720180258/https://martinfowler.com/articles/practical-test-pyramid.html
+    accessed: 2026-08-05
+    source_type: web
+    why: the canonical layered-testing-strategy article; its cost, speed, and brittleness argument for keeping end-to-end tests few and high-value anchors the pyramid lesson
+  - title: "Eradicating Non-Determinism in Tests (Martin Fowler)"
+    url: https://martinfowler.com/articles/nonDeterminism.html
+    archived_url: https://web.archive.org/web/20260802234429/https://martinfowler.com/articles/nonDeterminism.html
+    accessed: 2026-08-05
+    source_type: web
+    why: names the infection dynamic - a few randomly failing tests teach a team to ignore the whole suite - and the quarantine remedy the flakiness lesson builds on
+  - title: "Playwright docs: Best Practices"
+    url: https://playwright.dev/docs/best-practices
+    archived_url: https://web.archive.org/web/20260721072917/https://playwright.dev/docs/best-practices
+    accessed: 2026-08-05
+    source_type: web
+    why: states the test-user-visible-behavior principle and the isolation and third-party-dependency rules that frame what a browser test should and should not cover
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-testing-pyramid.md
+    title: The test pyramid, and where browser tests fit
+    concept: testing-pyramid
+    status: planned
+  - file: 02-browser-only-failures.md
+    title: What only a real browser catches
+    concept: browser-only-failures
+    status: planned
+  - file: 03-flakiness-economics.md
+    title: Flakiness, the tax on trust
+    concept: flakiness-economics
+    status: planned

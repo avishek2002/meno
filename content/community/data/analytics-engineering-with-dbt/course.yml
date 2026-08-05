@@ -1,0 +1,58 @@
+schema_version: 1
+slug: analytics-engineering-with-dbt
+title: Analytics engineering with dbt
+created: 2026-08-05
+status: draft                  # topic pack: pre-contract, not yet adopted by a tenant
+hub: ./analytics-engineering-with-dbt-hub.md
+objectives:
+  - id: O1
+    text: Explain how dbt turns SELECT-statement model files, ref() calls, and declared sources into a dependency graph that builds warehouse objects in order
+    bloom: understand
+    assessed_by: a written walkthrough of a small dbt project tracing one dbt run from source declarations through ref() edges to the final models
+  - id: O2
+    text: Apply generic and singular data tests plus schema.yml descriptions to a dbt project and generate its documentation site
+    bloom: apply
+    assessed_by: a schema.yml adding the four built-in generic tests and column descriptions to an untested model, one singular test for a bespoke rule, and the generated docs site inspected for lineage
+  - id: O3
+    text: Evaluate which materialization - view, table, incremental, or ephemeral - each model in a dbt project warrants, trading build time against query speed and freshness
+    bloom: evaluate
+    assessed_by: a materialization plan assigning every model in a given project a materialization with a one-line justification, including one incremental candidate with its is_incremental() filter sketched
+  - id: O4
+    text: Analyze raw warehouse tables into fact and dimension tables, declaring each fact table's grain and defending the star schema against a normalized alternative for analytics
+    bloom: analyze
+    assessed_by: a dimensional design for a provided operational schema - facts and dimensions identified via the four-step process, a declared grain per fact table, and a short defense of the star shape for analytical queries
+  - id: O5
+    text: Apply dbt snapshots to preserve dimension history as type 2 rows and query the resulting validity ranges as of any date
+    bloom: apply
+    assessed_by: a snapshot configuration (strategy, unique_key) for a mutable dimension plus an as-of query joining facts to the historical dimension rows that were current at event time
+modules:                       # ordered; every field here mirrors module.yml at regen time
+  - n: 1
+    slug: 01-models-and-the-dag
+    title: Models, ref(), and the DAG
+    status: skeleton
+    est_hours: 3
+    serves: [O1]
+  - n: 2
+    slug: 02-testing-and-documentation
+    title: Testing and documenting models
+    status: skeleton
+    est_hours: 3
+    serves: [O2]
+  - n: 3
+    slug: 03-materializations
+    title: Materializations - how models persist
+    status: skeleton
+    est_hours: 3
+    serves: [O3]
+  - n: 4
+    slug: 04-dimensional-modeling
+    title: Dimensional modeling - facts, dimensions, grain
+    status: skeleton
+    est_hours: 4
+    serves: [O4]
+  - n: 5
+    slug: 05-slowly-changing-dimensions
+    title: Slowly changing dimensions and snapshots
+    status: skeleton
+    est_hours: 3
+    serves: [O5]

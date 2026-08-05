@@ -1,0 +1,58 @@
+schema_version: 1
+slug: evidence-based-bug-reporting
+title: Evidence-based bug reporting
+created: 2026-08-05
+status: draft                  # topic pack: pre-contract, not yet adopted by a tenant
+hub: ./evidence-based-bug-reporting-hub.md
+objectives:
+  - id: O1
+    text: Apply the anatomy of a reproducible defect report - minimal reproduction steps, current versus expected behavior, and an environment record - to write a report a stranger can reproduce unaided
+    bloom: apply
+    assessed_by: a defect report written for a provided failure, checked against the anatomy for whether someone with no prior context could reproduce it
+  - id: O2
+    text: Analyze the claims in a defect report to separate verified observation from hypothesis, labeling each claim's confidence and attaching evidence that carries its provenance
+    bloom: analyze
+    assessed_by: an annotated rewrite of a flawed report marking every claim as observation or hypothesis, with confidence labels and the origin of each screenshot or log stated
+  - id: O3
+    text: Evaluate a defect's severity and its priority as separate axes - user impact versus scheduling urgency - and justify cases where the two diverge
+    bloom: evaluate
+    assessed_by: severity and priority judgments for a set of defect scenarios, each with a written justification naming the constraint that drove the call
+  - id: O4
+    text: Analyze a surface symptom down toward the failing layer before filing, choosing localization techniques and recognizing the point where further digging belongs to the fixer
+    bloom: analyze
+    assessed_by: a written trace of one failure from symptom toward its failing layer, naming the evidence gathered at each step and where and why the trace stopped
+  - id: O5
+    text: Apply the report lifecycle after filing - retesting fixes before closing, publishing a correction when a retest refutes the original claim, and closing the loop with the fixer
+    bloom: apply
+    assessed_by: a walkthrough of one report from filed to closed, including a retest record and a written correction for a claim the retest refuted
+modules:                       # ordered; every field here mirrors module.yml at regen time
+  - n: 1
+    slug: 01-report-anatomy
+    title: Anatomy of a reproducible report
+    status: skeleton
+    est_hours: 3
+    serves: [O1]
+  - n: 2
+    slug: 02-evidence-discipline
+    title: Evidence discipline - observation, hypothesis, confidence
+    status: skeleton
+    est_hours: 3
+    serves: [O2]
+  - n: 3
+    slug: 03-severity-vs-priority
+    title: Severity versus priority
+    status: skeleton
+    est_hours: 3
+    serves: [O3]
+  - n: 4
+    slug: 04-root-cause-tracing
+    title: Root-cause tracing - from symptom to failing layer
+    status: skeleton
+    est_hours: 3
+    serves: [O4]
+  - n: 5
+    slug: 05-report-lifecycle
+    title: The report's lifecycle - retests, corrections, closure
+    status: skeleton
+    est_hours: 3
+    serves: [O5]

@@ -1,0 +1,53 @@
+schema_version: 1
+module: 03-judge-biases
+title: Judge biases and how to contain them
+status: skeleton
+serves: [O3]
+prerequisites: [02-scorer-taxonomy]
+est_hours: 3
+concepts:                      # the two headline bias families, then the containment discipline
+  - position-bias
+  - verbosity-and-self-preference
+  - judge-pinning
+objectives:
+  - id: M3-1
+    text: Explain the judge biases documented in the MT-Bench study - position, verbosity, self-enhancement - and the limited-reasoning caveat on judging math and logic
+    bloom: understand
+  - id: M3-2
+    text: Analyze a model-judged comparison for bias by swapping answer order and varying answer length, reading verdict flips as evidence
+    bloom: analyze
+  - id: M3-3
+    text: Apply the standard containments - a fixed written rubric, position swapping, and a pinned judge model separate from the model being graded
+    bloom: apply
+sources:                       # fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena (Zheng et al., arXiv 2306.05685)"
+    url: https://arxiv.org/abs/2306.05685
+    archived_url: https://web.archive.org/web/20260802072036/https://arxiv.org/abs/2306.05685
+    accessed: 2026-08-05
+    source_type: web
+    why: the study the module is built on - names position, verbosity, and self-enhancement biases plus limited reasoning ability, and reports strong judges reaching over 80 percent agreement with human preferences, the same level as human-human agreement
+  - title: "Large Language Models are not Fair Evaluators (Wang et al., arXiv 2305.17926)"
+    url: https://arxiv.org/abs/2305.17926
+    archived_url: https://web.archive.org/web/20260803170718/https://arxiv.org/abs/2305.17926
+    accessed: 2026-08-05
+    source_type: web
+    why: demonstrates position bias is exploitable - candidate rankings hacked purely by reordering, a 13-billion-parameter model beating a stronger one on 66 of 80 queries - and proposes the calibration mitigations the containment lesson teaches
+  - title: "Define success criteria and build evaluations (Anthropic documentation)"
+    url: https://platform.claude.com/docs/en/test-and-evaluate/develop-tests
+    archived_url: https://web.archive.org/web/20260805034126/https://platform.claude.com/docs/en/test-and-evaluate/develop-tests
+    accessed: 2026-08-05
+    source_type: web
+    why: states the vendor best practice the pinning lesson extends - use a different model to grade than the one that generated the output being graded
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-position-bias.md
+    title: Position bias - order changes the verdict
+    concept: position-bias
+    status: planned
+  - file: 02-verbosity-and-self-preference.md
+    title: Verbosity and self-enhancement biases
+    concept: verbosity-and-self-preference
+    status: planned
+  - file: 03-fixed-rubrics-and-pinned-judges.md
+    title: Fixed rubrics and pinned judges
+    concept: judge-pinning
+    status: planned

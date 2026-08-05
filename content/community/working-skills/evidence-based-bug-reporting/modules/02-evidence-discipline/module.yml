@@ -1,0 +1,53 @@
+schema_version: 1
+module: 02-evidence-discipline
+title: Evidence discipline - observation, hypothesis, confidence
+status: skeleton
+serves: [O2]
+prerequisites: [01-report-anatomy]
+est_hours: 3
+concepts:                      # siblings: what a claim is, how sure you are, where evidence came from
+  - observation-vs-hypothesis
+  - confidence-labeling
+  - evidence-provenance
+objectives:
+  - id: M2-1
+    text: Classify every claim in a report as verified observation or hypothesis, and keep the two visibly separate on the page
+    bloom: analyze
+  - id: M2-2
+    text: Label each claim's confidence honestly - how often the failure reproduced, out of how many tries, under what variation
+    bloom: apply
+  - id: M2-3
+    text: Attach screenshots and logs as claims with provenance - stating which build, environment, and steps produced each artifact
+    bloom: apply
+sources:                       # 3, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "How to Report Bugs Effectively (Simon Tatham)"
+    url: https://www.chiark.greenend.org.uk/~sgtatham/bugs.html
+    archived_url: https://web.archive.org/web/20260803213444/https://www.chiark.greenend.org.uk/~sgtatham/bugs.html
+    accessed: 2026-08-05
+    source_type: web
+    why: the observation-versus-hypothesis rule in its original form - make very clear what are actual facts and what are speculations, report exact symptoms rather than your diagnosis, and share intermittency patterns because even probabilistic information helps reproduction
+  - title: "Bug writing guidelines (Mozilla, Bugzilla page)"
+    url: https://bugzilla.mozilla.org/page.cgi?id=bug-writing.html
+    archived_url: https://web.archive.org/web/20260712083111/https://bugzilla.mozilla.org/page.cgi?id=bug-writing.html
+    accessed: 2026-08-05
+    source_type: web
+    why: instructs reporters to separate facts from speculations in expected-versus-actual results, and its build-identifier and per-issue attachment requirements (stack traces, performance profiles) anchor the provenance lesson - evidence arrives tied to the build and steps that produced it
+  - title: "Flaky Tests at Google and How We Mitigate Them (Google Testing Blog)"
+    url: https://testing.googleblog.com/2016/05/flaky-tests-at-google-and-how-we.html
+    archived_url: https://web.archive.org/web/20260802232124/https://testing.googleblog.com/2016/05/flaky-tests-at-google-and-how-we.html
+    accessed: 2026-08-05
+    source_type: web
+    why: documents nondeterministic failures at industrial scale - the same code can pass and fail without changes, and reruns are used to tell environmental noise from genuine defects - grounding the confidence-labeling lesson's claim that a single observation is weak evidence
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-observation-vs-hypothesis.md
+    title: Observation versus hypothesis
+    concept: observation-vs-hypothesis
+    status: planned
+  - file: 02-confidence-labeling.md
+    title: Labeling confidence honestly
+    concept: confidence-labeling
+    status: planned
+  - file: 03-evidence-provenance.md
+    title: Evidence that carries its provenance
+    concept: evidence-provenance
+    status: planned

@@ -19,7 +19,7 @@ objectives:
   - id: M4-3
     text: Complete the pull-request template's community-tier attestations honestly for the drafted pack, flagging anything a human reviewer must judge
     bloom: apply
-sources:                       # 4, each fetched this session; see sourcing.md
+sources:                       # 4, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
   - title: "content/community/README.md (the bar for landing a pack)"
     url: https://github.com/avishek2002/meno/blob/main/content/community/README.md
     archived_url: https://web.archive.org/web/20260805102347/https://github.com/avishek2002/meno/blob/main/content/community/README.md

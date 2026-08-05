@@ -1,0 +1,53 @@
+schema_version: 1
+module: 02-metrics-and-promql
+title: Metrics and query languages
+status: skeleton
+serves: [O2]
+prerequisites: [01-three-signals]
+est_hours: 4
+concepts:                      # siblings: the type system, the selector grammar, the latency workhorse
+  - metric-types
+  - promql-selectors
+  - histogram-queries
+objectives:
+  - id: M2-1
+    text: Apply the Prometheus metric types - counter, gauge, histogram, summary - by picking the right type for a given measurement and justifying it from the type definitions
+    bloom: apply
+  - id: M2-2
+    text: Apply PromQL (Prometheus Query Language) instant and range vector selectors with label matchers to select exactly the series a question needs
+    bloom: apply
+  - id: M2-3
+    text: Apply the series a histogram exposes - bucket counters, sum, and count - to answer request-duration questions a single gauge cannot
+    bloom: apply
+sources:                       # fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "Metric types (Prometheus documentation)"
+    url: https://prometheus.io/docs/concepts/metric_types/
+    archived_url: https://web.archive.org/web/20260804032600/https://prometheus.io/docs/concepts/metric_types/
+    accessed: 2026-08-05
+    source_type: web
+    why: the counter, gauge, histogram, and summary definitions the type-choice lesson classifies against, including the rule that a counter must never expose a value that can decrease
+  - title: "Querying basics - PromQL (Prometheus documentation)"
+    url: https://prometheus.io/docs/prometheus/latest/querying/basics/
+    archived_url: https://web.archive.org/web/20260804032549/https://prometheus.io/docs/prometheus/latest/querying/basics/
+    accessed: 2026-08-05
+    source_type: web
+    why: defines PromQL and its expression types - instant vectors, range vectors, scalars - and the label matcher grammar the selector lesson practices
+  - title: "Data model (Prometheus documentation)"
+    url: https://prometheus.io/docs/concepts/data_model/
+    archived_url: https://web.archive.org/web/20260704050216/https://prometheus.io/docs/concepts/data_model/
+    accessed: 2026-08-05
+    source_type: web
+    why: the time-series-plus-labels data model PromQL selects over, including the series notation with metric name and label set that selectors mirror
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-metric-types.md
+    title: Counters, gauges, histograms, summaries
+    concept: metric-types
+    status: planned
+  - file: 02-promql-selectors.md
+    title: PromQL selectors and label matchers
+    concept: promql-selectors
+    status: planned
+  - file: 03-histograms-and-latency.md
+    title: Latency questions and histogram series
+    concept: histogram-queries
+    status: planned

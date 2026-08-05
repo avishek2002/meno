@@ -1,0 +1,53 @@
+schema_version: 1
+module: 04-governing-metric-definitions
+title: Governing metric definitions
+status: skeleton
+serves: [O4]
+prerequisites: [02-inside-a-semantic-layer]
+est_hours: 4
+concepts:                      # siblings: who answers for a metric, how changes land safely, how sameness is proven
+  - metric-ownership
+  - change-review-and-versioning
+  - metric-parity-testing
+objectives:
+  - id: M4-1
+    text: Explain why a metric definition needs a named owner and a single authoritative home, and what the owner is accountable for when the definition changes
+    bloom: understand
+  - id: M4-2
+    text: Evaluate a change-review workflow for metric definitions - version control, code review, versioned data with automatic backfills - against silent-edit and breaking-change failure modes
+    bloom: evaluate
+  - id: M4-3
+    text: Apply parity checks when a definition changes or migrates - semantic validation of the definition graph plus side-by-side comparison of the numbers old and new definitions produce
+    bloom: apply
+sources:                       # fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "How Airbnb Standardized Metric Computation at Scale (Amit Pahwa et al., The Airbnb Tech Blog)"
+    url: https://medium.com/airbnb-engineering/airbnb-metric-computation-with-minerva-part-2-9afe6695b486
+    archived_url: https://web.archive.org/web/20250911225300/https://medium.com/airbnb-engineering/airbnb-metric-computation-with-minerva-part-2-9afe6695b486
+    accessed: 2026-08-05
+    source_type: web
+    why: documents definitions treated as version-controlled code with rigorous review, automatic data-version bumps and backfills when a definition changes, and a staging environment that absorbs changes before consumers see them - the governance workflow the review lesson evaluates
+  - title: "Validations (dbt Developer Hub)"
+    url: https://docs.getdbt.com/docs/build/validation
+    archived_url: https://web.archive.org/web/20260612053905/https://docs.getdbt.com/docs/build/validation
+    accessed: 2026-08-05
+    source_type: web
+    why: specifies the three built-in validations - parsing, semantic, and data platform - and their use in continuous integration so model changes cannot silently break metric definitions; anchors the parity-testing lesson's automated half
+  - title: "dbt Semantic Layer (dbt Developer Hub)"
+    url: https://docs.getdbt.com/docs/use-dbt-semantic-layer/dbt-sl
+    archived_url: https://web.archive.org/web/20260709022406/https://docs.getdbt.com/docs/use-dbt-semantic-layer/dbt-sl
+    accessed: 2026-08-05
+    source_type: web
+    why: grounds the ownership lesson's premise that the definition's single authoritative home is the modeling layer, so a change made there is refreshed everywhere it is invoked
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-who-owns-a-metric.md
+    title: Who owns a metric
+    concept: metric-ownership
+    status: planned
+  - file: 02-change-review-and-versioning.md
+    title: Change review and versioned definitions
+    concept: change-review-and-versioning
+    status: planned
+  - file: 03-testing-metric-parity.md
+    title: Testing metric parity
+    concept: metric-parity-testing
+    status: planned

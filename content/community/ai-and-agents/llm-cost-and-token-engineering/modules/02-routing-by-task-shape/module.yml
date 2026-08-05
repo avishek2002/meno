@@ -1,0 +1,53 @@
+schema_version: 1
+module: 02-routing-by-task-shape
+title: Routing by task shape
+status: skeleton
+serves: [O2]
+prerequisites: [01-where-the-money-goes]
+est_hours: 3
+concepts:                      # siblings: the tier ladder, cascading up it, catching the falls
+  - capability-tiers
+  - cascade-routing
+  - fallback-design
+objectives:
+  - id: M2-1
+    text: Explain why providers ship model families in capability tiers whose prices differ by an order of magnitude, and what each tier is priced to be good at
+    bloom: understand
+  - id: M2-2
+    text: Analyze a task's difficulty signals to decide the tier it actually needs, resisting the default of sending everything to the flagship
+    bloom: analyze
+  - id: M2-3
+    text: Analyze a cascade design - inexpensive model first, escalate on weak answers - and place the fallback to a stronger model where escalation runs out
+    bloom: analyze
+sources:                       # 3, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "Choosing the right model (Claude API docs)"
+    url: https://platform.claude.com/docs/en/about-claude/models/choosing-a-model
+    archived_url: https://web.archive.org/web/20260805093823/https://platform.claude.com/docs/en/about-claude/models/choosing-a-model
+    accessed: 2026-08-05
+    source_type: web
+    why: the capability-speed-cost framing, the efficiency-first and capability-first starting strategies, and benchmark-your-own-use-case guidance the tier lessons follow
+  - title: "FrugalGPT: How to Use Large Language Models While Reducing Cost and Improving Performance (Chen, Zaharia, and Zou)"
+    url: https://arxiv.org/abs/2305.05176
+    archived_url: https://web.archive.org/web/20260805105151/https://arxiv.org/abs/2305.05176
+    accessed: 2026-08-05
+    source_type: web
+    why: the cascade result - routing queries through cheaper models first matched the best single model with up to 98 percent cost reduction - anchoring the cascade lesson
+  - title: "Pricing (Claude API docs)"
+    url: https://platform.claude.com/docs/en/about-claude/pricing
+    archived_url: https://web.archive.org/web/20260805104506/https://platform.claude.com/docs/en/about-claude/pricing
+    accessed: 2026-08-05
+    source_type: web
+    why: the concrete tier price ladder (Haiku at $1/$5 per million tokens to the flagship at $10/$50) that makes the order-of-magnitude claim checkable
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-the-tier-ladder.md
+    title: The tier ladder and what each rung buys
+    concept: capability-tiers
+    status: planned
+  - file: 02-cascades.md
+    title: Cascades - cheap first, escalate on doubt
+    concept: cascade-routing
+    status: planned
+  - file: 03-fallbacks.md
+    title: Fallbacks - designing for the misses
+    concept: fallback-design
+    status: planned

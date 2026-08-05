@@ -1,0 +1,47 @@
+schema_version: 1
+module: 03-grounded-generation
+title: The generation side - grounding, citations, abstention
+status: skeleton
+serves: [O3]
+prerequisites: [02-the-retrieval-side]
+est_hours: 3
+concepts:                      # constrain the generator: answer from passages, show which, or decline
+  - grounding-instructions
+  - citation-formats
+  - forced-abstention
+objectives:
+  - id: M3-1
+    text: Apply grounding instructions that constrain answers to the retrieved passages, and test that the constraint holds
+    bloom: apply
+  - id: M3-2
+    text: Apply a citation format that ties each claim to a specific retrieved passage, at a granularity a reader can verify
+    bloom: apply
+  - id: M3-3
+    text: Apply forced abstention - when retrieval returns nothing relevant, the system declines instead of answering from weights
+    bloom: apply
+sources:                       # 2, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "Citations (Claude API documentation)"
+    url: https://platform.claude.com/docs/en/build-with-claude/citations
+    archived_url: https://web.archive.org/web/20260428061146/https://platform.claude.com/docs/en/build-with-claude/citations
+    accessed: 2026-08-05
+    source_type: web
+    why: vendor documentation of passage-level citation output - documents chunked to sentence granularity, cited text returned with document indices, guaranteed to point at the provided sources
+  - title: "Know Your Limits: A Survey of Abstention in Large Language Models (Wen et al., TACL 2024)"
+    url: https://arxiv.org/abs/2407.18418
+    archived_url: https://web.archive.org/web/20260719194027/https://arxiv.org/abs/2407.18418
+    accessed: 2026-08-05
+    source_type: web
+    why: the survey of when and how models should decline to answer, framing abstention from the query, model, and human-values perspectives - the evidence base for the abstention lesson
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-grounding-instructions.md
+    title: Instructing the generator to stay inside its passages
+    concept: grounding-instructions
+    status: planned
+  - file: 02-citation-formats.md
+    title: Citation formats a reader can verify
+    concept: citation-formats
+    status: planned
+  - file: 03-forced-abstention.md
+    title: Abstaining when retrieval comes back empty
+    concept: forced-abstention
+    status: planned

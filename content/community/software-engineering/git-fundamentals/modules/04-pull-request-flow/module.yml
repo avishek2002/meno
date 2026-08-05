@@ -19,7 +19,7 @@ objectives:
   - id: M4-3
     text: Compare merge commit, squash and merge, and rebase and merge, and pick the method that fits a repository's history goals
     bloom: analyze
-sources:                       # 4, each fetched this session; see sourcing.md
+sources:                       # 4, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
   - title: "GitHub Docs: GitHub flow"
     url: https://docs.github.com/en/get-started/using-github/github-flow
     archived_url: https://web.archive.org/web/20260805093029/https://docs.github.com/en/get-started/using-github/github-flow

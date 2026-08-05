@@ -1,0 +1,59 @@
+schema_version: 1
+module: 05-report-lifecycle
+title: The report's lifecycle - retests, corrections, closure
+status: skeleton
+serves: [O5]
+prerequisites: [01-report-anatomy, 02-evidence-discipline]
+est_hours: 3
+concepts:                      # siblings: the state machine, the retest, and the correction
+  - lifecycle-states
+  - retest-verification
+  - publishing-corrections
+objectives:
+  - id: M5-1
+    text: Explain the report workflow from unconfirmed through resolved and verified, including reopening and the resolutions that end a report without a fix
+    bloom: understand
+  - id: M5-2
+    text: Retest a fix before verifying it, treating a single pass or failure as weak evidence when the failure is intermittent
+    bloom: apply
+  - id: M5-3
+    text: Publish a correction when a retest refutes the original claim - reclassify, state what changed, and close the loop with whoever acted on the report
+    bloom: apply
+sources:                       # 4, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "Bug statuses and resolutions (Mozilla wiki, BMO user guide)"
+    url: https://wiki.mozilla.org/BMO/UserGuide/BugStatuses
+    archived_url: https://web.archive.org/web/20260802181914/https://wiki.mozilla.org/BMO/UserGuide/BugStatuses
+    accessed: 2026-08-05
+    source_type: web
+    why: the lifecycle state machine with definitions - UNCONFIRMED through RESOLVED awaiting verification and VERIFIED, REOPENED when a resolution was deemed incorrect, and the no-fix resolutions INVALID, WONTFIX, DUPLICATE, WORKSFORME, and INCOMPLETE the corrections lesson builds on
+  - title: "Defect Management - Foundation Level syllabus section 5.5 (ASTQB)"
+    url: https://astqb.org/5-5-defect-management/
+    archived_url: https://web.archive.org/web/20260805111455/https://astqb.org/5-5-defect-management/
+    accessed: 2026-08-05
+    source_type: web
+    why: frames the whole module - a workflow for handling individual defects from their discovery to their closure, in which reported anomalies may turn out to be real defects or something else, such as a false-positive result, resolved during the process
+  - title: "Flaky Tests at Google and How We Mitigate Them (Google Testing Blog)"
+    url: https://testing.googleblog.com/2016/05/flaky-tests-at-google-and-how-we.html
+    archived_url: https://web.archive.org/web/20260802232124/https://testing.googleblog.com/2016/05/flaky-tests-at-google-and-how-we.html
+    accessed: 2026-08-05
+    source_type: web
+    why: the retest lesson's evidence that pass and fail are nondeterministic for some failures on identical code, and that deliberate reruns are how an industrial system separates environmental noise from a genuine defect before acting
+  - title: "Postmortem Culture: Learning from Failure (Google Site Reliability Engineering book)"
+    url: https://sre.google/sre-book/postmortem-culture/
+    archived_url: https://web.archive.org/web/20260803100934/https://sre.google/sre-book/postmortem-culture/
+    accessed: 2026-08-05
+    source_type: web
+    why: the corrections lesson's model for closing the loop blamelessly - a written record of what happened, its impact, and root causes, reviewed and shared so others learn from it, on the premise that systems and processes get fixed rather than people blamed
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-lifecycle-states.md
+    title: The lifecycle states
+    concept: lifecycle-states
+    status: planned
+  - file: 02-retest-discipline.md
+    title: Retest before you verify
+    concept: retest-verification
+    status: planned
+  - file: 03-publishing-corrections.md
+    title: Publishing corrections
+    concept: publishing-corrections
+    status: planned

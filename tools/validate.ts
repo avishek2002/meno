@@ -206,6 +206,11 @@ interface SourceRecord {
   why?: string;
 }
 
+/** Compare two URLs ignoring differences that never change which page is meant. */
+function canonicalUrl(u: string): string {
+  return u.trim().replace(/^https?:\/\//, '').replace(/\/+$/, '').toLowerCase();
+}
+
 function checkSourceRecords(sources: SourceRecord[], rel: string, findings: Finding[]): void {
   const today = new Date().toISOString().slice(0, 10);
   for (const [i, s] of sources.entries()) {
@@ -225,6 +230,27 @@ function checkSourceRecords(sources: SourceRecord[], rel: string, findings: Find
           path: rel,
           message: `${at}: archived_url must be a web.archive.org/web/ snapshot, got "${s.archived_url}"`,
         });
+      } else if (s.url) {
+        // The snapshot must be OF the cited url. Archiving follows redirects and records
+        // where it landed, while url keeps what was typed, so any source that moved
+        // silently produces a pair pointing at two different pages. Offline and exact:
+        // compare the original URL embedded after the wayback timestamp.
+        const captured = s.archived_url.match(/^https:\/\/web\.archive\.org\/web\/\d+(?:[a-z_]+)?\/(.+)$/);
+        if (!captured) {
+          findings.push({
+            level: 'error',
+            check: 'citations',
+            path: rel,
+            message: `${at}: archived_url has no original URL after the snapshot timestamp: "${s.archived_url}"`,
+          });
+        } else if (canonicalUrl(captured[1]) !== canonicalUrl(s.url)) {
+          findings.push({
+            level: 'error',
+            check: 'citations',
+            path: rel,
+            message: `${at}: archived_url is a snapshot of "${captured[1]}" but url is "${s.url}" - the snapshot must capture the cited page (a redirect usually means url needs updating to where it now resolves)`,
+          });
+        }
       }
       if (s.url && !/^https?:\/\//.test(s.url)) {
         findings.push({ level: 'error', check: 'citations', path: rel, message: `${at}: web source url must be http(s)` });

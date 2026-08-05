@@ -1,0 +1,53 @@
+schema_version: 1
+module: 04-provider-cost-mechanisms
+title: Provider cost mechanisms
+status: skeleton
+serves: [O4]
+prerequisites: [01-where-the-money-goes]
+est_hours: 3
+concepts:                      # siblings: pay once for the prefix, defer for the discount, stop paying for retries
+  - prompt-caching-economics
+  - batch-economics
+  - structured-output-retries
+objectives:
+  - id: M4-1
+    text: Place cache breakpoints so stable prompt prefixes are written once and read back at a tenth of the input rate
+    bloom: apply
+  - id: M4-2
+    text: Move deferrable work to a batch endpoint for the flat discount, identifying which jobs tolerate the asynchronous completion window
+    bloom: apply
+  - id: M4-3
+    text: Explain how schema-guaranteed structured output removes the parse-and-retry loop and the tokens each retry burns
+    bloom: understand
+sources:                       # 3, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "Prompt caching (Claude API docs)"
+    url: https://platform.claude.com/docs/en/build-with-claude/prompt-caching
+    archived_url: https://web.archive.org/web/20260805105758/https://platform.claude.com/docs/en/build-with-claude/prompt-caching
+    accessed: 2026-08-05
+    source_type: web
+    why: the cache mechanics the caching lesson teaches - writes at 1.25x or 2x input price, reads at 0.1x, exact-prefix matching, and breakpoint placement
+  - title: "Batch processing (Claude API docs)"
+    url: https://platform.claude.com/docs/en/build-with-claude/batch-processing
+    archived_url: https://web.archive.org/web/20260805105920/https://platform.claude.com/docs/en/build-with-claude/batch-processing
+    accessed: 2026-08-05
+    source_type: web
+    why: the 50 percent batch discount, the asynchronous processing model with most batches finishing under an hour, and the workload shapes it suits
+  - title: "Structured outputs (Claude API docs)"
+    url: https://platform.claude.com/docs/en/build-with-claude/structured-outputs
+    archived_url: https://web.archive.org/web/20260805093928/https://platform.claude.com/docs/en/build-with-claude/structured-outputs
+    accessed: 2026-08-05
+    source_type: web
+    why: constrained decoding guarantees schema-conforming output on the first attempt, the mechanism behind the no-retries claim in the structured-output lesson
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-prompt-caching.md
+    title: Prompt caching - pay for the prefix once
+    concept: prompt-caching-economics
+    status: planned
+  - file: 02-batch-apis.md
+    title: Batch endpoints - the patience discount
+    concept: batch-economics
+    status: planned
+  - file: 03-structured-output.md
+    title: Structured output - stop paying for retries
+    concept: structured-output-retries
+    status: planned

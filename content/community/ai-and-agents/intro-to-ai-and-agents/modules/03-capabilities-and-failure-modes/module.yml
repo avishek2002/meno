@@ -19,7 +19,7 @@ objectives:
   - id: M3-3
     text: Analyze a task for jagged-capability risk, predicting where the model is likely strong or weak and checking the prediction against reality
     bloom: analyze
-sources:                       # 4, each fetched this session; see sourcing.md
+sources:                       # 4, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
   - title: "A Survey on Hallucination in Large Language Models (Huang et al.)"
     url: https://arxiv.org/abs/2311.05232
     archived_url: https://web.archive.org/web/20260805093131/https://arxiv.org/abs/2311.05232

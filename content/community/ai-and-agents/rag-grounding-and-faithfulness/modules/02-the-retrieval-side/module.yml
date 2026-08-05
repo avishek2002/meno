@@ -1,0 +1,53 @@
+schema_version: 1
+module: 02-the-retrieval-side
+title: The retrieval side - chunking, embeddings, hybrid search, reranking
+status: skeleton
+serves: [O2]
+prerequisites: [01-why-retrieval]
+est_hours: 4
+concepts:                      # the pipeline in document order: split, index, search, reorder
+  - chunking-and-indexing
+  - hybrid-lexical-semantic-search
+  - reranking
+objectives:
+  - id: M2-1
+    text: Apply a chunking strategy that keeps retrievable units coherent, and justify chunk size and overlap for a given corpus
+    bloom: apply
+  - id: M2-2
+    text: Apply embedding-based semantic search combined with lexical search, and explain what each side catches that the other misses
+    bloom: apply
+  - id: M2-3
+    text: Apply a reranking stage over merged candidates and measure whether it lifts the passages the question needs into the context
+    bloom: apply
+sources:                       # 3, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "Retrieval-Augmented Generation for Large Language Models: A Survey (Gao et al.)"
+    url: https://arxiv.org/abs/2312.10997
+    archived_url: https://web.archive.org/web/20260802002734/https://arxiv.org/abs/2312.10997
+    accessed: 2026-08-05
+    source_type: web
+    why: the survey organizing RAG into naive, advanced, and modular paradigms across retrieval, generation, and augmentation - the module's map of the design space
+  - title: "Dense Passage Retrieval for Open-Domain Question Answering (Karpukhin et al.)"
+    url: https://arxiv.org/abs/2004.04906
+    archived_url: https://web.archive.org/web/20260729153150/https://arxiv.org/abs/2004.04906
+    accessed: 2026-08-05
+    source_type: web
+    why: the dual-encoder embedding retriever that beat BM25 (a term-frequency ranking function) by 9 to 19 points absolute on top-20 accuracy - the case for dense retrieval, and its limits motivate hybrids
+  - title: "Hybrid search overview (Azure AI Search documentation, Microsoft Learn)"
+    url: https://learn.microsoft.com/en-us/azure/search/hybrid-search-overview
+    archived_url: https://web.archive.org/web/20260724050501/https://learn.microsoft.com/en-us/azure/search/hybrid-search-overview
+    accessed: 2026-08-05
+    source_type: web
+    why: vendor documentation of production hybrid search - full-text and vector queries run in parallel, merged with reciprocal rank fusion, with optional semantic reranking on top
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-chunking-and-indexing.md
+    title: Chunking and indexing the corpus
+    concept: chunking-and-indexing
+    status: planned
+  - file: 02-hybrid-lexical-semantic-search.md
+    title: Hybrid search - lexical plus semantic
+    concept: hybrid-lexical-semantic-search
+    status: planned
+  - file: 03-reranking.md
+    title: Reranking the candidates
+    concept: reranking
+    status: planned

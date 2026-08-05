@@ -1,0 +1,47 @@
+schema_version: 1
+module: 01-the-metric-drift-problem
+title: The metric-drift problem - one label, three numbers
+status: skeleton
+serves: [O1]
+prerequisites: []
+est_hours: 3
+concepts:                      # siblings: the symptom, the mechanism, the cure's principle
+  - metric-drift
+  - tool-local-formulas
+  - define-once-serve-everywhere
+objectives:
+  - id: M1-1
+    text: Analyze a metric-drift incident, tracing each divergent number for the same label back to the different formula each tool embeds
+    bloom: analyze
+  - id: M1-2
+    text: Explain why formulas locked inside individual reporting tools rot - duplicated logic, silent edits, and no shared review path
+    bloom: understand
+  - id: M1-3
+    text: Explain the define-once-serve-everywhere principle and what moving definitions out of the reporting layer changes for every consumer
+    bloom: understand
+sources:                       # fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "How Airbnb Achieved Metric Consistency at Scale (Robert Chang et al., The Airbnb Tech Blog)"
+    url: https://medium.com/airbnb-engineering/how-airbnb-achieved-metric-consistency-at-scale-f23cc53dea70
+    archived_url: https://web.archive.org/web/20250918071400/https://medium.com/airbnb-engineering/how-airbnb-achieved-metric-consistency-at-scale-f23cc53dea70
+    accessed: 2026-08-05
+    source_type: web
+    why: the canonical drift story - teams answering the same executive question with diverging numbers from slightly different tables and metric definitions, and the trust erosion that followed; anchors the incident-analysis lesson
+  - title: "dbt Semantic Layer (dbt Developer Hub)"
+    url: https://docs.getdbt.com/docs/use-dbt-semantic-layer/dbt-sl
+    archived_url: https://web.archive.org/web/20260709022406/https://docs.getdbt.com/docs/use-dbt-semantic-layer/dbt-sl
+    accessed: 2026-08-05
+    source_type: web
+    why: states the cure's principle - centralizing metric definitions in the modeling layer so a change refreshes everywhere it is invoked and every business unit works from the same definition regardless of tool
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-one-label-three-numbers.md
+    title: "One label, three numbers: anatomy of a drift incident"
+    concept: metric-drift
+    status: planned
+  - file: 02-why-tool-local-formulas-rot.md
+    title: Why tool-local formulas rot
+    concept: tool-local-formulas
+    status: planned
+  - file: 03-define-once-serve-everywhere.md
+    title: Define once, serve everywhere
+    concept: define-once-serve-everywhere
+    status: planned

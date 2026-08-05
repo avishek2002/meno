@@ -19,7 +19,7 @@ objectives:
   - id: M4-3
     text: Evaluate their own calibration by logging confidence predictions, checking them against outcomes, and interpreting the gap with the research
     bloom: evaluate
-sources:                       # 3, each fetched this session; see sourcing.md
+sources:                       # 3, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
   - title: "Unskilled and Unaware of It (Kruger and Dunning, Journal of Personality and Social Psychology) - PubMed record"
     url: https://pubmed.ncbi.nlm.nih.gov/10626367/
     archived_url: https://web.archive.org/web/20260805095951/https://pubmed.ncbi.nlm.nih.gov/10626367/
