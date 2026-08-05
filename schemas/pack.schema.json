@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/avishek2002/meno/schemas/pack.schema.json",
+  "title": "Meno pack provenance (PACK.md frontmatter)",
+  "description": "Every pack directory carries a PACK.md: provenance, audience, and the amendment log. Canonical prose definition: topic-packs/README.md.",
+  "type": "object",
+  "required": ["schema_version", "pack", "title", "maintainers", "audience", "hours", "created"],
+  "properties": {
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "pack": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+/[a-z0-9-]+$",
+      "description": "domain/slug, matching the directory path under topic-packs/ (or org/packs/)"
+    },
+    "title": { "type": "string", "minLength": 1 },
+    "maintainers": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "advisory reviewers for amendments, not owners with veto"
+    },
+    "audience": { "type": "string", "minLength": 1 },
+    "hours": { "type": "string", "minLength": 1 },
+    "created": { "type": "string", "format": "date" }
+  },
+  "additionalProperties": true
+}

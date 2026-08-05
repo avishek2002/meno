@@ -1,9 +1,16 @@
-# Seeded-fault fixture
+# Seeded-fault fixtures
 
-A deliberately corrupted mini-course for testing the `audit-citations` skill. Every
-source record here is **structurally valid** - `tools/validate.ts` passes this tree
-clean - because that is the point: hallucinated citations look exactly like real ones
-until someone fetches them. Only a live audit can tell these apart.
+This directory holds two deliberately compromised trees, each for a skill that must catch what
+schema validation cannot. Both are, on purpose, **structurally valid** -
+`tools/validate.ts` passes each tree clean - because that is the point in both cases: a
+hallucinated citation and a leaked worked example each look exactly like ordinary content
+until someone actually checks.
+
+## audit-fixture (below): for `audit-citations`
+
+A deliberately corrupted mini-course. Every source record here is structurally valid because
+that is the point: hallucinated citations look exactly like real ones until someone fetches
+them. Only a live audit can tell these apart.
 
 The tree seeds four fault classes among clean records:
 
@@ -21,3 +28,11 @@ answer key**; eval harnesses enforce that by instruction.
 
 This fixture is permanent: do not "fix" its citations. The Phase 6 refresh-flow
 acceptance runs operate on throwaway copies.
+
+## publish-fixture: for `publish-to-community`
+
+A deliberately compromising tenant course - ordinary and validate-clean, seeded with the kind
+of personal, employer, and real-work content that must never reach a topic pack. Its own
+[README.md](publish-fixture/README.md) and [ANSWER-KEY.md](publish-fixture/ANSWER-KEY.md)
+explain the seeded leaks and score blind publish drills the same way this fixture's answer key
+scores blind audits.

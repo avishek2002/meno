@@ -15,6 +15,48 @@ _Last updated: 2026-08-05_
 
 ## Done
 
+- 2026-08-05 - **v1.2: publish-to-community skill and the read/write closure of the community
+  tier.** Built on top of the coordinator-landed contract (domain-scoped `topic-packs/<domain>/<slug>/`,
+  `DOMAINS.md`, `PACK.md`, generated `INDEX.md` via `tools/packs.ts`, `pack.schema.json` +
+  `reference-note.schema.json`, `course.yml`'s `derived_from`, and validate's `pack-layout` /
+  `pack-notes` / `pack-overlap` / `pack-safety` checks). Landed the write side:
+  `.agents/skills/publish-to-community/SKILL.md` (search-first mandatory step 1, transcribe-never-copy,
+  sanitize, four-part quality gate, amend-over-fork) plus `references/sanitization.md` (the
+  never-leaves-`content/` catalog, naming worked-examples-from-real-work as the one class no
+  regex catches) and `references/amendment.md` (amendment-log mechanics, `derived_from`
+  provenance lookup); symlinked and listed in `AGENTS.md`. Read side amended into three existing
+  skills: `generate-curriculum` gained a step-0 preflight search (backstop for direct invocation)
+  and the untrusted-reference-data rule; `elicit-needs` gained the same search between
+  confirmation and handoff; `generate-module` gained the rule for reading a pack's `notes/` at
+  adoption. `extend-meno/references/recipes.md` gained a full "Adopt a pack" recipe
+  (domain-scoped path, `derived_from` capture including the `PACK.md`-version-or-commit-sha
+  rule) and cross-linked its existing "Draft a topic pack" recipe against the new skill.
+  `topic-packs/README.md` rewritten for the landed reality (domains, `PACK.md`, `notes/`,
+  `INDEX.md` search-first, the publish path, `derived_from`, a security-posture section). PR
+  template gained a "Publishing to the community tier" block (search-first result line, eight
+  sanitization attestations with the real-work-example one marked human-review-only, audit
+  verdicts, validate + INDEX freshness). `examples/seeded-faults/publish-fixture/` - a second
+  red-team fixture alongside `audit-fixture/` (parent README now introduces both): an ordinary,
+  fully `npm run validate`-clean tenant course (profile, one module, one 9/9-anatomy lesson,
+  a 4-event ledger with a rubric string and an override reason, `mastery.yml` rebuilt via
+  `tools/rebuild-mastery.ts`) seeded with six leak classes - personal name+email, employer name,
+  a machine path, a `source_type: user` record citing `sources/`, a real-work worked example,
+  and a credential-shaped string that would trip `pack-safety` if it were ever transcribed.
+  `ANSWER-KEY.md` scores blind publish drills (answer key off-limits to the publisher, same
+  discipline as the audit fixture). Specs: new `docs/specs/community.md` (the three-tier model,
+  amend-over-fork, search-first, the publish/adopt/amend mermaid flow); amended
+  `docs/specs/validation.md` (four pack-check rows), `docs/specs/curriculum.md` (step-0 preflight
+  in behavior, an untrusted-data invariant), `docs/specs/interview.md` (the pre-handoff search
+  step), `docs/architecture.md` (a "three content tiers" section, phase-to-spec row v1.2),
+  `CONTRIBUTING.md` (packs section points at the skill and template block; the eval-gate section
+  now names the blind publish drill requirement alongside the existing blind audit one). Found
+  and fixed one unrelated pre-existing bug while getting the gate green: a coordinator-added test
+  in `tools/test/courses.test.ts` used `new URL(...).pathname` directly (breaks on paths with
+  spaces), tripping the repo's own no-`URL.pathname` hygiene test - fixed to use `fileURLToPath`
+  like every other source file. Gate green: `npm run typecheck`, `node --test
+  tools/test/*.test.ts app/test/*.test.ts` (72/72), `npm run validate` (0 errors, 0 warnings on
+  `examples/` + `topic-packs/`), `node tools/packs.ts --check` (fresh).
+
 - 2026-08-05 - **v1.1 study-insights acceptance loop**: the skill's acceptance run (committed as the 2026-08-08 fixture note under examples/example-learner/insights/) caught two real bugs before ship - lib/vault.ts and the app resolver only matched bare basenames so every path-style wikilink read broken (both now resolve path targets like Obsidian; regression test added), and the course hub's five lesson links were folder-relative (fixed to unique basenames). The ledger fixture's item ids were also corrected to the spec's fully-qualified form (check_usage now honestly 1/21). The narrative note refused to fabricate on both intermediate states - it reported the traced cause instead of fake topic candidates - which is the cite-your-numbers design working.
 - 2026-08-05 - **v1.1: study-insights feature complete.**
   `lib/insights.ts` (`computeInsights`, pure) and `lib/vault.ts` (graph walk) already existed as the

@@ -1,0 +1,19 @@
+schema_version: 1
+slug: error-handling-patterns
+title: Error handling patterns
+created: 2026-08-05
+status: active
+profile: ./profile.md
+hub: ./error-handling-patterns-hub.md
+objectives:
+  - id: O1
+    text: Apply a typed result to replace a bare catch-and-ignore at a service boundary
+    bloom: apply
+    assessed_by: error-handling-patterns transfer prompt
+modules:
+  - n: 1
+    slug: 01-error-boundaries
+    title: Error boundaries and the cost of swallowing failures
+    status: generated
+    est_hours: 2
+    serves: [O1]

@@ -32,9 +32,30 @@ Ordered steps per recipe. All paths relative to the repo root; `<t>` is the tena
 
 ## Draft a topic pack
 
-1. `topic-packs/<pack-slug>/` mirroring a course tree (manifests, hub, lessons) but with no profile - packs are pre-contract; the interview still runs and its profile decides how much of the pack applies.
-2. Mark the pack `status: draft` in its `course.yml` until the Phase 8 spec formalizes packs.
-3. Packs are base content: standard markdown links, no tenant references, sources fetched and archived like any generated content.
+1. `topic-packs/<domain>/<pack-slug>/` (`<domain>` from the closed vocabulary in `topic-packs/DOMAINS.md`) mirroring a course tree (`course.yml`, `PACK.md`, hub, module manifests) but with no profile and no lesson bodies - packs are pre-contract; lessons stay `planned`.
+2. `course.yml` gets `status: draft` and no `profile` field; `PACK.md` per `schemas/pack.schema.json` (title, maintainers, audience, hours, created, one amendment-log line).
+3. Packs are base content: standard markdown links, no tenant references, sources fetched and archived like any generated content. Full spec: `topic-packs/README.md`.
+
+This recipe is for hand-authoring a pack from nothing. Turning an already-studied tenant course
+into a pack instead is a different job with real sanitization stakes -
+`.agents/skills/publish-to-community/SKILL.md` owns that path.
+
+## Adopt a pack
+
+Full flow and the "why" of each step: `topic-packs/README.md`'s adoption section (canonical -
+this recipe only adds the extend-meno-side mechanics and links back rather than restating it).
+
+1. Copy the pack's tree from `topic-packs/<domain>/<slug>/` into `content/<t>/<slug>/` (this
+   direction is a normal copy - `topic-packs/README.md`'s adoption flow, not the
+   transcribe-never-copy rule that binds the opposite, publish direction).
+2. Run `elicit-needs` to produce the missing `profile.md` - the pack's scope gives the
+   interviewer a running start. Set `course.yml`'s `status: active` and add the `profile` field.
+3. Record provenance in `course.yml`: a `derived_from` block (`schemas/course.schema.json`) -
+   `pack` (`topic-packs/<domain>/<slug>`), `pack_version` (the version `PACK.md` states, if it
+   states one; otherwise the git commit sha of the pack directory right now -
+   `git log -1 --format=%H -- topic-packs/<domain>/<slug>`), `adopted_at` (today). This is what
+   lets a later `publish-to-community` run find the right pack to amend instead of guessing.
+4. `generate-module` writes module 1 against the now-confirmed contract.
 
 ## After any recipe
 

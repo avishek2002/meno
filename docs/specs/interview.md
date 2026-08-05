@@ -1,9 +1,11 @@
 # Interview spec
 
-*Status: current as of Phase 1. Canonical formats owned elsewhere: profile format in
+*Status: current as of Phase 1; amended at v1.2 (community-tier search before handoff).
+Canonical formats owned elsewhere: profile format in
 [elicit-needs/references/profile-format.md](../../.agents/skills/elicit-needs/references/profile-format.md),
 question menus and probe patterns in
-[elicit-needs/references/question-bank.md](../../.agents/skills/elicit-needs/references/question-bank.md).*
+[elicit-needs/references/question-bank.md](../../.agents/skills/elicit-needs/references/question-bank.md),
+the community tier itself in [community.md](community.md).*
 
 ## Purpose
 
@@ -33,12 +35,19 @@ number-two ranked risk (scope mismatch, the MOOC killer).
 7. The confirmed contract lands at `content/<tenant>/<course-slug>/profile.md`. If the
    tenant vault does not exist yet, the skill bootstraps it (home note, todos, sources
    directory) before writing.
-8. Mid-course, two triggers re-open the interview in a short re-clarification form (1-2
+8. Before handing off to `generate-curriculum`, the interviewer searches
+   `topic-packs/INDEX.md` for coverage of the confirmed subject. A match is presented as a
+   choice, never resolved silently in either direction: adopt the pack as the skeleton
+   (recommended - `extend-meno`'s adopt-a-pack recipe) or generate fresh anyway.
+   `generate-curriculum` runs the same search again as its own preflight backstop
+   ([curriculum.md](curriculum.md)), for the case where it is invoked directly against an
+   older confirmed profile with no fresh handoff to check against.
+9. Mid-course, two triggers re-open the interview in a short re-clarification form (1-2
    questions): struggle (repeated misses on the same concepts) and drift (requests
    off-contract). Re-clarification appends to the profile's adjustment log; a wholesale
    re-scope supersedes the profile rather than deleting it.
-9. Degraded path: an interview abandoned before confirmation leaves `status: draft` and
-   downstream skills still refuse to generate from it.
+10. Degraded path: an interview abandoned before confirmation leaves `status: draft` and
+    downstream skills still refuse to generate from it.
 
 ## Architecture
 

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, readdirSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { checkCourses } from '../validate.ts';
 
 const PROFILE = `---
@@ -165,4 +166,14 @@ test('missing mermaid map in the hub is an error', () => {
 test('serves naming an unknown objective is an error', () => {
   const findings = run(makeCourse({ module: MODULE.replace('serves: [O1]', 'serves: [O9]'), course: COURSE.replace('    serves: [O1]', '    serves: [O9]') }));
   assert.ok(findings.some((f) => f.message.includes('unknown objective')));
+});
+
+test('pack checks: layout, safety, notes, and overlap enforcement', async () => {
+  const { checkPacks } = await import('../validate.ts');
+  // pack trees live under the REPO's topic-packs/, so checkPacks findings are
+  // exercised against synthetic file lists rooted there via direct calls
+  const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
+  const real = `${repoRoot}topic-packs/software-engineering/git-fundamentals/course.yml`;
+  const findings = checkPacks('', [real, real.replace('course.yml', 'PACK.md'), real.replace('course.yml', 'git-fundamentals-hub.md')]);
+  assert.deepEqual(findings.filter((f) => f.level === 'error'), []);
 });

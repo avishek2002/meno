@@ -616,6 +616,155 @@ export function checkInsights(_target: string, files: string[]): Finding[] {
   return findings;
 }
 
+// --- pack-tier checks (community and org content) --------------------------
+
+const SAFETY_ERROR_PATTERNS: [RegExp, string][] = [
+  [/<script\b/i, 'script tag'],
+  [/<iframe\b/i, 'iframe tag'],
+  [/<object\b/i, 'object tag'],
+  [/\son\w+\s*=\s*["']/i, 'inline event handler'],
+  [/javascript:/i, 'javascript: URL'],
+  [/data:text\/html/i, 'data:text/html URL'],
+  [/curl[^\n]*\|\s*(sh|bash)\b/, 'curl-pipe-to-shell'],
+  [/\b(sk-ant-|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{36})/, 'credential-shaped string'],
+  [/-----BEGIN [A-Z ]*PRIVATE KEY/, 'private key block'],
+  [/\bprocess\.env\b/, 'environment-variable read'],
+  [/~\/\.ssh\b/, 'ssh key path'],
+  [/https?:\/\/(bit\.ly|tinyurl\.com|t\.co|goo\.gl|ow\.ly)\//i, 'URL shortener (hides its destination)'],
+];
+const SAFETY_WARNING_PATTERNS: [RegExp, string][] = [
+  [/ignore (all |any )?(previous|prior|earlier) instructions/i, 'instruction-shaped text'],
+  [/you are now\b/i, 'instruction-shaped text'],
+  [/\bsystem prompt\b/i, 'instruction-shaped text'],
+];
+const ANATOMY_HEADINGS = /^##\s+(Before you start|The idea|Worked example|Your turn|Recall|Apply it somewhere new)\b/m;
+
+function loadDomains(): Set<string> {
+  const path = join(repoRoot, 'topic-packs', 'DOMAINS.md');
+  if (!existsSync(path)) return new Set();
+  const out = new Set<string>();
+  for (const m of readFileSync(path, 'utf8').matchAll(/^\|\s*`([a-z0-9-]+)`\s*\|/gm)) out.add(m[1]);
+  return out;
+}
+
+export function checkPacks(_target: string, files: string[]): Finding[] {
+  const findings: Finding[] = [];
+  const packFiles = files.filter((f) => {
+    const rel = relative(repoRoot, f);
+    return rel.startsWith('topic-packs/') || rel.startsWith('org/');
+  });
+  if (packFiles.length === 0) return findings;
+  const domains = loadDomains();
+  const validatePack = loadSchema('pack.schema.json');
+  const validateNote = loadSchema('reference-note.schema.json');
+
+  // layout + provenance per pack (a pack = a dir with course.yml)
+  const packDirs = packFiles.filter((f) => f.endsWith('/course.yml')).map((f) => f.slice(0, -'/course.yml'.length));
+  const slugsByDomain = new Map<string, Map<string, string>>();
+  const objectivesByDomain = new Map<string, { pack: string; tokens: Set<string> }[]>();
+  for (const dir of packDirs) {
+    const rel = relative(repoRoot, dir);
+    const parts = rel.split('/');
+    const underOrg = parts[0] === 'org';
+    const expectLen = underOrg ? 4 : 3; // org/packs/<domain>/<slug> | topic-packs/<domain>/<slug>
+    if (parts.length !== expectLen || (underOrg && parts[1] !== 'packs')) {
+      findings.push({ level: 'error', check: 'pack-layout', path: rel, message: `pack directory must be ${underOrg ? 'org/packs' : 'topic-packs'}/<domain>/<slug>` });
+      continue;
+    }
+    const domain = parts[expectLen - 2];
+    const slug = parts[expectLen - 1];
+    if (!underOrg && !domains.has(domain)) {
+      findings.push({ level: 'error', check: 'pack-layout', path: rel, message: `domain "${domain}" is not in topic-packs/DOMAINS.md (closed vocabulary)` });
+    }
+    const packMd = join(dir, 'PACK.md');
+    if (!existsSync(packMd)) {
+      findings.push({ level: 'error', check: 'pack-layout', path: rel, message: 'missing PACK.md (provenance and amendment log)' });
+    } else {
+      const { frontmatter } = parseFrontmatter(readFileSync(packMd, 'utf8'));
+      if (!frontmatter || !validatePack(frontmatter)) {
+        for (const err of validatePack.errors ?? []) {
+          findings.push({ level: 'error', check: 'pack-layout', path: relative(repoRoot, packMd), message: `${err.instancePath || '/'} ${err.message}` });
+        }
+        if (!frontmatter) findings.push({ level: 'error', check: 'pack-layout', path: relative(repoRoot, packMd), message: 'missing frontmatter' });
+      } else if (frontmatter.pack !== `${domain}/${slug}`) {
+        findings.push({ level: 'error', check: 'pack-layout', path: relative(repoRoot, packMd), message: `pack field "${frontmatter.pack}" does not match path "${domain}/${slug}"` });
+      }
+    }
+    const course = parseYamlFile(join(dir, 'course.yml'), findings, 'pack-layout');
+    if (course) {
+      if (course.status !== 'draft') findings.push({ level: 'error', check: 'pack-layout', path: rel, message: 'a pack course.yml must have status: draft' });
+      if ('profile' in course) findings.push({ level: 'error', check: 'pack-layout', path: rel, message: 'a pack course.yml must not have a profile field (packs are pre-contract)' });
+      // overlap bookkeeping
+      const byDomain = slugsByDomain.get(domain) ?? new Map();
+      if (byDomain.has(String(course.slug))) {
+        findings.push({ level: 'error', check: 'pack-overlap', path: rel, message: `slug "${course.slug}" collides with ${byDomain.get(String(course.slug))} in the same domain` });
+      }
+      byDomain.set(String(course.slug), rel);
+      slugsByDomain.set(domain, byDomain);
+      const tokens = new Set(
+        ((course.objectives as { text?: string }[]) ?? [])
+          .flatMap((o) => (o.text ?? '').toLowerCase().split(/\W+/))
+          .filter((t) => t.length > 3),
+      );
+      const list = objectivesByDomain.get(domain) ?? [];
+      for (const other of list) {
+        const inter = [...tokens].filter((t) => other.tokens.has(t)).length;
+        const union = new Set([...tokens, ...other.tokens]).size;
+        if (union > 0 && inter / union > 0.6) {
+          findings.push({ level: 'warning', check: 'pack-overlap', path: rel, message: `objectives overlap heavily with ${other.pack} - amend that pack, or say in PACK.md why this is a different thing` });
+        }
+      }
+      list.push({ pack: rel, tokens });
+      objectivesByDomain.set(domain, list);
+    }
+  }
+
+  // reference notes
+  for (const f of packFiles.filter((x) => /\/notes\/[^/]+\.md$/.test(x))) {
+    const rel = relative(repoRoot, f);
+    const text = readFileSync(f, 'utf8');
+    const { frontmatter, body } = parseFrontmatter(text);
+    if (!frontmatter || !validateNote(frontmatter)) {
+      for (const err of validateNote.errors ?? []) {
+        findings.push({ level: 'error', check: 'pack-notes', path: rel, message: `${err.instancePath || '/'} ${err.message}` });
+      }
+      if (!frontmatter) findings.push({ level: 'error', check: 'pack-notes', path: rel, message: 'missing frontmatter (type: reference required)' });
+    } else {
+      checkSourceRecords((frontmatter.sources as SourceRecord[]) ?? [], rel, findings);
+    }
+    if (/```meno-check/.test(body)) findings.push({ level: 'error', check: 'pack-notes', path: rel, message: 'reference notes must not contain check blocks' });
+    if (/\bTransfer\b/.test(body) && /\[!question\]/.test(body)) findings.push({ level: 'error', check: 'pack-notes', path: rel, message: 'reference notes must not contain transfer prompts' });
+    if (ANATOMY_HEADINGS.test(body) || /\*\*You'll be able to:\*\*/.test(body)) {
+      findings.push({ level: 'error', check: 'pack-notes', path: rel, message: 'reference notes must not use lesson-anatomy sections (they are ground truth, not pedagogy)' });
+    }
+  }
+
+  // safety: every file under a pack tree
+  for (const f of packFiles) {
+    const rel = relative(repoRoot, f);
+    if (!/\.(md|yml|yaml)$/.test(f) && !f.endsWith('.gitkeep')) {
+      findings.push({ level: 'error', check: 'pack-safety', path: rel, message: 'packs may contain only markdown and YAML files' });
+      continue;
+    }
+    const text = readFileSync(f, 'utf8');
+    for (const [re, label] of SAFETY_ERROR_PATTERNS) {
+      if (re.test(text)) findings.push({ level: 'error', check: 'pack-safety', path: rel, message: `${label} in community content` });
+    }
+    for (const [re, label] of SAFETY_WARNING_PATTERNS) {
+      if (re.test(text)) findings.push({ level: 'warning', check: 'pack-safety', path: rel, message: `${label} - explain the intent in the pull request` });
+    }
+    for (const fence of text.matchAll(/```mermaid\n([\s\S]*?)```/g)) {
+      if (/\b(click|href)\b/.test(fence[1])) {
+        findings.push({ level: 'error', check: 'pack-safety', path: rel, message: 'mermaid click/href directives are not allowed in packs' });
+      }
+    }
+    if (/http:\/\//.test(text)) {
+      findings.push({ level: 'warning', check: 'pack-safety', path: rel, message: 'plain-http URL - use https or justify in the pull request' });
+    }
+  }
+  return findings;
+}
+
 type Check = (target: string, files: string[]) => Finding[];
 const CHECKS: Record<string, Check> = {
   profiles: checkProfiles,
@@ -624,6 +773,7 @@ const CHECKS: Record<string, Check> = {
   ledger: checkLedgers,
   mastery: checkMastery,
   insights: checkInsights,
+  packs: checkPacks,
   tenancy: checkTenancy,
 };
 
@@ -646,7 +796,10 @@ if (isMain) {
   const strict = args.includes('--strict');
   const json = args.includes('--json');
   const targets = args.filter((a) => !a.startsWith('--'));
-  if (targets.length === 0) targets.push(join(repoRoot, 'examples'));
+  if (targets.length === 0) {
+    targets.push(join(repoRoot, 'examples'), join(repoRoot, 'topic-packs'));
+    if (existsSync(join(repoRoot, 'org'))) targets.push(join(repoRoot, 'org'));
+  }
 
   const findings = runValidation(targets);
   const errors = findings.filter((f) => f.level === 'error');

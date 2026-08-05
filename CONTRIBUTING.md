@@ -9,8 +9,13 @@ ships in the repo.
 - **Skill improvements and base capabilities** - pull request against `main`. Read the
   invariants in `.agents/skills/extend-meno/SKILL.md` first; they bind upstream changes
   too.
-- **Topic packs** (pre-vetted curricula) - under `topic-packs/`, same manifest formats as
-  generated courses; spec in [topic-packs/README.md](topic-packs/README.md).
+- **Topic packs** (pre-vetted curricula) - under `topic-packs/<domain>/<slug>/`, same manifest
+  formats as generated courses; spec in [topic-packs/README.md](topic-packs/README.md). A pack
+  built from an existing tenant course goes through
+  [`publish-to-community`](.agents/skills/publish-to-community/SKILL.md) (search-first,
+  transcribe-never-copy, sanitize, quality gate) and fills the pull request template's
+  "Publishing to the community tier" block; a hand-authored pack uses `extend-meno`'s
+  draft-a-topic-pack recipe instead.
 - **Your own learning content** - never contributed: everything under `content/` is
   tenant-scoped and gitignored by design, and a pre-commit guard (installed by
   `tools/meno-init`) blocks even a forced attempt.
@@ -49,8 +54,10 @@ moved number in the PR. Never rebaseline to make a red run green without saying 
 
 Changing the `elicit-needs` interview? Also re-run a persona interview against
 `examples/golden-personas/` and diff the structured fields against the expected brief.
-Changing `audit-citations`? Run a blind audit of `examples/seeded-faults/` (answer key
-off-limits) and report the verdicts.
+Changing `audit-citations`? Run a blind audit of `examples/seeded-faults/audit-fixture/`
+(answer key off-limits) and report the verdicts. Changing `publish-to-community`? Run a blind
+publish drill against `examples/seeded-faults/publish-fixture/` (answer key off-limits) and
+report which seeded leaks were caught and which were missed.
 
 ## The smoke test (required for skill or entry-point changes)
 
