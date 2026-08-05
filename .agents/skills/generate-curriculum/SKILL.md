@@ -1,0 +1,38 @@
+---
+name: generate-curriculum
+description: Turn a confirmed profile.md into a complete course skeleton - Bloom-leveled objectives, module manifests, dependency map, hub note, verified anchor sources - then module 1's body so study can start immediately. Use after elicit-needs confirms a contract, or when a confirmed profile exists with no course structure. Structure plus module 1 only - later lesson bodies belong to generate-module.
+---
+
+# Generate curriculum
+
+This skill owns course structure: it reads a confirmed learning contract and produces everything above the lesson level, plus module 1's body (via `generate-module`) so the learner can start today. It refuses to run without a confirmed profile - if none exists, run `elicit-needs` first; that ordering is the product.
+
+## Procedure
+
+1. **Read the contract.** `content/<tenant>/<course-slug>/profile.md` (format: [../elicit-needs/references/profile-format.md](../elicit-needs/references/profile-format.md)). Three fields bind everything below: `bloom_ceiling` caps every objective verb, `budget_hours` caps total scope, and the Scope contract section decides what stays out. If `user_sources: true`, list and skim `content/<tenant>/sources/` now - user material is preferred anchor-source material. If it claims true but the directory is empty, say so, proceed web-only, and leave a `#note` todo reminding the user to add their files.
+
+2. **Backward design - objectives before content.** Write 3-6 course objectives, each with a Bloom verb at or below the ceiling and each naming how it will be assessed (what the learner will produce, not read). No module exists until the objective it serves exists.
+
+3. **Decompose into modules, then lessons.** Each module: 2-6 hours of the budget, serves at least one course objective, and contains two or more sibling concepts wherever the material allows (interleaved practice needs siblings). Order by prerequisite, not by topic taxonomy. Sum of module estimates stays within `budget_hours`, at most 10 percent over. Then plan each module's `lessons` list in its manifest - default one lesson per concept, titles and target concepts now, bodies later; `generate-module` iterates exactly this list, so an empty one hands off nothing.
+
+4. **Anchor sources - fetch before you cite.** 2-4 per module, each actually retrieved and read in this session, recorded with access date and a Wayback Machine archive URL. Full procedure and quality bar: [references/sourcing.md](references/sourcing.md). User-supplied material from `sources/` counts as anchors (`source_type: user`) and takes precedence where it covers a module.
+
+5. **Write the structure files.** One `modules/NN-slug/module.yml` per module (each carrying its own `status: skeleton`), then derive `course.yml` from them - field specs and the derivation rule in [references/manifest-format.md](references/manifest-format.md).
+
+6. **Weave the vault.** Create the course hub note and populate its derived block exactly per the hub anatomy in [../second-brain/references/vault-conventions.md](../second-brain/references/vault-conventions.md) - it defines the Mermaid map, the skeleton-time state (planned modules as plain text, no broken wikilinks), and what gets wikilinked once lessons exist. Link the hub from the tenant home note.
+
+7. **Generate module 1 now.** Invoke [`generate-module`](../generate-module/SKILL.md) for module 1 (the onboarding rule, decision 6 in PLAN.md): the interview just ended, and the learner studies today, not after the next agent session. That run sets module 1's `status: generated` in its `module.yml` and refreshes `course.yml`.
+
+8. **Scope honesty, even now.** If fetching sources reveals the topic is materially bigger or smaller than the contract assumed, stop and say so - reopen the depth x time question through `elicit-needs` re-clarification rather than silently thinning or padding modules.
+
+## Done means
+
+- Every course objective has a Bloom verb at or below `bloom_ceiling` and a named assessment.
+- Module hour estimates sum within `budget_hours` +10 percent; each module sits in the 2-6 hour range; every module serves a named objective; prerequisite ordering holds; modules have two or more sibling concepts except where a stated comment justifies one.
+- Every module manifest lists its planned lessons (default one per concept) with titles and concepts.
+- Every module manifest carries 2-4 sources, each fetched this session with access date and archive URL; user sources used wherever they apply.
+- `course.yml` and all `module.yml` files written per spec, `schema_version` present.
+- Course hub note exists, its Mermaid map renders, every module is wikilinked from it, and the tenant home note links the hub.
+- Module 1's body exists (nine-part anatomy, via `generate-module`) and its manifest status says so.
+- Run `tools/validate.py` if it exists (Phase 2 delivers it); until then, self-check each file against the format references.
+- The learner has been told where to start: module 1, lesson 1, in the app or Obsidian.

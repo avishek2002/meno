@@ -4,17 +4,31 @@ Canonical entry point for any coding agent working in this repository. If you ar
 
 ## What this repository is
 
-Meno is a learning system that lives entirely in a git repository. An AI coding agent interviews a user to pin down what they actually need to learn, generates a cited curriculum sized to their goal and time budget, and tutors them through it with spaced reviews and mastery gates. A static site renders the course; an append-only ledger tracks progress.
+Meno is a learning system that lives entirely in a git repository. An AI coding agent interviews a user to pin down what they actually need to learn, generates a cited curriculum sized to their goal and time budget, and tutors them through it with spaced reviews and mastery gates. A local web app on localhost renders the course and tracks progress; an append-only ledger records it.
 
 Named for Plato's *Meno* and its paradox: how can you search for something when you don't know what it is? The clarification interview is the answer.
 
-## Current status: planning phase
+Meno rests on three pillars: **Obsidian** as the second brain (each tenant's `content/<tenant>/` directory is itself a vault of connected markdown), **a localhost app** for daily study, tracking, and todos, and **the agent** (you) for creating content and extending the instance.
 
-**No implementation exists yet.** The build has not started; do not scaffold skills, schemas, or site code unless the maintainer asks for a numbered phase from the plan.
+## Current status: skills drafted, app and tooling pending
 
-- [PLAN.md](PLAN.md) - the approved phased build plan, decision record, and acceptance criteria. Start here.
+The five core skills exist as drafts in `.agents/skills/`; the localhost app, schemas as JSON files, validation tooling, and evals do not exist yet. Build work follows numbered phases from the plan - do not scaffold app code, schemas, or tooling unless the maintainer asks for a phase.
+
+- [PLAN.md](PLAN.md) - the phased build plan, decision record, and acceptance criteria. Start here.
 - [docs/RESEARCH.md](docs/RESEARCH.md) - the evidence base behind every design decision.
 - [PROGRESS.md](PROGRESS.md) - live done/backlog tracker.
+
+## Skills
+
+All skills live in `.agents/skills/<name>/SKILL.md` (Claude Code discovers them via `.claude/skills/` symlinks). If your CLI has no native skill support, read the SKILL.md file directly; each is written to work that way.
+
+- `elicit-needs` - interview a learner into a confirmed learning contract (`profile.md`). Run this first whenever someone wants to learn something new.
+- `generate-curriculum` - turn a confirmed profile into a course skeleton plus module 1.
+- `generate-module` - write one module's lesson bodies (nine-part anatomy, tiered checks, verified citations).
+- `extend-meno` - change or add to this Meno instance without breaking its invariants.
+- `second-brain` - vault conventions (wikilinks, hub notes), graph operations, and the `todos.md` shared queue.
+
+**Session start, once a tenant exists:** check `content/<tenant>/progress/` for due reviews and scan `content/<tenant>/todos.md` for actionable items; mention what you find and propose, never auto-act.
 
 ## Rules for agents in this repo
 
@@ -22,4 +36,6 @@ Named for Plato's *Meno* and its paradox: how can you search for something when 
 - `CLAUDE.md` stays a one-line `@AGENTS.md` shim. All agent-facing guidance lives in this file; never add instructions to `CLAUDE.md` (entry-point drift is a ranked risk in PLAN.md).
 - A phase is done when its acceptance criteria pass, not when files exist.
 - Writing style for all repo content: plain hyphens (never em or en dashes), acronyms expanded on first use, small focused files.
-- Once tenancy exists (Phase 0): nothing under `content/` is ever committed, read into shared artifacts, or referenced by base content. Only `examples/example-learner/` may be referenced.
+- Link syntax: wikilinks (`[[target]]`) inside tenant content (Obsidian-canonical; the app resolves them too); standard markdown links in base content, which renders on GitHub.
+- Nothing under `content/` is ever committed, read into shared artifacts, or referenced by base content. Only committed fixtures under `examples/` may be referenced.
+- Each canonical format has one owner (profile: elicit-needs; manifests and sourcing: generate-curriculum; lesson anatomy and check blocks: generate-module; vault and todo conventions: second-brain). Link to the owner instead of restating.

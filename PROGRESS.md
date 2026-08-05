@@ -17,18 +17,21 @@ _Last updated: 2026-08-05_
 
 ## Done
 
+- 2026-08-05 - adversarial review of the skill drafts (7-agent workflow: per-skill executability, cross-consistency, end-to-end flow simulation); 40 findings fixed, notably: vault bootstrap given an owner (elicit-needs preflight), module status moved to module.yml with course.yml as derived view, ledger events gain the level field gates key on, new-topic todos route through the interview, amend-a-course recipe added to extend-meno, CONTRIBUTING.md and docs/migrations.md stubs created.
+- 2026-08-05 - five core skills drafted in `.agents/skills/` (elicit-needs, generate-curriculum, generate-module, extend-meno, second-brain) with references/ carrying the canonical formats (profile, manifests, sourcing, lesson anatomy, check blocks, vault conventions, todos); `.claude/skills/` symlinks; AGENTS.md skill listing + session-start rule. Drafts - phase acceptance criteria still gate "done".
+- 2026-08-05 - second grill: three-pillar model added (Obsidian second brain / localhost app / agent). Decisions 14-17 locked: split write authority (UI recognition-level, agent gates), content/<tenant>/ IS an Obsidian vault (wikilinks canonical), todos.md as shared agent-scannable queue, Vite + React + local file API. Decision 2 superseded: static site -> local-first web app. PLAN.md Phase 4 rewritten.
 - 2026-08-05 - project scaffolded: PLAN.md (phased build plan + decision record), docs/RESEARCH.md (9-agent research synthesis), AGENTS.md/CLAUDE.md entry points, README, MIT license. Public repo on avishek2002.
 - 2026-08-05 - grill phase: all load-bearing decisions locked (see PLAN.md decision record). Notable: static site from day one, hybrid study loop, generate-ahead timing, gated-with-logged-override mastery, private-mirror tooling in v1 (knowingly-accepted scope risk).
 - 2026-08-05 - research phase: 9-agent workflow across learning science, LMS landscape, needs elicitation, agent architecture, prior art, content schema; synthesized into docs/RESEARCH.md.
 
 ## On the agenda (backlog, not started)
 
-- Phase 0 - skeleton and entry points (tenancy gitignore, skills layout, guide stubs, example-learner stub, cold-start acceptance test).
-- Phase 1 - elicit-needs skill (the interview).
-- Phase 2 - generate-curriculum skill (skeleton + dependency map).
-- Phase 3 - generate-module skill (nine-part lesson anatomy).
-- Phase 4 - static site (generator spike first).
-- Phase 5 - tutor-session skill + ledger.
+- Phase 0 - remaining skeleton: guide stubs (how-meno-works, extending-meno), example-learner stub, cold-start acceptance test (skills layout + tenancy gitignore already exist).
+- Phase 1 - harden elicit-needs: golden personas, profile JSON schema, acceptance runs.
+- Phase 2 - harden generate-curriculum: course/module JSON schemas, tools/validate.py, example skeleton.
+- Phase 3 - harden generate-module: lesson/ledger JSON schemas, example module 1, anatomy validation.
+- Phase 4 - the localhost app (Vite + React + file API; recognition checks, todos, progress, wikilink rendering).
+- Phase 5 - tutor-session skill + live ledger writes.
 - Phase 6 - citation-integrity hardening (audit-citations + seeded-fault fixture).
 - Phase 7 - meno init + private mirror tooling (design doc first).
 - Phase 8 - collaboration + eval gate.
