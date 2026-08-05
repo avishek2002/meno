@@ -94,6 +94,11 @@ this table stays honest about what has actually been run.
    (`.agents/skills/generate-curriculum/references/sourcing.md`) - fetched this session,
    archived, never from memory.
 
+## Found a vulnerability?
+
+Do not open a pull request or a public issue for it. [SECURITY.md](SECURITY.md) has the
+private channel, the threat model, and what is already known and tracked.
+
 ## How contributions are reviewed
 
 Reviewing a contribution to this repository is an act of execution, not just of reading:

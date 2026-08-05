@@ -15,6 +15,23 @@ _Last updated: 2026-08-05_
 
 ## Done
 
+- 2026-08-05 - **Security policy and the repository-level checks (follow-on to v1.4).** The
+  settings half of supply-chain hardening, which no file in the tree can show: secret scanning
+  with push protection (a credential is blocked at `git push` rather than reported once it is
+  already public - worth having in a repository whose design has agents writing files that get
+  committed), Dependabot alerts and security updates, private vulnerability reporting. All four
+  are free on public repositories and none were on. Added `SECURITY.md`: the draft-advisory
+  channel instead of a public issue (everything here is cloned and run locally, so a public
+  report is a working exploit against every instance before anyone can update), the three
+  things worth attacking (the learner's vault, the machine running the agent, everyone
+  downstream of `main` via `tools/org-sync.sh`), and explicit scope - including an
+  "already known, and tracked" section that links `docs/specs/supply-chain.md`'s Verified-by
+  gaps rather than restating them, so a reporter can tell a known gap from a new one and the
+  two documents cannot drift. Out-of-scope names the loopback-and-unauthenticated design
+  assumption as an assumption, with breaking the assumption itself explicitly back in scope.
+  Spec amended: two new behaviors, invariants 7-8, and an honest Verified-by entry saying
+  invariant 7 is unverifiable from the tree (settings are not files; a fork inherits none of
+  them) with the `gh api` commands to check it by hand.
 - 2026-08-05 - **v1.4: supply-chain hardening - CI enforcement, capability paths, the rebinding
   guard.** Prompted by a security review of v1.3 whose finding was structural: every gate this
   repository documents ran on the contributor's own machine and reached the maintainer as a ticked
