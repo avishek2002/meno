@@ -168,6 +168,32 @@ test('serves naming an unknown objective is an error', () => {
   assert.ok(findings.some((f) => f.message.includes('unknown objective')));
 });
 
+// The one constraint the content consolidation actually narrowed. Nothing under
+// examples/ carries a derived_from block, so the pattern is unexercised by every
+// other test here and a change to it reaches a release unnoticed - which is how
+// the pre-consolidation form went from valid to invalid with no migration line
+// (docs/migrations.md, 2026-08-05).
+test('derived_from.pack accepts the consolidated roots and rejects the pre-consolidation ones', () => {
+  const withPack = (pack: string): string =>
+    COURSE.replace(
+      'status: active',
+      `status: active\nderived_from:\n  pack: ${pack}\n  pack_version: "1"\n  adopted_at: 2026-08-05`,
+    );
+  for (const ok of [
+    'content/community/software-engineering/git-fundamentals',
+    'content/org/platform-team/internal-tooling',
+  ]) {
+    assert.deepEqual(run(makeCourse({ course: withPack(ok) })).filter((f) => f.level === 'error'), [], ok);
+  }
+  for (const stale of ['topic-packs/software-engineering/git-fundamentals', 'org/packs/platform-team/internal-tooling']) {
+    const findings = run(makeCourse({ course: withPack(stale) }));
+    assert.ok(
+      findings.some((f) => f.check === 'manifests' && f.message.includes('/derived_from/pack')),
+      `${stale} should fail the derived_from.pack pattern`,
+    );
+  }
+});
+
 test('pack checks: layout, safety, notes, and overlap enforcement', async () => {
   const { checkPacks } = await import('../validate.ts');
   // pack trees live under the REPO's content/community/, so checkPacks findings are
