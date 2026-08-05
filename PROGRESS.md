@@ -11,11 +11,13 @@ _Last updated: 2026-08-05_
 
 ## Pending decisions (needs maintainer)
 
-- Static site generator (Quartz vs Docusaurus vs Astro Starlight) - decided by the Phase 4 spike, per PLAN.md.
-- Which agent CLIs besides Claude Code are on the maintainer machine (affects Phase 0/8 acceptance recording).
-- Are external video and interactive resources in scope as linkable content types? (PLAN.md open item.)
+- None currently open.
 
 ## Done
+
+- 2026-08-05 - **Phase 0 complete (skeleton and entry points).** Guides landed (how-meno-works, extending-meno, content-schema stub), specs foundation landed (docs/architecture.md, docs/specs/ template + repo-and-tenancy spec), example-learner stub with the Sam Park persona and golden brief. Acceptance: cold-start `claude -p` run in a fresh clone named the interview as entry point, covered tenant privacy, and linked the user guide (after one AGENTS.md hardening iteration; only Claude Code installed, other CLIs designed-for but unverified); dummy tenant content invisible to `git status`; all five skill symlinks survive a fresh clone on macOS (Linux by construction, not machine-verified).
+- 2026-08-05 - design council at build start (4 specialists) locked the open build questions: one Node runtime for tools (validate.ts/eval.ts; mirror tooling stays shell), per-subsystem specs under docs/specs/, 8-event ledger taxonomy with authored check ids and byte-identical mastery rebuild, app design (node:http, unified/remark, walk-on-request, write authority by construction), eval judge with pinned model + anchor set. Details: docs/architecture.md and PLAN.md build addenda.
+- 2026-08-05 - three open items resolved at build start: (a) static-site-generator choice is moot, superseded by decision 17 (Vite + React + local file API); (b) maintainer-machine agent CLI census: only Claude Code is installed, so Phase 0/8 acceptance runs record Claude Code results and list other CLIs as unverified; (c) video and interactive resources: decided by default - a source is any URL, video included, with no dedicated content type in v1 (additive to revisit).
 
 - 2026-08-05 - adversarial review of the skill drafts (7-agent workflow: per-skill executability, cross-consistency, end-to-end flow simulation); 40 findings fixed, notably: vault bootstrap given an owner (elicit-needs preflight), module status moved to module.yml with course.yml as derived view, ledger events gain the level field gates key on, new-topic todos route through the interview, amend-a-course recipe added to extend-meno, CONTRIBUTING.md and docs/migrations.md stubs created.
 - 2026-08-05 - five core skills drafted in `.agents/skills/` (elicit-needs, generate-curriculum, generate-module, extend-meno, second-brain) with references/ carrying the canonical formats (profile, manifests, sourcing, lesson anatomy, check blocks, vault conventions, todos); `.claude/skills/` symlinks; AGENTS.md skill listing + session-start rule. Drafts - phase acceptance criteria still gate "done".
@@ -26,7 +28,6 @@ _Last updated: 2026-08-05_
 
 ## On the agenda (backlog, not started)
 
-- Phase 0 - remaining skeleton: guide stubs (how-meno-works, extending-meno), example-learner stub, cold-start acceptance test (skills layout + tenancy gitignore already exist).
 - Phase 1 - harden elicit-needs: golden personas, profile JSON schema, acceptance runs.
 - Phase 2 - harden generate-curriculum: course/module JSON schemas, tools/validate.py, example skeleton.
 - Phase 3 - harden generate-module: lesson/ledger JSON schemas, example module 1, anatomy validation.

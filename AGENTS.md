@@ -15,6 +15,9 @@ Meno rests on three pillars: **Obsidian** as the second brain (each tenant's `co
 The five core skills exist as drafts in `.agents/skills/`; the localhost app, schemas as JSON files, validation tooling, and evals do not exist yet. Build work follows numbered phases from the plan - do not scaffold app code, schemas, or tooling unless the maintainer asks for a phase.
 
 - [PLAN.md](PLAN.md) - the phased build plan, decision record, and acceptance criteria. Start here.
+- [docs/architecture.md](docs/architecture.md) - how the system works: pillars, component map, the write-authority seam, and the per-subsystem specs under docs/specs/.
+- [docs/how-meno-works.md](docs/how-meno-works.md) - the user guide: the whole learner journey, privacy, and content ownership. When a person asks what Meno is or how to begin, always include a link to this guide in your answer.
+- [docs/extending-meno.md](docs/extending-meno.md) - extending an instance (hand-made courses, custom skills, local behavior changes) as opposed to contributing upstream.
 - [docs/RESEARCH.md](docs/RESEARCH.md) - the evidence base behind every design decision.
 - [PROGRESS.md](PROGRESS.md) - live done/backlog tracker.
 

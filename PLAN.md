@@ -34,6 +34,8 @@ These were decided during the research and grill phase (2026-08-05). Revisit del
 
 Rows 14-17 and the row 2 revision come from the second grill (2026-08-05), which added the three-pillar model: Obsidian as the second brain (all tenant content as connected markdown), the localhost app for study, tracking, and todos, and the agent setup for creating content and extending the repo.
 
+**Build addenda (2026-08-05, design council at build start; details in [docs/architecture.md](docs/architecture.md)):** one runtime - `tools/validate.py` and `tools/eval.py` land as TypeScript (`tools/validate.ts`, `tools/eval.ts`) so mastery derivation, markdown parsing, and YAML parsing each exist exactly once, shared by app, validate, and eval (the mirror tooling stays POSIX shell deliberately); specs are per-subsystem under `docs/specs/`, landed or amended by each phase; the ledger event vocabulary and mastery derivation are specified in `docs/specs/progress.md` from Phase 3.
+
 ## Target architecture
 
 ```mermaid
@@ -269,5 +271,5 @@ A stranger with no context can: clone Meno, run init, be interviewed by their ag
 ## Open items
 
 - Mirror tooling design: Phase 7 design doc before code.
-- Which agent CLIs beyond Claude Code exist on the maintainer machine (affects how Phase 0 and 8 acceptance runs are recorded).
-- Whether linking external video and interactive resources (not just written sources) is in scope as a content type: owner decision pending.
+- ~~Which agent CLIs beyond Claude Code exist on the maintainer machine~~ - resolved 2026-08-05: only Claude Code is installed; acceptance runs record it and list other CLIs as unverified.
+- ~~Whether linking external video and interactive resources is in scope as a content type~~ - resolved 2026-08-05 by default: a source is any URL (video included); no dedicated content type in v1.
