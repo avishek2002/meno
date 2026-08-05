@@ -48,7 +48,7 @@ Now learning: [[rust-for-backend/rust-for-backend-hub|Rust for backend]]
 (hands off during refreshes)
 ````
 
-**Course hub (`<slug>-hub.md`):** the derived block holds (a) a Mermaid `graph TD` of module dependencies and (b) one entry per module. A module whose lessons have no bodies yet appears as plain text with status - "02 borrowing in practice (planned)" - never as a broken wikilink; once its lessons exist, the entry becomes wikilinks to them, each with a one-line why. This skeleton-time rule is the spec `generate-curriculum` builds against.
+**Course hub (`<slug>-hub.md`):** the derived block holds (a) a Mermaid `graph TD` of module dependencies and (b) one entry per module. A module whose lessons have no bodies yet appears as plain text with status - "02 borrowing in practice (planned)" - never as a broken wikilink; once its lessons exist, the entry becomes wikilinks to them, each with a one-line why. This skeleton-time rule is the spec `generate-curriculum` builds against, and it generalizes to the pure-skeleton state: immediately after skeleton generation, before any module has bodies, every entry is plain text with status.
 
 ````markdown
 # Rust for backend - map

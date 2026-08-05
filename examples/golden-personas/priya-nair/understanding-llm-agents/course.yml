@@ -1,0 +1,43 @@
+schema_version: 1
+slug: understanding-llm-agents
+title: Understanding LLM agents
+created: 2026-08-05
+status: active
+profile: ./profile.md
+hub: ./understanding-llm-agents-hub.md
+objectives:
+  - id: O1
+    text: Explain the core agent loop - a model call, a tool call, and the tool's result chaining together - in your own words, for a hypothetical agent design
+    bloom: understand
+    assessed_by: a short written walkthrough of the loop for a sample agent design, produced from memory without notes
+  - id: O2
+    text: Explain what is in an agent's context at a given step and why it grows or gets pruned as a task runs
+    bloom: understand
+    assessed_by: annotates a sample agent transcript, marking what is in context at each step and why
+  - id: O3
+    text: Describe how an orchestration pattern decides what an agent does next, and distinguish a single-loop agent from a multi-step or multi-agent design
+    bloom: understand
+    assessed_by: classifies two example agent designs by orchestration pattern and justifies each classification in one sentence
+  - id: O4
+    text: Recognize common agent failure modes and name what an evaluation should check, when reading a proposed agent design
+    bloom: understand
+    assessed_by: reviews a short design write-up and flags which failure modes it is vulnerable to and what evaluation criteria are missing
+modules:
+  - n: 1
+    slug: 01-the-agent-loop
+    title: The agent loop and its context
+    status: skeleton
+    est_hours: 3
+    serves: [O1, O2]
+  - n: 2
+    slug: 02-orchestration-patterns
+    title: "Orchestration: how agents decide what happens next"
+    status: skeleton
+    est_hours: 3
+    serves: [O3]
+  - n: 3
+    slug: 03-failure-modes-and-evaluation
+    title: "Where agents fail, and how teams know"
+    status: skeleton
+    est_hours: 2.5
+    serves: [O4]

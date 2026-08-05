@@ -1,6 +1,6 @@
 # Manifest formats (canonical)
 
-Course and module manifests. This document is the spec until `schemas/course.schema.json` and `schemas/module.schema.json` land in Phase 2. Decentralized on purpose: per-module manifests own all mutable state, so parallel writes never collide. **`course.yml` is a derived view**: regenerated from `profile.md` plus the module manifests (statuses included), never hand-edited - anything a tool needs to change lives in a `module.yml`.
+Course and module manifests, formalized in `schemas/course.schema.json` and `schemas/module.schema.json` and machine-checked by `tools/validate.ts` (schema, derived-view drift, Bloom ceiling, budget sums, source records); this document remains the canonical prose definition. Decentralized on purpose: per-module manifests own all mutable state, so parallel writes never collide. **`course.yml` is a derived view**: regenerated from `profile.md` plus the module manifests (statuses included), never hand-edited - anything a tool needs to change lives in a `module.yml`.
 
 ## module.yml (the mutable truth)
 
@@ -24,7 +24,7 @@ objectives:
     bloom: apply               # never above the profile's bloom_ceiling
 sources:                       # 2-4, each FETCHED this session; see sourcing.md
   - title: The Rust Book, ch. 4
-    url: https://doc.rust-lang.org/book/ch04-00-understanding-ownership.html
+    url: https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html
     archived_url: https://web.archive.org/web/2026...
     accessed: 2026-08-05
     source_type: web           # web | user (user = vault-root-relative path in url field)

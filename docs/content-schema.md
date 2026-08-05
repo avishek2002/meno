@@ -10,9 +10,9 @@ will live in `schemas/` as JSON Schema files and be enforced by `tools/validate.
 | Artifact | Canonical definition (owner) | JSON Schema | Status |
 |---|---|---|---|
 | `profile.md` frontmatter | `elicit-needs/references/profile-format.md` | `schemas/profile.schema.json` | landed (Phase 1) |
-| `module.yml` | `generate-curriculum/references/manifest-format.md` | `schemas/module.schema.json` | Phase 2 |
-| `course.yml` | `generate-curriculum/references/manifest-format.md` | `schemas/course.schema.json` | Phase 2 |
-| Source records | `generate-curriculum/references/sourcing.md` | embedded in the above | Phase 2 |
+| `module.yml` | `generate-curriculum/references/manifest-format.md` | `schemas/module.schema.json` | landed (Phase 2) |
+| `course.yml` | `generate-curriculum/references/manifest-format.md` | `schemas/course.schema.json` | landed (Phase 2) |
+| Source records | `generate-curriculum/references/sourcing.md` | `$defs/source` in module.schema.json | landed (Phase 2) |
 | Lesson frontmatter | `generate-module/references/lesson-format.md` | `schemas/lesson.schema.json` | Phase 3 |
 | Check blocks (`meno-check`) | `generate-module/references/check-formats.md` | embedded in lesson schema | Phase 3 |
 | `progress/ledger.jsonl` events | `generate-module/references/lesson-format.md` | `schemas/ledger.schema.json` | Phase 3 |

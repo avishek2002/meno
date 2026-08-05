@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/avishek2002/meno/schemas/module.schema.json",
+  "title": "Meno module manifest (module.yml)",
+  "description": "Machine-checkable half of the canonical format owned by .agents/skills/generate-curriculum/references/manifest-format.md. Cross-file rules (budget sums, Bloom ceiling, course.yml mirroring, lesson file existence) are enforced by tools/validate.ts.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "module",
+    "title",
+    "status",
+    "serves",
+    "prerequisites",
+    "est_hours",
+    "concepts",
+    "objectives",
+    "sources",
+    "lessons"
+  ],
+  "properties": {
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "module": {
+      "type": "string",
+      "pattern": "^[0-9]{2}-[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "NN- ordered kebab-case slug, matches the directory name"
+    },
+    "title": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["skeleton", "generated", "in-progress", "mastered", "stale"] },
+    "serves": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "minItems": 1,
+      "description": "course objective ids this module serves"
+    },
+    "prerequisites": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "module slugs that gate this one"
+    },
+    "est_hours": { "type": "number", "exclusiveMinimum": 0 },
+    "concepts": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "minItems": 1
+    },
+    "objectives": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "text", "bloom"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "text": { "type": "string", "minLength": 1 },
+          "bloom": { "$ref": "#/$defs/bloom" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 2,
+      "items": { "$ref": "#/$defs/source" }
+    },
+    "lessons": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["file", "title", "concept", "status"],
+        "properties": {
+          "file": { "type": "string", "pattern": "\\.md$" },
+          "title": { "type": "string", "minLength": 1 },
+          "concept": { "type": "string", "minLength": 1 },
+          "status": { "enum": ["planned", "generated", "reviewed", "stale"] }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "bloom": { "enum": ["remember", "understand", "apply", "analyze", "evaluate", "create"] },
+    "source": {
+      "type": "object",
+      "required": ["title", "url", "archived_url", "accessed", "source_type", "why"],
+      "properties": {
+        "title": { "type": "string", "minLength": 1 },
+        "url": { "type": "string", "minLength": 1 },
+        "archived_url": { "type": "string" },
+        "accessed": { "type": "string", "format": "date" },
+        "source_type": { "enum": ["web", "user"] },
+        "why": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": true
+    }
+  }
+}

@@ -1,0 +1,51 @@
+schema_version: 1
+module: 01-the-agent-loop
+title: The agent loop and its context
+status: skeleton
+serves: [O1, O2]
+prerequisites: []
+est_hours: 3
+concepts:
+  - agent-loop
+  - context-window-management
+objectives:
+  - id: M1-1
+    text: Narrate the sequence of a model call, a tool call, and the tool's returned result within a single agent turn
+    bloom: understand
+  - id: M1-2
+    text: Explain what counts toward an agent's context at a given step and why context accumulates or gets pruned across a long-running task
+    bloom: understand
+sources:
+  - title: Building Effective AI Agents
+    url: https://www.anthropic.com/engineering/building-effective-agents
+    archived_url: https://web.archive.org/web/20260805033902/https://www.anthropic.com/engineering/building-effective-agents
+    accessed: 2026-08-05
+    source_type: web
+    why: defines the augmented-LLM building block and the workflows-vs-agents distinction the lesson uses to name what "the agent loop" is
+  - title: Tool use with Claude (overview)
+    url: https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview
+    archived_url: https://web.archive.org/web/20260805033937/https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview
+    accessed: 2026-08-05
+    source_type: web
+    why: walks the model-call to tool-call to tool-result round trip the lesson paraphrases as "the loop", including how a model can guess an unsupplied argument
+  - title: Context windows (Claude docs)
+    url: https://platform.claude.com/docs/en/build-with-claude/context-windows
+    archived_url: https://web.archive.org/web/20260805034729/https://platform.claude.com/docs/en/build-with-claude/context-windows
+    accessed: 2026-08-05
+    source_type: web
+    why: enumerates exactly what counts toward context at each turn (system prompt, messages, tool results, tool definitions, output) and how it accumulates
+  - title: Effective context engineering for AI agents
+    url: https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents
+    archived_url: https://web.archive.org/web/20260805034214/https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents
+    accessed: 2026-08-05
+    source_type: web
+    why: explains why context keeps growing in an agent loop and why it must be curated or pruned ("context rot"), anchoring the "why" half of M1-2
+lessons:
+  - file: 01-agent-loop.md
+    title: "The agent loop: model call, tool call, result"
+    concept: agent-loop
+    status: planned
+  - file: 02-context-windows.md
+    title: What's in context, and why it changes
+    concept: context-window-management
+    status: planned

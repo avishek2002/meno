@@ -1,0 +1,45 @@
+schema_version: 1
+module: 02-orchestration-patterns
+title: "Orchestration: how agents decide what happens next"
+status: skeleton
+serves: [O3]
+prerequisites: [01-the-agent-loop]
+est_hours: 3
+concepts:
+  - single-agent-control-loops
+  - multi-agent-orchestration
+objectives:
+  - id: M2-1
+    text: Explain how a single-agent control loop (interleaved reasoning and acting) decides its next action
+    bloom: understand
+  - id: M2-2
+    text: Distinguish a single-agent loop from a multi-step or multi-agent orchestration pattern, and identify why a design might use one over the other
+    bloom: understand
+sources:
+  - title: "ReAct: Synergizing Reasoning and Acting in Language Models"
+    url: https://arxiv.org/abs/2210.03629
+    archived_url: https://web.archive.org/web/20260803151324/https://arxiv.org/abs/2210.03629
+    accessed: 2026-08-05
+    source_type: web
+    why: canonical peer-reviewed source for the interleaved reasoning-then-acting single-agent loop pattern M2-1 names
+  - title: How we built our multi-agent research system
+    url: https://www.anthropic.com/engineering/multi-agent-research-system
+    archived_url: https://web.archive.org/web/20260805034331/https://www.anthropic.com/engineering/multi-agent-research-system
+    accessed: 2026-08-05
+    source_type: web
+    why: primary engineering account of an orchestrator-subagent pattern in production, showing concretely how a lead agent decides what happens next
+  - title: "Building multi-agent systems: when and how to use them"
+    url: https://claude.com/blog/building-multi-agent-systems-when-and-how-to-use-them
+    archived_url: https://web.archive.org/web/20260805034416/https://claude.com/blog/building-multi-agent-systems-when-and-how-to-use-them
+    accessed: 2026-08-05
+    source_type: web
+    why: explains when a design should reach for multi-agent orchestration over a single agent, and the coordination costs, anchoring M2-2's "why one over the other"
+lessons:
+  - file: 01-single-agent-loops.md
+    title: Single-agent control loops
+    concept: single-agent-control-loops
+    status: planned
+  - file: 02-multi-agent-orchestration.md
+    title: Multi-step and multi-agent orchestration
+    concept: multi-agent-orchestration
+    status: planned

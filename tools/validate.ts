@@ -13,6 +13,7 @@ import addFormatsExport from 'ajv-formats';
 // ajv-formats ships CommonJS; under Node ESM the callable lands on .default
 const addFormats = ((addFormatsExport as unknown as { default?: unknown }).default ??
   addFormatsExport) as (ajv: Ajv2020) => void;
+import { parse as parseYaml } from 'yaml';
 import { parseFrontmatter } from '../lib/frontmatter.ts';
 
 export interface Finding {
@@ -148,9 +149,238 @@ export function checkTenancy(_target: string, _files: string[]): Finding[] {
   return findings;
 }
 
+const BLOOM_ORDER = ['remember', 'understand', 'apply', 'analyze', 'evaluate', 'create'];
+
+function bloomAbove(bloom: string, ceiling: string): boolean {
+  const b = BLOOM_ORDER.indexOf(bloom);
+  const c = BLOOM_ORDER.indexOf(ceiling);
+  return b !== -1 && c !== -1 && b > c;
+}
+
+function parseYamlFile(file: string, findings: Finding[], check: string): Record<string, unknown> | null {
+  try {
+    const parsed = parseYaml(readFileSync(file, 'utf8'));
+    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      findings.push({ level: 'error', check, path: relative(repoRoot, file), message: 'not a YAML mapping' });
+      return null;
+    }
+    return parsed as Record<string, unknown>;
+  } catch (e) {
+    findings.push({
+      level: 'error',
+      check,
+      path: relative(repoRoot, file),
+      message: `invalid YAML: ${(e as Error).message}`,
+    });
+    return null;
+  }
+}
+
+interface SourceRecord {
+  title?: string;
+  url?: string;
+  archived_url?: string;
+  accessed?: string;
+  source_type?: string;
+  why?: string;
+}
+
+function checkSourceRecords(sources: SourceRecord[], rel: string, findings: Finding[]): void {
+  const today = new Date().toISOString().slice(0, 10);
+  for (const [i, s] of sources.entries()) {
+    const at = `${rel} sources[${i}]`;
+    if (s.source_type === 'web') {
+      if (!s.archived_url) {
+        findings.push({
+          level: 'warning',
+          check: 'citations',
+          path: rel,
+          message: `${at}: web source with empty archived_url (allowed only with the reason stated in why: "${s.why}")`,
+        });
+      } else if (!/^https:\/\/web\.archive\.org\/web\//.test(s.archived_url)) {
+        findings.push({
+          level: 'error',
+          check: 'citations',
+          path: rel,
+          message: `${at}: archived_url must be a web.archive.org/web/ snapshot, got "${s.archived_url}"`,
+        });
+      }
+      if (s.url && !/^https?:\/\//.test(s.url)) {
+        findings.push({ level: 'error', check: 'citations', path: rel, message: `${at}: web source url must be http(s)` });
+      }
+    } else if (s.source_type === 'user') {
+      if (s.url && !s.url.startsWith('sources/')) {
+        findings.push({
+          level: 'error',
+          check: 'citations',
+          path: rel,
+          message: `${at}: user source url must be a vault-relative path starting with "sources/"`,
+        });
+      }
+      if (s.archived_url) {
+        findings.push({ level: 'error', check: 'citations', path: rel, message: `${at}: user sources are not archived; archived_url must be empty` });
+      }
+    }
+    if (s.accessed && s.accessed > today) {
+      findings.push({ level: 'error', check: 'citations', path: rel, message: `${at}: accessed date ${s.accessed} is in the future` });
+    }
+  }
+}
+
+export function checkCourses(_target: string, files: string[]): Finding[] {
+  const findings: Finding[] = [];
+  const validateCourse = loadSchema('course.schema.json');
+  const validateModule = loadSchema('module.schema.json');
+
+  for (const courseFile of files.filter((f) => f.endsWith('/course.yml'))) {
+    const courseDir = courseFile.slice(0, -'/course.yml'.length);
+    const relCourse = relative(repoRoot, courseFile);
+    const course = parseYamlFile(courseFile, findings, 'manifests');
+    if (!course) continue;
+
+    if (!validateCourse(course)) {
+      for (const err of validateCourse.errors ?? []) {
+        findings.push({ level: 'error', check: 'manifests', path: relCourse, message: `${err.instancePath || '/'} ${err.message}` });
+      }
+    }
+
+    // profile context (topic packs have none)
+    let ceiling: string | undefined;
+    let budget: number | undefined;
+    const profilePath = join(courseDir, 'profile.md');
+    if (existsSync(profilePath)) {
+      const { frontmatter } = parseFrontmatter(readFileSync(profilePath, 'utf8'));
+      ceiling = frontmatter?.bloom_ceiling as string | undefined;
+      budget = frontmatter?.budget_hours as number | undefined;
+    }
+
+    // collect module manifests
+    const moduleFiles = files.filter((f) => f.startsWith(join(courseDir, 'modules') + '/') && f.endsWith('/module.yml'));
+    const modules = new Map<string, Record<string, unknown>>();
+    for (const mf of moduleFiles) {
+      const relMod = relative(repoRoot, mf);
+      const mod = parseYamlFile(mf, findings, 'manifests');
+      if (!mod) continue;
+      if (!validateModule(mod)) {
+        for (const err of validateModule.errors ?? []) {
+          findings.push({ level: 'error', check: 'manifests', path: relMod, message: `${err.instancePath || '/'} ${err.message}` });
+        }
+      }
+      const dirSlug = mf.split('/').at(-2)!;
+      if (mod.module !== dirSlug) {
+        findings.push({ level: 'error', check: 'refs', path: relMod, message: `module field "${mod.module}" does not match directory "${dirSlug}"` });
+      }
+      modules.set(String(mod.module), mod);
+
+      // per-module rules
+      const est = mod.est_hours as number;
+      if (typeof est === 'number' && (est < 2 || est > 6)) {
+        findings.push({ level: 'warning', check: 'refs', path: relMod, message: `est_hours ${est} outside the 2-6 sizing guideline` });
+      }
+      const concepts = (mod.concepts as string[]) ?? [];
+      if (concepts.length < 2) {
+        findings.push({ level: 'warning', check: 'refs', path: relMod, message: 'fewer than 2 sibling concepts (allowed only when the material truly has no siblings)' });
+      }
+      for (const obj of (mod.objectives as { bloom?: string; id?: string }[]) ?? []) {
+        if (ceiling && obj.bloom && bloomAbove(obj.bloom, ceiling)) {
+          findings.push({ level: 'error', check: 'refs', path: relMod, message: `objective ${obj.id} bloom "${obj.bloom}" exceeds the profile ceiling "${ceiling}"` });
+        }
+      }
+      for (const lesson of (mod.lessons as { file?: string; concept?: string; status?: string }[]) ?? []) {
+        if (lesson.concept && !concepts.includes(lesson.concept)) {
+          findings.push({ level: 'error', check: 'refs', path: relMod, message: `lesson ${lesson.file} concept "${lesson.concept}" not in the module's concepts list` });
+        }
+        const lessonPath = join(courseDir, 'modules', dirSlug, lesson.file ?? '');
+        if (lesson.status && lesson.status !== 'planned' && !existsSync(lessonPath)) {
+          findings.push({ level: 'error', check: 'refs', path: relMod, message: `lesson ${lesson.file} has status "${lesson.status}" but the file does not exist` });
+        }
+      }
+      checkSourceRecords((mod.sources as SourceRecord[]) ?? [], relMod, findings);
+    }
+
+    // cross-file: course.yml mirrors the module.yml set
+    const courseModules = (course.modules as { slug?: string; status?: string; est_hours?: number; title?: string; serves?: string[]; n?: number }[]) ?? [];
+    const courseSlugs = new Set(courseModules.map((m) => m.slug));
+    for (const slug of modules.keys()) {
+      if (!courseSlugs.has(slug)) {
+        findings.push({ level: 'error', check: 'refs', path: relCourse, message: `module ${slug} exists on disk but is missing from course.yml (derived view is stale)` });
+      }
+    }
+    for (const cm of courseModules) {
+      const mod = modules.get(cm.slug ?? '');
+      if (!mod) {
+        findings.push({ level: 'error', check: 'refs', path: relCourse, message: `course.yml lists module ${cm.slug} but modules/${cm.slug}/module.yml does not exist` });
+        continue;
+      }
+      for (const field of ['status', 'est_hours', 'title'] as const) {
+        if (cm[field] !== mod[field]) {
+          findings.push({
+            level: 'error',
+            check: 'refs',
+            path: relCourse,
+            message: `course.yml module ${cm.slug} ${field} "${cm[field]}" drifted from module.yml "${mod[field]}" (regenerate course.yml)`,
+          });
+        }
+      }
+    }
+
+    // objectives and prerequisites resolve
+    const objectiveIds = new Set(((course.objectives as { id?: string }[]) ?? []).map((o) => o.id));
+    for (const obj of (course.objectives as { id?: string; bloom?: string }[]) ?? []) {
+      if (ceiling && obj.bloom && bloomAbove(obj.bloom, ceiling)) {
+        findings.push({ level: 'error', check: 'refs', path: relCourse, message: `course objective ${obj.id} bloom "${obj.bloom}" exceeds the profile ceiling "${ceiling}"` });
+      }
+    }
+    for (const [slug, mod] of modules) {
+      for (const s of (mod.serves as string[]) ?? []) {
+        if (!objectiveIds.has(s)) {
+          findings.push({ level: 'error', check: 'refs', path: relCourse, message: `module ${slug} serves unknown objective "${s}"` });
+        }
+      }
+      for (const p of (mod.prerequisites as string[]) ?? []) {
+        if (!modules.has(p)) {
+          findings.push({ level: 'error', check: 'refs', path: relCourse, message: `module ${slug} prerequisite "${p}" names no existing module` });
+        }
+      }
+    }
+
+    // budget: honest sums, at most 10 percent over
+    if (typeof budget === 'number' && modules.size > 0) {
+      const total = [...modules.values()].reduce((acc, m) => acc + ((m.est_hours as number) || 0), 0);
+      if (total > budget * 1.1) {
+        findings.push({
+          level: 'error',
+          check: 'refs',
+          path: relCourse,
+          message: `module hours sum to ${total}, more than 10 percent over the ${budget}-hour budget`,
+        });
+      }
+    }
+
+    // hub: exists, carries the dependency map, derived markers balanced
+    const hubPath = join(courseDir, String(course.hub ?? '').replace(/^\.\//, ''));
+    if (!existsSync(hubPath)) {
+      findings.push({ level: 'error', check: 'hub', path: relCourse, message: `hub note "${course.hub}" does not exist` });
+    } else {
+      const hub = readFileSync(hubPath, 'utf8');
+      const relHub = relative(repoRoot, hubPath);
+      if (!hub.includes('```mermaid')) {
+        findings.push({ level: 'error', check: 'hub', path: relHub, message: 'hub note has no mermaid dependency map' });
+      }
+      const starts = (hub.match(/<!-- meno:derived:start -->/g) ?? []).length;
+      const ends = (hub.match(/<!-- meno:derived:end -->/g) ?? []).length;
+      if (starts !== ends || starts === 0) {
+        findings.push({ level: 'error', check: 'hub', path: relHub, message: `derived markers unbalanced (${starts} start, ${ends} end)` });
+      }
+    }
+  }
+  return findings;
+}
+
 type Check = (target: string, files: string[]) => Finding[];
 const CHECKS: Record<string, Check> = {
   profiles: checkProfiles,
+  courses: checkCourses,
   tenancy: checkTenancy,
 };
 
