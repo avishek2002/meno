@@ -15,6 +15,31 @@ _Last updated: 2026-08-05_
 
 ## Done
 
+- 2026-08-05 - **v1.4: supply-chain hardening - CI enforcement, capability paths, the rebinding
+  guard.** Prompted by a security review of v1.3 whose finding was structural: every gate this
+  repository documents ran on the contributor's own machine and reached the maintainer as a ticked
+  checkbox, because `.github/` held nothing but a pull request template. Landed
+  `.github/workflows/gate.yml` - `npm ci` + `npm run gate` + `npm run build` +
+  `node tools/packs.ts --check` on every pull request and every push to `main`; `pull_request`
+  and never `pull_request_target` (which would hand an untrusted branch the base repo's secrets
+  and a write token), `permissions: contents: read`, `persist-credentials: false`, actions pinned
+  to commit shas rather than mutable tags, Node 24 as the floor CONTRIBUTING documents, and
+  deliberately the *same* `npm run gate` a contributor runs, so CI and the local gate cannot
+  drift. `npm run eval` stays manual and CI says so - it shells out to the `claude` CLI, which no
+  runner has. `.github/CODEOWNERS` names the capability-bearing paths (`.github/`, `tools/`
+  including the `tools/test/**` that `npm test` globs and executes, `.agents/skills/`, `.claude/`,
+  the lockfile, `app/client/vite.config.ts`, the entry-point markdown, `schemas/`); advisory today
+  and the file says why - GitHub forbids self-approval, so required code-owner review would make
+  `main` unmergeable for a solo maintainer. App: the `Origin` check turned out not to cover DNS
+  rebinding at all (once the attacker's name resolves to 127.0.0.1 their page is same-origin, so
+  no `Origin` header is sent and the check never fires) - added a loopback `Host` allowlist ahead
+  of routing, which is the header a browser will not let a page forge; 4 new tests in
+  write-authority.test.ts, needing a new `rawRequest` helper because `fetch`/undici silently
+  replaces a caller-supplied `Host`. New spec `docs/specs/supply-chain.md` states the trust
+  boundary and, in "Verified by", names the holes rather than implying coverage: `.agents/skills/**`
+  is scanned by nothing (`pack-safety` is scoped to `topic-packs/` and `org/`), its
+  instruction-shaped-phrase patterns are non-blocking warnings, and a cited URL is reviewed at one
+  time and fetched by an agent at another. `.gitignore` gained `.claude/worktrees/`.
 - 2026-08-05 - **v1.3: org deployment as a git-native pattern (docs/org-deployment.md +
   docs/integration-surface.md).** The third maintainer ask ("managed shared content at
   organizational level, RBAC, incorporated into in-house systems") read as a hosted-platform
@@ -165,3 +190,14 @@ _Last updated: 2026-08-05_
 
 ## On the agenda (backlog, not started)
 
+- **Extend `pack-safety`'s file scan to `.agents/skills/**`** - at minimum the error-level
+  patterns (curl-pipe-to-shell, `process.env`, `~/.ssh`, credential shapes), plus a warning on
+  any newly introduced URL. Skills are prose an agent executes with tool access and nothing
+  scans them today; this is the largest unverified gap named in `docs/specs/supply-chain.md`.
+  Held out of v1.4 only to keep a validate behavior change separate from a CI change.
+- **Decide whether the gate runs `npm run validate -- --strict`** so pack warnings block a
+  merge. Turns three easily-paraphrased regexes into a gate; revisit after the first
+  adversarial pack pull request rather than guessing at the false-positive rate now.
+- **`actionlint` in the gate**, plus a check that no workflow other than `gate.yml` exists -
+  supply-chain spec invariants 1, 2, and 5 are readable but not machine-verified.
+- **Turn on required code-owner review** on the `main` ruleset when a second maintainer exists.

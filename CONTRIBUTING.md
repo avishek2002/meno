@@ -34,6 +34,11 @@ npm run build     once, builds the study app client
 npm start         the study app, for seeing your change live
 ```
 
+`npm run gate`, `npm run build`, and `node tools/packs.ts --check` also run in CI on every
+pull request (`.github/workflows/gate.yml`) - the same commands, so a green run here means
+a green run there. `npm run eval` cannot run in CI (it shells out to the `claude` CLI),
+which is why it stays a reported manual step below.
+
 TypeScript here is **erasable-syntax only** (`erasableSyntaxOnly` is enforced at
 typecheck): no `enum`, no `namespace`, no parameter properties, `import type` for
 type-only imports. Node runs the `.ts` files directly, so non-erasable syntax fails at
@@ -88,6 +93,23 @@ this table stays honest about what has actually been run.
 5. Sources in any committed content follow fetch-before-cite
    (`.agents/skills/generate-curriculum/references/sourcing.md`) - fetched this session,
    archived, never from memory.
+
+## How contributions are reviewed
+
+Reviewing a contribution to this repository is an act of execution, not just of reading:
+`tools/` runs during the gate, `.agents/skills/` is followed by an agent holding tool
+access, and `tools/org-sync.sh` carries whatever lands on `main` into private org
+deployments. Two consequences, both binding on reviewers as much as on contributors:
+
+- **CI runs the gate, not the maintainer's laptop.** An unreviewed branch is not checked
+  out and run locally to find out whether it is green; that is what
+  `.github/workflows/gate.yml` is for.
+- **Some diffs are code review even when they do not look like code.** Anything under
+  `.github/`, `tools/` (including `tools/test/**`, which `npm test` globs and executes),
+  `.agents/skills/**`, `package.json`, `package-lock.json`, `app/client/vite.config.ts`,
+  or the entry-point markdown changes what this repository *does* when someone runs it.
+  `.github/CODEOWNERS` is the list, and [docs/specs/supply-chain.md](docs/specs/supply-chain.md)
+  says what is machine-checked and what is not.
 
 Pull requests are squash-merged; the checklist in the PR template is the review
 contract.

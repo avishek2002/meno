@@ -1,0 +1,46 @@
+name: gate
+
+# `pull_request`, never `pull_request_target`. This workflow checks out and runs
+# a contributor's branch; `pull_request_target` would hand that code the base
+# repository's secrets and a write-scoped token. Running it here is the whole
+# point - the maintainer should not have to execute an unreviewed branch on
+# their own machine to find out whether it is green.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # actions pinned to a commit sha, not a tag: a tag is mutable and a moved
+      # tag is the cheapest supply-chain attack there is. The trailing comment
+      # is the human-readable version.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          # the floor CONTRIBUTING.md documents - if the gate passes here it
+          # passes for every supported runtime
+          node-version: 24
+          cache: npm
+      # `npm ci` (not `npm install`): installs exactly the committed lockfile
+      # and fails on drift, so a pull request cannot quietly resolve a
+      # different dependency tree than the one under review
+      - run: npm ci
+      # the same command CONTRIBUTING.md tells a contributor to run, verbatim -
+      # if CI and the local gate ever diverge, the local one stops being
+      # trusted
+      - run: npm run gate
+      - run: npm run build
+      - run: node tools/packs.ts --check

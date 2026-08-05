@@ -84,9 +84,17 @@ Write disciplines: the ledger is appended with a single sub-4096-byte `write()` 
 `O_APPEND` descriptor (atomic against the agent appending concurrently - no lockfile);
 everything else is same-directory temp file + fsync + rename, guarded by `If-Match`.
 
-Security posture for a private vault: bind `127.0.0.1` only; reject foreign `Origin`
-headers; every request-derived path is rejected on `..` before resolution, must stay under
-the content root after resolution, and must not escape via symlink after `realpath`.
+Security posture for a private vault: bind `127.0.0.1` only; require a loopback `Host`
+header; reject foreign `Origin` headers; every request-derived path is rejected on `..`
+before resolution, must stay under the content root after resolution, and must not escape
+via symlink after `realpath`.
+
+The `Host` check is what closes DNS rebinding, and it is not redundant with the `Origin`
+check. Once an attacker's name resolves to `127.0.0.1`, their page is same-origin with the
+app, so its requests carry no `Origin` header at all and the `Origin` check never fires;
+the `Host` header still names the attacker's domain, and a browser will not let a page
+forge it. `Origin` covers ordinary cross-site requests, `Host` covers rebound ones, and
+both run before routing so they cover writes and unrouted paths equally.
 
 ## Data touched
 
@@ -109,7 +117,8 @@ the content root after resolution, and must not escape via symlink after `realpa
 5. Correctness never depends on a watcher or cache; every read endpoint rebuilds truth by
    walking the tree.
 6. Every request-derived path stays under the content root after realpath.
-7. The server binds `127.0.0.1` only and rejects foreign-origin requests.
+7. The server binds `127.0.0.1` only, rejects foreign-origin requests, and rejects any
+   request whose `Host` header is not a loopback name - both checks run before routing.
 8. Exactly one implementation exists for grading, lesson parsing, mastery derivation, and
    markdown rendering - the app imports `lib/`, never re-implements it.
 
@@ -119,8 +128,12 @@ the content root after resolution, and must not escape via symlink after `realpa
   write route, the appendUiEvent throw, a no-agent-literal source assertion, and a full
   scripted UI session asserting zero gates unlocked, zero transfer evidence gained.
 - Invariants 3, 5, 6, 7: `app/test/api.test.ts` - answer-stripping, discovery
-  mid-process, traversal/symlink suite, origin rejection, todos line-diff round-trip,
-  If-Match 409, and a 50-submit + concurrent-agent-appender ledger integrity test.
+  mid-process, traversal/symlink suite, todos line-diff round-trip, If-Match 409, and a
+  50-submit + concurrent-agent-appender ledger integrity test. Invariant 7's two header
+  checks live in `app/test/write-authority.test.ts`: foreign-origin rejection, rebound
+  `Host` rejection with no `Origin` present, the loopback forms that must still pass, and
+  coverage of a write route and an unrouted path. Forging a `Host` header needs
+  `helpers.ts`'s `rawRequest`, because `fetch` replaces a caller-supplied one.
 - Invariant 4: by construction (no code path); the ledger check re-asserts at rest.
 - "Example course fully navigable": live smoke run recorded in the Phase 4 pull request
   (API walk of tree, course, lesson, submit, todos, progress against the example tenant,
@@ -131,3 +144,8 @@ the content root after resolution, and must not escape via symlink after `realpa
 
 1. Whether the "Re-read files" action should gain a server-sent-events hint later - only
    if the manual refresh becomes annoying in practice (cut from v1 by design).
+2. Whether the loopback `Host` allowlist needs a documented escape hatch. It deliberately
+   has none: reaching a `127.0.0.1`-bound socket under some other name is what rebinding
+   looks like, so a custom `/etc/hosts` alias or a reverse proxy in front of the app is
+   refused today. Revisit if a real deployment needs one, and add an explicit opt-in flag
+   rather than widening the default.

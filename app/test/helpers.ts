@@ -1,7 +1,7 @@
 import { fileURLToPath } from 'node:url';
 // Test harness: boot the real server on an ephemeral port against a throwaway
 // copy of the committed example tenant. Never mutates examples/ itself.
-import { createServer, type Server } from 'node:http';
+import { createServer, request, type Server } from 'node:http';
 import { mkdtempSync, cpSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -54,4 +54,27 @@ export async function api(app: TestApp, method: string, path: string, body?: unk
     json = { raw: text };
   }
   return { status: res.status, json };
+}
+
+// A socket-level request, because `fetch` cannot express the one thing the
+// rebinding guard is about: undici silently replaces a caller-supplied Host
+// header with the connected authority, so a forged Host only reaches the
+// server through node:http.
+export function rawRequest(
+  app: TestApp,
+  method: string,
+  path: string,
+  headers: Record<string, string> = {},
+): Promise<{ status: number; body: string }> {
+  const url = new URL(app.base);
+  return new Promise((resolve, reject) => {
+    const req = request({ host: url.hostname, port: url.port, method, path, headers }, (res) => {
+      let body = '';
+      res.setEncoding('utf8');
+      res.on('data', (c: string) => (body += c));
+      res.on('end', () => resolve({ status: res.statusCode ?? 0, body }));
+    });
+    req.on('error', reject);
+    req.end();
+  });
 }
