@@ -869,3 +869,77 @@ th {
   padding: 0.4rem 0;
   font-size: 0.92rem;
 }
+
+/* ---------- insights ----------
+   Deliberately one neutral palette throughout: no status-badge/level-badge
+   pass-fail coloring anywhere on this page (docs/specs/insights.md) - it
+   mirrors what happened, it does not judge it. */
+
+.insights-section {
+  margin-bottom: 2rem;
+}
+
+.insights-section h2 {
+  font-size: 1.05rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.4rem;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  gap: 0.75rem;
+  margin: 0.75rem 0 1rem;
+}
+
+.stat-tile {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.8rem;
+  background: var(--bg-subtle);
+}
+
+.stat-label {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin-bottom: 0.25rem;
+}
+
+.stat-value {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.rate-value {
+  font-weight: 600;
+}
+
+.rate-empty {
+  color: var(--text-muted);
+  font-weight: 400;
+  font-style: normal;
+}
+
+.insights-callout {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.85rem 1.1rem;
+  background: var(--bg-subtle);
+  margin: 0.75rem 0;
+}
+
+.insights-callout h3 {
+  margin-top: 0;
+  font-size: 0.95rem;
+}
+
+.insights-notes-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}

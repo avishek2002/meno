@@ -19,6 +19,7 @@ live in `schemas/` as JSON Schema files and are enforced by `tools/validate.ts`.
 | UI-writable ledger events (narrowed) | `docs/specs/app.md` | `schemas/ledger.ui.schema.json` | landed (Phase 4) |
 | `todos.md` lines | `second-brain/references/todo-format.md` | not schema-validated (line format) | - |
 | Hub notes / derived regions | `second-brain/references/vault-conventions.md` | not schema-validated (prose format) | - |
+| Narrative insights-note frontmatter | `study-insights/references/narrative-format.md` | `schemas/insights.schema.json` | landed (v1.1) |
 
 Cross-cutting rules that will hold for every schema:
 

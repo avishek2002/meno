@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/avishek2002/meno/schemas/insights.schema.json",
+  "title": "Meno narrative insights-note frontmatter",
+  "description": "Machine-checkable half of the canonical format owned by .agents/skills/study-insights/references/narrative-format.md. Body-section and cite-your-numbers rules are enforced by tools/validate.ts's insights check.",
+  "type": "object",
+  "required": ["schema_version", "type", "as_of", "generated_at", "courses", "agent", "basis", "metrics_snapshot"],
+  "properties": {
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "type": { "const": "insights" },
+    "as_of": { "type": "string", "format": "date" },
+    "generated_at": { "type": "string", "format": "date" },
+    "courses": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "agent": { "type": "string", "minLength": 1 },
+    "basis": {
+      "type": "object",
+      "required": ["ledger_lines", "ledger_sha256"],
+      "properties": {
+        "ledger_lines": { "type": "integer", "minimum": 0 },
+        "ledger_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      },
+      "additionalProperties": true
+    },
+    "metrics_snapshot": {
+      "type": "object",
+      "description": "The full InsightsReport JSON (lib/insights.ts) this note was written from, embedded verbatim - the cite-your-numbers validate check searches this object for every number the body quotes."
+    }
+  },
+  "additionalProperties": true
+}

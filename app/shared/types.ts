@@ -1,6 +1,15 @@
 // API payload types shared by the server and the client. The server constructs
 // these; the client consumes them. Content formats stay owned by the skill
 // references - these are transport shapes only.
+import type { InsightsReport, Rate } from '../../lib/insights.ts';
+
+// Re-exported (not duplicated) so the client can import it like every other
+// response type below, via a plain `import type { InsightsReport } from
+// '../../../shared/types.ts'` - lib/insights.ts stays the one place the shape
+// is defined. Unlike ProgressResponse.mastery (kept as `unknown` on purpose,
+// since mastery.yml is also read from disk elsewhere), InsightsReport has no
+// second producer to reconcile against, so a direct type import is safe.
+export type { InsightsReport, Rate };
 
 export interface TenantInfo {
   id: string;
@@ -104,6 +113,13 @@ export interface ProgressResponse {
   mastery: unknown; // lib/mastery.ts Mastery - derived live, never read from disk
   due: DueConcept[];
   recent: unknown[];
+}
+
+// InsightsReport plus narrative report files found under insights/ in the
+// vault (see app/server/routes.ts getInsights) - the one field the endpoint
+// adds that lib/insights.ts's pure computeInsights does not know about.
+export interface InsightsResponse extends InsightsReport {
+  notes: string[];
 }
 
 export interface HealthResponse {

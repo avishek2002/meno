@@ -19,6 +19,7 @@ const ROUTES: RouteDef[] = [
   { name: 'course', pattern: /^#\/t\/(?<tenant>[^/]+)\/c\/(?<course>[^/]+)$/ },
   { name: 'todos', pattern: /^#\/t\/(?<tenant>[^/]+)\/todos$/ },
   { name: 'progress', pattern: /^#\/t\/(?<tenant>[^/]+)\/progress$/ },
+  { name: 'insights', pattern: /^#\/t\/(?<tenant>[^/]+)\/insights$/ },
   { name: 'note', pattern: /^#\/t\/(?<tenant>[^/]+)\/n\/(?<path>.+)$/ },
   { name: 'tenant', pattern: /^#\/t\/(?<tenant>[^/]+)$/ },
 ];

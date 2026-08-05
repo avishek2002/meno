@@ -119,5 +119,10 @@ looked up).
 
 ## Open questions
 
-1. Whether `read` events should feed a visible "time spent" view or stay analytics-only -
-   decided when the app's progress views land (Phase 4).
+1. ~~Whether `read` events should feed a visible "time spent" view or stay
+   analytics-only~~ - resolved (v1.1, [insights.md](insights.md)): `read` events stay
+   counts-only. `usage.surface_mix.reads` reports how many reads happened, never how long
+   - `lib/insights.ts` names this explicitly in its own `limits` array ("time studied is
+   not measured: dwell seconds cannot distinguish reading from an open tab"), so the
+   report is honest about the gap rather than quietly filling it with a number `seconds`
+   was never trustworthy enough to support.

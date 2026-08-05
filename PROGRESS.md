@@ -15,6 +15,38 @@ _Last updated: 2026-08-05_
 
 ## Done
 
+- 2026-08-05 - **v1.1 study-insights acceptance loop**: the skill's acceptance run (committed as the 2026-08-08 fixture note under examples/example-learner/insights/) caught two real bugs before ship - lib/vault.ts and the app resolver only matched bare basenames so every path-style wikilink read broken (both now resolve path targets like Obsidian; regression test added), and the course hub's five lesson links were folder-relative (fixed to unique basenames). The ledger fixture's item ids were also corrected to the spec's fully-qualified form (check_usage now honestly 1/21). The narrative note refused to fabricate on both intermediate states - it reported the traced cause instead of fake topic candidates - which is the cite-your-numbers design working.
+- 2026-08-05 - **v1.1: study-insights feature complete.**
+  `lib/insights.ts` (`computeInsights`, pure) and `lib/vault.ts` (graph walk) already existed as the
+  contract; this pass built everything around them. `lib/insights-io.ts`: the shared loader (ledger via
+  a minimal `lib/mastery.ts`-based reimplementation, not `app/server/ledger.ts`, to avoid pulling the UI
+  write path into `lib/`; vault via `loadVaultFiles`+`buildVaultGraph`; todos via a value import of
+  `app/server/todos.ts`'s `parseTodos` - safe one-way edge, confirmed no cycle since `todos.ts` has zero
+  runtime imports of its own; manifests via a `course.yml`/`module.yml` walk that also parses each
+  non-planned lesson for fully-qualified authored check ids). `GET /api/v1/:tenant/insights` (read-only,
+  no POST sibling, adds a `notes: string[]` field for narrative reports under `insights/`).
+  `tools/insights.ts` CLI (`npm run insights --`) sharing the same loader. `InsightsPage.tsx`
+  (`#/t/:tenant/insights`, one neutral palette, no pass/fail coloring, every rate shown as `n/of`) +
+  router + header nav. `schemas/insights.schema.json` for narrative-note frontmatter. `study-insights`
+  skill (user-invoked only, quotes the snapshot, never computes a number, writes dated
+  `content/<tenant>/insights/YYYY-MM-DD-insights.md` notes + an `insights-hub.md`) with
+  `references/narrative-format.md`, symlinked into `.claude/skills/`, listed in AGENTS.md. validate
+  gained an `insights` check (frontmatter schema, six required body sections, cite-your-numbers as a
+  literal-substring match against the note's own embedded `metrics_snapshot` - a warning by default,
+  escalating under `--strict`). 12 new tests in `tools/test/insights.test.ts` (determinism, min_n on the
+  example tenant's one session, `insufficient_data` Rate, the example tenant's real unrepaid ownership
+  override at `gate_ts: 2026-08-07T09:35:00+10:00`, a clock-purity source grep, the vanity denylist, a
+  mastery-never-imports-insights grep, and the validate check's schema/sections/citation paths) plus 4 in
+  `app/test/insights.test.ts` (GET 200 with ledger/mastery bytes unchanged, POST 404). `docs/specs/insights.md`
+  written per the template, owning the metric-definitions table; `docs/specs/validation.md`,
+  `docs/specs/app.md`, `docs/architecture.md`'s phase-to-spec table, and `docs/specs/progress.md`'s open
+  question 1 (read events stay counts-only, resolved) all amended. `npm run typecheck && node --test
+  tools/test/*.test.ts app/test/*.test.ts && npm run validate && npm run build` all green (70 tests
+  passing). Known pre-existing quirk, not touched: the committed example tenant's hand-authored ledger
+  fixture uses short-form `item` ids (`03-ownership#string-move-invalidates`) rather than the
+  fully-qualified `<course>/<module>/<lesson>#<check>` form the live app's `postCheckSubmit` route
+  actually writes, so `usage.check_usage` reports `0/21` for that fixture specifically - an honest
+  reflection of the fixture, not a bug in the new code.
 - 2026-08-05 - **Phase 8 complete (collaboration and evals) - v1 done.** CONTRIBUTING.md full (one-runtime setup, erasable-TS constraint, gate + eval requirements, deliberate-rebaseline rule, honest one-CLI smoke table), .github PR template, topic-packs/README.md spec (packs = pre-contract skeletons, no bodies - bodies generate at adoption against the adopter's profile), docs/specs/quality.md. tools/eval.ts landed: 4 fixtures, deterministic checklist half (43 items, gates absolutely) + judged half (pinned claude-sonnet-5, prompt sha, median-of-3, quantized grid, non-parsing = error not zero, identical-judge gating, 0.1 guard band under observed medians) + anchor set good/mediocre/bad with ranking-and-separation drift alarm; runs.jsonl append-only; baselines committed from a real establishment run and confirmed by an independent verification run (checklists 43/43, curriculum 0.63 vs min 0.4, lessons 0.85 vs min 0.7, anchors 0.8/0.5/0). The anchor alarm proved itself during setup: the first mediocre anchor scored 0 (tied with bad) and failed ranking until it was made genuinely mid-quality. README rewritten for v1 (quickstart, what's inside), AGENTS.md status -> v1 built, npm run eval wired. Demo topic pack lands via its own PR next (the documented path, exercised for real).
 - 2026-08-05 - **Phase 7 complete (tenant durability).** Design doc written first (docs/specs/durability.md: nested-independent-repo mirror model - no submodule, no second remote, the public repo stays structurally ignorant; POSIX shell as the deliberate one-runtime exception; hooks scoped off for mirror pushes; verify-before-every-push). tools/meno-init (idempotent: leakage-guard pre-commit hook that chains to pre-existing hooks, tenant dir, CLI census, next steps) and tools/meno-mirror (init|push|restore|status|verify; gh-created private repo when no URL; PRIVATE-visibility assertion for GitHub remotes, local paths allowed for drills, anything else hard-refused; restore refuses non-empty destinations). Automated e2e drill in the gate (tools/test/mirror.test.ts): init, hook blocks a force-added tenant file, push, outer-repo-ignorance checks (no tracked content/, no mirror URL in config), wipe, refuse-overwrite, restore byte-identical, unverifiable-remote refusal. Honest gap recorded in the spec: the real-GitHub visibility drill is maintainer-manual before first real use. Guide's backup section now shows the concrete commands + 4-command manual fallback.
 - 2026-08-05 - **Phase 6 complete (citation integrity).** audit-citations skill landed (adversarial live-fetch protocol: existence, claim support against why + citing prose, archive liveness, archive match; six verdicts; per-record routing into citation-refresh vs content-refresh; edge rules for multi-fault precedence, FABRICATED-vs-ROTTED evidence, orphaned sources, canonical URL comparison). Permanent seeded-fault fixture committed (examples/seeded-faults: structurally validate-clean mini-course seeding FABRICATED, MISATTRIBUTED, MISMATCHED-ARCHIVE, orphaned-MISATTRIBUTED among clean records; ANSWER-KEY for eval scoring). Acceptance: blind audit (answer key off-limits) caught ALL four faults with correct classes, flagged neither clean record, and proved never-existed via the book's canonical ToC; drill A citation-refresh diff touched exactly one archived_url line with zero prose; drill B content-refresh rewrote from live-fetched sources, removed the fabrication, re-audited all-CLEAN with anatomy intact. sourcing.md gained the CDX-API snapshot lookup (wayback/available lags). Spec: docs/specs/citations.md.

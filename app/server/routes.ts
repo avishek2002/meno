@@ -12,7 +12,9 @@ import { appendUiEvent, readLedgerEvents } from './ledger.ts';
 import { parseTodos, addTodo, patchTodo, parkTodo, sha256 } from './todos.ts';
 import { parseLesson } from '../../lib/lesson.ts';
 import { deriveMastery } from '../../lib/mastery.ts';
-import type { LessonResponse, PublicCheck, SubmitRequest, SubmitResponse } from '../shared/types.ts';
+import { computeInsights } from '../../lib/insights.ts';
+import { loadInsightsInputs } from '../../lib/insights-io.ts';
+import type { LessonResponse, PublicCheck, SubmitRequest, SubmitResponse, InsightsResponse } from '../shared/types.ts';
 import { writeFileAtomic } from './atomic.ts';
 
 interface Ctx {
@@ -159,6 +161,20 @@ const getProgress: Handler = (_req, res, p, ctx) => {
   json(res, 200, { mastery, due, recent: events.slice(-20).reverse() });
 };
 
+// Read-only, walks fresh like every other GET. No POST sibling: insights is a
+// snapshot over existing files, never a write path (docs/specs/insights.md).
+const getInsights: Handler = (_req, res, p, ctx) => {
+  const tenantDir = safePath(ctx.root, p.tenant);
+  const { events, vault, todos, manifests } = loadInsightsInputs(tenantDir);
+  const report = computeInsights(events, vault, todos, manifests, localToday());
+  // narrative reports the study-insights skill has written, surfaced for the
+  // client's "Narrative reports" list - sourced from the same vault walk so
+  // there is no second file-listing implementation
+  const notes = vault.files.filter((f) => /^insights\/[^/]+-insights\.md$/.test(f)).sort();
+  const payload: InsightsResponse = { ...report, notes };
+  json(res, 200, payload);
+};
+
 const getLedger: Handler = (req, res, p, ctx) => {
   const url = new URL(req.url ?? '/', 'http://x');
   const since = url.searchParams.get('since');
@@ -290,6 +306,7 @@ const ROUTES: [string, RegExp, Handler][] = [
   ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/note$/, getNote],
   ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/todos$/, getTodos],
   ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/progress$/, getProgress],
+  ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/insights$/, getInsights],
   ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/ledger$/, getLedger],
   ['POST', /^\/api\/v1\/(?<tenant>[^/]+)\/check\/submit$/, postCheckSubmit],
   ['POST', /^\/api\/v1\/(?<tenant>[^/]+)\/lesson\/read$/, postLessonRead],
