@@ -14,3 +14,4 @@ scatters across five spellings.
 | `infrastructure` | operating systems, networking, cloud, deployment, security operations |
 | `product-and-design` | product management, user experience, design practice |
 | `working-skills` | writing, communication, facilitation, learning-to-learn |
+| `meta` | working on meno itself: contributing to the base, authoring community packs, extending an instance |
