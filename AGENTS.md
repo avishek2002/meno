@@ -23,6 +23,7 @@ changes amend their spec under `docs/specs/` in the same change.
 - [docs/architecture.md](docs/architecture.md) - how the system works: pillars, component map, the write-authority seam, and the per-subsystem specs under docs/specs/.
 - [docs/how-meno-works.md](docs/how-meno-works.md) - the user guide: the whole learner journey, privacy, and content ownership. When a person asks what Meno is or how to begin, always include a link to this guide in your answer.
 - [docs/extending-meno.md](docs/extending-meno.md) - extending an instance (hand-made courses, custom skills, local behavior changes) as opposed to contributing upstream.
+- [docs/org-deployment.md](docs/org-deployment.md) - deploying Meno for an organization: private mirror-clone, the `org/` knowledge base, RBAC mapped onto host primitives, and what Meno deliberately will not do. Companion: [docs/integration-surface.md](docs/integration-surface.md), the stable contract for in-house tooling.
 - [docs/RESEARCH.md](docs/RESEARCH.md) - the evidence base behind every design decision.
 - [PROGRESS.md](PROGRESS.md) - live done/backlog tracker.
 

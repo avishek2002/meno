@@ -52,6 +52,9 @@ gates, the Obsidian graph, todos, private backups - is in
 - [docs/specs/](docs/specs/) - per-subsystem specs: how each piece behaves and why.
 - [PLAN.md](PLAN.md) - the phased build plan and locked decision record.
 - [docs/RESEARCH.md](docs/RESEARCH.md) - the learning-science evidence base.
+- [docs/org-deployment.md](docs/org-deployment.md) - deploying Meno for an organization: a
+  private mirror-clone, a shared `org/` knowledge base, and roles mapped honestly onto your
+  host - as a git-native pattern, not a hosted platform.
 - [CONTRIBUTING.md](CONTRIBUTING.md) - the gate, the eval, the smoke protocol.
 
 ## License
