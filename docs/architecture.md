@@ -79,7 +79,10 @@ Generation prefers adopting a matching pack over regenerating one from scratch (
 run before `elicit-needs` hands off and again as `generate-curriculum`'s own preflight), and a
 finished tenant course can publish back to the community tier through the same reviewed path
 (`publish-to-community`, search-first and sanitize-then-gate in the other direction). Full
-spec: [specs/community.md](specs/community.md).
+spec: [specs/community.md](specs/community.md). An organization's private deployment adds one
+more, optional tier at the same layer as community - **org-private** (`org/packs/`, the pack
+format verbatim, never created by this repository) - detailed in
+[org-deployment.md](org-deployment.md).
 
 ## The write-authority seam
 
@@ -135,6 +138,9 @@ app/                         localhost app: server/ (Node, no build) + client/ (
 tools/                       validate.ts, eval.ts, meno-mirror
 topic-packs/                 community tier: pre-vetted pack skeletons under <domain>/<slug>/,
                              same schema as courses, plus PACK.md provenance and INDEX.md
+org/                         org deployments only (org-deployment.md); reserved,
+                             downstream-owned; org/packs/<domain>/<slug>/ in the same pack
+                             format, never created by this repository
 content/<tenant>/            gitignored; a real learner's Obsidian vault
 ```
 
@@ -158,6 +164,7 @@ spec row is stale.
 | [specs/quality.md](specs/quality.md) | evals, baselines, smoke protocol, topic packs | Phase 8 | - |
 | [specs/insights.md](specs/insights.md) | study-insights snapshot (`lib/insights.ts`), read-only endpoint, CLI, narrative reports | v1.1 | - |
 | [specs/community.md](specs/community.md) | topic-pack layout, search-first, publish-to-community, amend-over-fork | v1.2 | - |
+| [org-deployment.md](org-deployment.md) + [integration-surface.md](integration-surface.md) | org deployment: private mirror-clone, `org/` knowledge base, RBAC mapped to host primitives, the stable integration surface | v1.3 | - |
 
 Vault conventions (wikilinks, hub notes, todos) deliberately have no spec file: the
 `second-brain` skill and its references are the canonical owner, and a spec would duplicate

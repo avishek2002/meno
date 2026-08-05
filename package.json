@@ -12,6 +12,7 @@
     "validate": "node tools/validate.ts",
     "eval": "node tools/eval.ts",
     "insights": "node tools/insights.ts",
+    "export": "node tools/export.ts",
     "typecheck": "tsc --noEmit && tsc --noEmit -p app/client/tsconfig.json",
     "test": "node --test tools/test/*.test.ts app/test/*.test.ts",
     "gate": "npm run typecheck && npm test && npm run validate"

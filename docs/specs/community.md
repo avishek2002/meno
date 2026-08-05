@@ -147,6 +147,10 @@ graph TD
 1. Whether `pack-overlap`'s 0.6 token-overlap threshold needs tuning once more than one pack
    exists per domain - revisit after the first real amendment-vs-new-pack pull request decides
    a live case.
-2. Whether `org/packs/` (private org packs, same shape, referenced in `pack.schema.json`'s
+2. ~~Whether `org/packs/` (private org packs, same shape, referenced in `pack.schema.json`'s
    path pattern and `checkPacks`'s dual-root walk) needs its own spec section once a real org
-   tier ships - currently speculative plumbing with no content and no dedicated skill.
+   tier ships~~ - resolved (v1.3): the deployment pattern lives in
+   [docs/org-deployment.md](../org-deployment.md) rather than in this spec, since `org/` is a
+   downstream-owned root with no content or skill of its own in this repository - the same
+   reason `content/<tenant>/` has no spec section here either. This spec's job stays what it
+   was: the pack format `org/packs/` reuses verbatim.

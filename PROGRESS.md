@@ -15,6 +15,61 @@ _Last updated: 2026-08-05_
 
 ## Done
 
+- 2026-08-05 - **v1.3: org deployment as a git-native pattern (docs/org-deployment.md +
+  docs/integration-surface.md).** The third maintainer ask ("managed shared content at
+  organizational level, RBAC, incorporated into in-house systems") read as a hosted-platform
+  request, which PLAN.md's locked out-of-scope list rules out (no accounts, no server, no
+  database) - delivered instead as a documented pattern plus a stable integration surface, no
+  new runtime. `docs/org-deployment.md`: (a) the private mirror-clone (bare-clone + push to a
+  new private repo, `upstream` remote kept for pulls - distinct from `tools/meno-mirror`'s
+  per-tenant backup, disambiguated explicitly); (b) `org/` as a reserved downstream-owned root
+  using the pack format verbatim (`org/README.md`, `org/packs/<domain>/<slug>/`) - this was
+  already-landed plumbing (`checkPacks`'s dual-root walk, `pack.schema.json` and
+  `course.schema.json`'s `org/packs/` patterns, org domains already exempt from
+  `topic-packs/DOMAINS.md`'s closed vocabulary), now finally documented; one format, three
+  distributions (upstream community / org-private / tenant-local), contributing upstream is a
+  directory move; (c) RBAC mapped honestly onto GitHub/GitLab primitives (a table: KB admin =
+  Maintain + CODEOWNERS on `org/` / GitLab Maintainer, contributor = Write + required-review
+  branch protection, learner = Read / Reporter), stating plainly that a domain-scoped team is
+  not expressible in one repository, and that server-side branch protection on a private repo
+  is a paid GitHub tier but free on GitLab - headlined by "git permissions are write control
+  and distribution control, not read control after a clone exists"; (d) the org never sees a
+  learner's progress, structurally (content/ stays gitignored in every clone including the
+  org's); (e) upstream updates via `tools/org-sync.sh`; (f) "What Meno will not do, and why" -
+  no accounts, no read enforcement after distribution, no progress telemetry to the org (the
+  load-bearing refusal - a gradebook and an honest mastery signal cannot coexist, full
+  argument given, learner-run redacted export as the alternative), no SCORM/LTI/seat
+  management. `docs/integration-surface.md`: schemas (additive within `schema_version`),
+  the ledger read format (8 event types, unknown-type-tolerant, external systems never write
+  it - two writers with disjoint authority is the correctness argument, not a convention), the
+  stable `GET /api/v1/*` read routes (write routes are explicitly not surface; server binds
+  `127.0.0.1` only, so integration means same-machine or exports), and exports via
+  `tools/export.ts`; a "not committed surface" list (`lib/*` signatures, the client bundle,
+  `mastery.yml` as a file, CLI stdout). `tools/export.ts` (new): `<tenant-dir>
+  [--format jsonl|csv] [--redact] [--out <dir>]`, emits `ledger.jsonl`/`ledger.csv` (flat,
+  documented columns), `mastery.csv` (derived live via `deriveMastery`, never read from disk),
+  `insights.json` (`computeInsights` via `lib/insights-io.ts`); `--redact` strips only
+  `rubric` and `reason`; `npm run export` wired. `tools/org-sync.sh` (new, POSIX shell,
+  meno-mirror's voice): fetches `upstream`, refuses any merge whose diff touches `content/` or
+  `org/` (`MENO_SYNC_SKIP_GATE=1` test-only escape hatch, documented in the script), else
+  merges and runs `npm run gate`. Tests: `tools/test/export.test.ts` (5 tests - redact is a
+  byte-diff of events minus exactly those two fields, determinism across two runs, CSV column
+  shape, mastery.csv matches `deriveMastery` directly, `examples/` never mutated, all against a
+  throwaway tenant copy) and `tools/test/org-sync.test.ts` (4 tests - refuses on `org/` touch,
+  refuses on `content/` touch, merges a clean change, reports up-to-date; a tiny
+  upstream+downstream repo pair per test, `GIT_CONFIG_GLOBAL=/dev/null` isolation following
+  `mirror.test.ts`'s `makeFreshMeno` pattern). Amended:
+  `docs/specs/repo-and-tenancy.md` (`org/` named alongside `content/` as a reserved
+  downstream-owned root - behavior line + invariant 3 extended), `docs/architecture.md`
+  (`org/` in the repository layout block, one line in the three-content-tiers prose, a
+  phase-to-spec row for v1.3), `docs/how-meno-works.md` ("Using Meno in an organization"
+  pointer section), `CONTRIBUTING.md` (one line routing org deployments to the new doc),
+  `README.md` ("For the curious" gains the org doc), `AGENTS.md` (docs list gains
+  org-deployment.md + integration-surface.md), `docs/specs/community.md` (open question 2
+  resolved - `org/` documented in `docs/org-deployment.md`, not here, same as `content/`).
+  Gate green: `npm run typecheck`, `node --test tools/test/*.test.ts app/test/*.test.ts`
+  (81/81), `npm run validate` (0 errors, 0 warnings).
+
 - 2026-08-05 - **v1.2: publish-to-community skill and the read/write closure of the community
   tier.** Built on top of the coordinator-landed contract (domain-scoped `topic-packs/<domain>/<slug>/`,
   `DOMAINS.md`, `PACK.md`, generated `INDEX.md` via `tools/packs.ts`, `pack.schema.json` +

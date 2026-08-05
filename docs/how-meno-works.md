@@ -121,6 +121,17 @@ under `content/` belongs to you, full stop. It is gitignored so it cannot leak i
 public repo, it is backed up only to a private mirror you own, and no part of the base system
 ever reads another tenant's content.
 
+## Using Meno in an organization
+
+Everything above describes one learner's own clone. An organization that wants a shared,
+curated knowledge base with roles and review - without a hosted platform, accounts, or a
+database, none of which this project builds - can deploy Meno as a git-native pattern
+instead: a private mirror-clone of this repository, a reserved `org/` knowledge base in the
+same pack format `topic-packs/` already uses, and roles mapped honestly onto your host's
+real permissions. See [org-deployment.md](org-deployment.md) for the full pattern, including
+the one refusal that makes it trustworthy: an org deployment never sees an individual
+learner's progress, and cannot be configured to.
+
 ## Extending your instance
 
 Want a hand-made course, a custom skill, or different behavior? See

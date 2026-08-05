@@ -19,6 +19,8 @@ ships in the repo.
 - **Your own learning content** - never contributed: everything under `content/` is
   tenant-scoped and gitignored by design, and a pre-commit guard (installed by
   `tools/meno-init`) blocks even a forced attempt.
+- **Org deployments** (a shared knowledge base for an organization, with roles and review) -
+  not a change to this repository at all: see [docs/org-deployment.md](docs/org-deployment.md).
 
 ## Setup and the gate
 

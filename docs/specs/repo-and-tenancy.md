@@ -25,9 +25,17 @@ forks; without the tenancy boundary, one bad commit publishes someone's learning
 4. Anything under `content/` is invisible to git: creating tenant files changes nothing in
    `git status`. The example learner lives under `examples/`, outside `content/`, so no
    ignore rule can ever hide it or leak a real tenant alongside it.
-5. A fresh clone behaves identically on macOS and Linux: symlinks are committed as symlinks
+5. `content/` and `org/` are both reserved downstream-owned roots: this repository never
+   creates either directory and never commits a file under either path. `content/` stays
+   gitignored everywhere (invariant 3 below); `org/` is different in kind, not just in
+   name - it exists only inside an organization's own private deployment
+   ([docs/org-deployment.md](../org-deployment.md)), where it is meant to be committed to
+   that org's repository, not ignored. Upstream's contract is identical either way: it never
+   writes there, so `tools/org-sync.sh` can refuse an incoming merge that touches either path
+   as proof something has gone wrong, not as a routine check.
+6. A fresh clone behaves identically on macOS and Linux: symlinks are committed as symlinks
    and resolve after checkout.
-6. Base content renders on GitHub (standard markdown links); tenant content is
+7. Base content renders on GitHub (standard markdown links); tenant content is
    Obsidian-canonical (wikilinks). The committed example tenant uses wikilinks like any
    tenant; its degraded GitHub rendering is accepted.
 
@@ -59,8 +67,8 @@ Entry-point chain: `CLAUDE.md` (shim) -> `AGENTS.md` (canonical) -> skills, guid
 1. `CLAUDE.md` is exactly one line: `@AGENTS.md`.
 2. Every skill is listed in `AGENTS.md` and readable as plain markdown without native skill
    support.
-3. No committed file under `content/`; no base file references a path under `content/`
-   except as a pattern or example.
+3. No committed file under `content/` or `org/` in this repository; no base file references
+   a path under either except as a pattern or example.
 4. `.claude/skills/` entries are relative symlinks into `.agents/skills/` (relative, so
    they survive clone and directory moves).
 5. Every manifest and lesson carries `schema_version`; consumers tolerate stale versions
