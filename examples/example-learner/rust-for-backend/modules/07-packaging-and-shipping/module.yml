@@ -1,0 +1,39 @@
+schema_version: 1
+module: 07-packaging-and-shipping
+title: Packaging and shipping the service cheaply
+status: skeleton
+serves: [O5]
+prerequisites: [06-persistence]
+est_hours: 3
+concepts:                      # siblings: release profiles, minimal deployment
+  - release-profiles
+  - minimal-deployment
+objectives:
+  - id: M7-1
+    text: Configure a Cargo release profile to produce a smaller, optimized binary
+    bloom: apply
+  - id: M7-2
+    text: Build and run the service as a release binary, verifying it serves requests standalone
+    bloom: apply
+sources:                       # 2, each fetched this session; see sourcing.md
+  - title: "The Cargo Book: Profiles"
+    url: https://doc.rust-lang.org/cargo/reference/profiles.html
+    archived_url: https://web.archive.org/web/20260805034331/https://doc.rust-lang.org/cargo/reference/profiles.html
+    accessed: 2026-08-05
+    source_type: web
+    why: "documents release-profile settings (opt-level, lto, strip) that lesson 1 tunes for a small, cheap-to-run binary"
+  - title: "The Cargo Book: cargo build"
+    url: https://doc.rust-lang.org/cargo/commands/cargo-build.html
+    archived_url: https://web.archive.org/web/20260805034826/https://doc.rust-lang.org/cargo/commands/cargo-build.html
+    accessed: 2026-08-05
+    source_type: web
+    why: documents cargo build --release, which lesson 2 uses to produce the shipped binary
+lessons:
+  - file: 01-release-profiles.md
+    title: Cargo release profiles
+    concept: release-profiles
+    status: planned
+  - file: 02-minimal-deployment.md
+    title: Building and running the release binary
+    concept: minimal-deployment
+    status: planned

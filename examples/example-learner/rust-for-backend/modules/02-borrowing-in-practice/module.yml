@@ -1,0 +1,42 @@
+schema_version: 1
+module: 02-borrowing-in-practice
+title: Borrowing and lifetimes in practice
+status: skeleton
+serves: [O1]
+prerequisites: [01-syntax-and-ownership-basics]
+est_hours: 3
+concepts:                      # siblings: borrowing, lifetimes
+  - borrowing
+  - lifetimes
+objectives:
+  - id: M2-1
+    text: Rewrite a function that takes ownership unnecessarily to borrow instead, satisfying the borrow checker
+    bloom: apply
+  - id: M2-2
+    text: Predict whether a snippet compiles by applying the borrow checker's mutable-or-many-immutable rule
+    bloom: apply
+  - id: M2-3
+    text: Annotate a function signature with the lifetime parameter it needs when the compiler requires one
+    bloom: apply
+sources:                       # 2, each fetched this session; see sourcing.md
+  - title: "The Rust Book, ch. 4.2: References and Borrowing"
+    url: https://doc.rust-lang.org/book/ch04-02-references-and-borrowing.html
+    archived_url: https://web.archive.org/web/20260805033733/https://doc.rust-lang.org/book/ch04-02-references-and-borrowing.html
+    accessed: 2026-08-05
+    source_type: web
+    why: explains the borrow checker's one-mutable-or-many-immutable-references rule that lesson 1's exercises apply
+  - title: "The Rust Book, ch. 10.3: Validating References with Lifetimes"
+    url: https://doc.rust-lang.org/book/ch10-03-lifetime-syntax.html
+    archived_url: https://web.archive.org/web/20260805033756/https://doc.rust-lang.org/book/ch10-03-lifetime-syntax.html
+    accessed: 2026-08-05
+    source_type: web
+    why: covers lifetime annotation syntax and elision rules that lesson 2 applies to the longest-style example
+lessons:
+  - file: 01-borrowing.md
+    title: Borrowing and references
+    concept: borrowing
+    status: planned
+  - file: 02-lifetimes.md
+    title: Lifetimes
+    concept: lifetimes
+    status: planned

@@ -1,0 +1,39 @@
+schema_version: 1
+module: 06-persistence
+title: Persisting short codes and click counts
+status: skeleton
+serves: [O4]
+prerequisites: [05-http-layer-with-axum]
+est_hours: 4
+concepts:                      # siblings: embedded storage, serialization
+  - embedded-storage
+  - serialization
+objectives:
+  - id: M6-1
+    text: Use sled to durably insert and retrieve key-value pairs (short code to redirect target)
+    bloom: apply
+  - id: M6-2
+    text: Use serde to serialize and deserialize a domain struct for storage
+    bloom: apply
+sources:                       # 2, each fetched this session; see sourcing.md
+  - title: sled crate documentation
+    url: https://docs.rs/sled/latest/sled/
+    archived_url: https://web.archive.org/web/20260805034033/https://docs.rs/sled/latest/sled/
+    accessed: 2026-08-05
+    source_type: web
+    why: documents opening a sled database and insert/get operations that lesson 1 uses for short-code storage
+  - title: serde crate documentation
+    url: https://docs.rs/serde/latest/serde/
+    archived_url: https://web.archive.org/web/20260723040415/https://docs.rs/serde/latest/serde/
+    accessed: 2026-08-05
+    source_type: web
+    why: explains serde's trait-based (de)serialization that lesson 2 uses to store domain structs
+lessons:
+  - file: 01-embedded-storage.md
+    title: Embedded storage with sled
+    concept: embedded-storage
+    status: planned
+  - file: 02-serialization.md
+    title: Serialization with serde
+    concept: serialization
+    status: planned

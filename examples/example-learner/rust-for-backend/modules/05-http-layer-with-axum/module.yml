@@ -1,0 +1,47 @@
+schema_version: 1
+module: 05-http-layer-with-axum
+title: Building the HTTP layer with Axum and async
+status: skeleton
+serves: [O3]
+prerequisites: [04-modeling-the-domain]
+est_hours: 5
+concepts:                      # siblings: routing, async handlers, request/response handling
+  - axum-routing
+  - async-handlers
+  - request-response-handling
+objectives:
+  - id: M5-1
+    text: Build an Axum Router that maps HTTP paths to handler functions
+    bloom: apply
+  - id: M5-2
+    text: Write an async handler function that uses #[tokio::main] and .await to process a request
+    bloom: apply
+  - id: M5-3
+    text: Extract path parameters and request bodies in an Axum handler and return an HTTP response
+    bloom: apply
+sources:                       # 2, each fetched this session; see sourcing.md
+  - title: Axum crate documentation
+    url: https://docs.rs/axum/latest/axum/
+    archived_url: https://web.archive.org/web/20260805034703/https://docs.rs/axum/latest/axum/
+    accessed: 2026-08-05
+    source_type: web
+    why: documents Router, handlers, and extractors that lessons 1 and 3 use to build the service's routes
+  - title: "Tokio Tutorial: Hello Tokio"
+    url: https://tokio.rs/tokio/tutorial/hello-tokio
+    archived_url: https://web.archive.org/web/20260805034008/https://tokio.rs/tokio/tutorial/hello-tokio
+    accessed: 2026-08-05
+    source_type: web
+    why: shows the #[tokio::main] and .await pattern that lesson 2's async handlers are built on
+lessons:
+  - file: 01-axum-routing.md
+    title: Routing with Axum
+    concept: axum-routing
+    status: planned
+  - file: 02-async-handlers.md
+    title: Async handlers with Tokio
+    concept: async-handlers
+    status: planned
+  - file: 03-request-response-handling.md
+    title: Request and response handling
+    concept: request-response-handling
+    status: planned

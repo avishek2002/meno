@@ -1,0 +1,39 @@
+schema_version: 1
+module: 03-error-handling
+title: Error handling with Result and Option
+status: skeleton
+serves: [O2]
+prerequisites: [02-borrowing-in-practice]
+est_hours: 3
+concepts:                      # siblings: Result/Option, the ? operator
+  - result-and-option
+  - question-mark-operator
+objectives:
+  - id: M3-1
+    text: Use Result and Option to represent link-shortener operations that can fail or return nothing
+    bloom: apply
+  - id: M3-2
+    text: Use the ? operator to propagate errors instead of writing manual match expressions
+    bloom: apply
+sources:                       # 2, each fetched this session; see sourcing.md
+  - title: "The Rust Book, ch. 9: Error Handling"
+    url: https://doc.rust-lang.org/book/ch09-00-error-handling.html
+    archived_url: https://web.archive.org/web/20260805033822/https://doc.rust-lang.org/book/ch09-00-error-handling.html
+    accessed: 2026-08-05
+    source_type: web
+    why: explains Result for recoverable errors versus panic! for unrecoverable ones; anchors lesson 1
+  - title: "Rust by Example: The ? operator"
+    url: https://doc.rust-lang.org/rust-by-example/std/result/question_mark.html
+    archived_url: https://web.archive.org/web/20260805033845/https://doc.rust-lang.org/rust-by-example/std/result/question_mark.html
+    accessed: 2026-08-05
+    source_type: web
+    why: shows the ? operator replacing manual match expressions for error propagation; anchors lesson 2
+lessons:
+  - file: 01-result-and-option.md
+    title: Result and Option
+    concept: result-and-option
+    status: planned
+  - file: 02-question-mark-operator.md
+    title: The ? operator
+    concept: question-mark-operator
+    status: planned

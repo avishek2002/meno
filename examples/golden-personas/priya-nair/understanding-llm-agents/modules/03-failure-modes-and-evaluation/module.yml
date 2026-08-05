@@ -1,0 +1,51 @@
+schema_version: 1
+module: 03-failure-modes-and-evaluation
+title: "Where agents fail, and how teams know"
+status: skeleton
+serves: [O4]
+prerequisites: [01-the-agent-loop, 02-orchestration-patterns]
+est_hours: 2.5
+concepts:
+  - agent-failure-modes
+  - agent-evaluation-basics
+objectives:
+  - id: M3-1
+    text: Recognize and name common agent failure modes - hallucinated tool arguments, infinite loops, context overflow, and silently swallowed errors - from a description or transcript
+    bloom: understand
+  - id: M3-2
+    text: Identify what an agent evaluation typically checks (task success, cost, latency, safety) at a conceptual level
+    bloom: remember
+sources:
+  - title: "When Agents Do Not Stop: Uncovering Infinite Agentic Loops in LLM Agents"
+    url: https://arxiv.org/abs/2607.01641
+    archived_url: https://web.archive.org/web/20260715033057/https://arxiv.org/abs/2607.01641
+    accessed: 2026-08-05
+    source_type: web
+    why: names the infinite-loop failure mode precisely - agents repeatedly executing model calls, tools, or handoffs when the feedback path is not effectively bounded
+  - title: "SHIELDA: Structured Handling of Exceptions in LLM-Driven Agentic Workflows"
+    url: https://arxiv.org/abs/2508.07935
+    archived_url: https://web.archive.org/web/20260805034549/https://arxiv.org/abs/2508.07935
+    accessed: 2026-08-05
+    source_type: web
+    why: documents how agentic-workflow exceptions get handled superficially and go untraced to their root cause, anchoring the silent-error-swallowing failure mode
+  - title: "AgentBench: Evaluating LLMs as Agents"
+    url: https://arxiv.org/abs/2308.03688
+    archived_url: https://web.archive.org/web/20260805034104/https://arxiv.org/abs/2308.03688
+    accessed: 2026-08-05
+    source_type: web
+    why: canonical benchmark defining what "evaluating an agent" concretely measures (task success across environments), anchoring M3-2 at a recognize level
+  - title: Define your success criteria and build evaluations
+    url: https://platform.claude.com/docs/en/test-and-evaluate/develop-tests
+    archived_url: https://web.archive.org/web/20260805034126/https://platform.claude.com/docs/en/test-and-evaluate/develop-tests
+    accessed: 2026-08-05
+    source_type: web
+    why: primary provider guidance on the multidimensional criteria (accuracy, consistency, latency, cost) a design review should ask an agent proposal to meet
+lessons:
+  - file: 01-failure-modes.md
+    title: Where agents fail
+    concept: agent-failure-modes
+    status: planned
+  - file: 02-evaluation-basics.md
+    title: How teams know an agent design works
+    concept: agent-evaluation-basics
+    status: planned

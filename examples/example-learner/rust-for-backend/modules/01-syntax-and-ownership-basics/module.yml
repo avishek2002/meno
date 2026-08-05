@@ -1,0 +1,53 @@
+schema_version: 1
+module: 01-syntax-and-ownership-basics
+title: Rust syntax and ownership basics
+status: skeleton              # skeleton | generated | in-progress | mastered | stale
+serves: [O1]
+prerequisites: []              # first module, nothing gates it
+est_hours: 4
+concepts:                      # siblings: toolchain, syntax transfer, ownership
+  - cargo-and-toolchain
+  - syntax-for-experienced-developers
+  - ownership
+objectives:
+  - id: M1-1
+    text: Set up a Rust project with Cargo and run it (build, run, and add a dependency)
+    bloom: apply
+  - id: M1-2
+    text: Translate familiar Python and TypeScript constructs (variables, functions, control flow) into idiomatic Rust syntax
+    bloom: apply
+  - id: M1-3
+    text: Predict whether a snippet compiles by applying the rule that each value has one owner
+    bloom: apply
+sources:                       # 3, each fetched this session; see sourcing.md
+  - title: "The Rust Book, ch. 1: Getting Started"
+    url: https://doc.rust-lang.org/book/ch01-00-getting-started.html
+    archived_url: https://web.archive.org/web/20260805033625/https://doc.rust-lang.org/book/ch01-00-getting-started.html
+    accessed: 2026-08-05
+    source_type: web
+    why: covers installing Rust and Cargo and running a first program; anchors lesson 1's toolchain setup
+  - title: "The Rust Book, ch. 3.1: Variables and Mutability"
+    url: https://doc.rust-lang.org/book/ch03-01-variables-and-mutability.html
+    archived_url: https://web.archive.org/web/20260805033645/https://doc.rust-lang.org/book/ch03-01-variables-and-mutability.html
+    accessed: 2026-08-05
+    source_type: web
+    why: explains let vs let mut, const, and shadowing; anchors lesson 2's syntax comparison to Python and TypeScript
+  - title: "The Rust Book, ch. 4.1: What Is Ownership?"
+    url: https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html
+    archived_url: https://web.archive.org/web/20260805033707/https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html
+    accessed: 2026-08-05
+    source_type: web
+    why: states the three ownership rules (one owner, move vs Copy, drop on scope exit) that lesson 3 paraphrases
+lessons:                       # planned at skeleton time, one per concept
+  - file: 01-cargo-and-toolchain.md
+    title: Cargo and the Rust toolchain
+    concept: cargo-and-toolchain
+    status: planned             # planned | generated | reviewed | stale
+  - file: 02-syntax-for-experienced-developers.md
+    title: Rust syntax for Python and TypeScript developers
+    concept: syntax-for-experienced-developers
+    status: planned
+  - file: 03-ownership.md
+    title: Ownership
+    concept: ownership
+    status: planned

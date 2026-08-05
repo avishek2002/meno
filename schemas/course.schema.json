@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/avishek2002/meno/schemas/course.schema.json",
+  "title": "Meno course overview (course.yml, derived view)",
+  "description": "Machine-checkable half of the canonical format owned by .agents/skills/generate-curriculum/references/manifest-format.md. course.yml is regenerated from profile.md plus the module manifests, never hand-edited; tools/validate.ts checks it mirrors the module.yml set.",
+  "type": "object",
+  "required": ["schema_version", "slug", "title", "created", "status", "hub", "objectives", "modules"],
+  "properties": {
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "slug": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+    "title": { "type": "string", "minLength": 1 },
+    "created": { "type": "string", "format": "date" },
+    "status": { "enum": ["active", "draft"] },
+    "profile": {
+      "type": "string",
+      "description": "path to profile.md; absent for topic packs (pre-contract)"
+    },
+    "hub": { "type": "string", "minLength": 1 },
+    "objectives": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "text", "bloom", "assessed_by"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "text": { "type": "string", "minLength": 1 },
+          "bloom": { "enum": ["remember", "understand", "apply", "analyze", "evaluate", "create"] },
+          "assessed_by": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": true
+      }
+    },
+    "modules": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["n", "slug", "title", "status", "est_hours", "serves"],
+        "properties": {
+          "n": { "type": "integer", "minimum": 1 },
+          "slug": { "type": "string", "pattern": "^[0-9]{2}-[a-z0-9]+(-[a-z0-9]+)*$" },
+          "title": { "type": "string", "minLength": 1 },
+          "status": { "enum": ["skeleton", "generated", "in-progress", "mastered", "stale"] },
+          "est_hours": { "type": "number", "exclusiveMinimum": 0 },
+          "serves": { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

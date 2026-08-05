@@ -1,0 +1,53 @@
+schema_version: 1
+module: 04-modeling-the-domain
+title: "Modeling the domain: structs, enums, and traits"
+status: skeleton
+serves: [O2]
+prerequisites: [03-error-handling]
+est_hours: 4
+concepts:                      # siblings: structs, enums, traits
+  - structs
+  - enums
+  - traits
+objectives:
+  - id: M4-1
+    text: Define structs to model the link-shortener's domain (short code, redirect target, click count)
+    bloom: apply
+  - id: M4-2
+    text: Define an enum with variants to represent a closed set of states or error kinds in the domain
+    bloom: apply
+  - id: M4-3
+    text: Implement a trait for one of the domain structs and use it through a trait bound
+    bloom: apply
+sources:                       # 3, each fetched this session; see sourcing.md
+  - title: "The Rust Book, ch. 5.1: Defining and Instantiating Structs"
+    url: https://doc.rust-lang.org/book/ch05-01-defining-structs.html
+    archived_url: https://web.archive.org/web/20260805033914/https://doc.rust-lang.org/book/ch05-01-defining-structs.html
+    accessed: 2026-08-05
+    source_type: web
+    why: shows struct definition and instantiation syntax that lesson 1's domain-modeling exercise reuses
+  - title: "The Rust Book, ch. 6: Enums and Pattern Matching"
+    url: https://doc.rust-lang.org/book/ch06-00-enums.html
+    archived_url: https://web.archive.org/web/20260805033934/https://doc.rust-lang.org/book/ch06-00-enums.html
+    accessed: 2026-08-05
+    source_type: web
+    why: covers enum definitions, match, and if let that lesson 2 applies to model a closed set of states
+  - title: "The Rust Book, ch. 10.2: Traits"
+    url: https://doc.rust-lang.org/book/ch10-02-traits.html
+    archived_url: https://web.archive.org/web/20260805034637/https://doc.rust-lang.org/book/ch10-02-traits.html
+    accessed: 2026-08-05
+    source_type: web
+    why: explains defining and implementing traits and trait bounds that lesson 3 applies
+lessons:
+  - file: 01-structs.md
+    title: Structs
+    concept: structs
+    status: planned
+  - file: 02-enums.md
+    title: Enums and pattern matching
+    concept: enums
+    status: planned
+  - file: 03-traits.md
+    title: Traits
+    concept: traits
+    status: planned
