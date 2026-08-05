@@ -29,6 +29,7 @@ All skills live in `.agents/skills/<name>/SKILL.md` (Claude Code discovers them 
 - `generate-curriculum` - turn a confirmed profile into a course skeleton plus module 1.
 - `generate-module` - write one module's lesson bodies (nine-part anatomy, tiered checks, verified citations).
 - `tutor-session` - run a spaced review session: due computation, Socratic grading, mastery gates with logged overrides, generate-ahead.
+- `audit-citations` - adversarially re-check cited sources against the live web (existence, claim support, archive liveness and match) and route findings into citation-refresh or content-refresh.
 - `extend-meno` - change or add to this Meno instance without breaking its invariants.
 - `second-brain` - vault conventions (wikilinks, hub notes), graph operations, and the `todos.md` shared queue.
 
