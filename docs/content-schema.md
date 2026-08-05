@@ -9,7 +9,7 @@ will live in `schemas/` as JSON Schema files and be enforced by `tools/validate.
 
 | Artifact | Canonical definition (owner) | JSON Schema | Status |
 |---|---|---|---|
-| `profile.md` frontmatter | `elicit-needs/references/profile-format.md` | `schemas/profile.schema.json` | Phase 1 |
+| `profile.md` frontmatter | `elicit-needs/references/profile-format.md` | `schemas/profile.schema.json` | landed (Phase 1) |
 | `module.yml` | `generate-curriculum/references/manifest-format.md` | `schemas/module.schema.json` | Phase 2 |
 | `course.yml` | `generate-curriculum/references/manifest-format.md` | `schemas/course.schema.json` | Phase 2 |
 | Source records | `generate-curriculum/references/sourcing.md` | embedded in the above | Phase 2 |

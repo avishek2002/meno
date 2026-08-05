@@ -1,0 +1,23 @@
+{
+  "name": "meno",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "validate": "node tools/validate.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test tools/test/*.test.ts",
+    "gate": "npm run typecheck && npm test && npm run validate"
+  },
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "yaml": "^2.8.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0"
+  }
+}

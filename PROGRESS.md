@@ -15,6 +15,7 @@ _Last updated: 2026-08-05_
 
 ## Done
 
+- 2026-08-05 - **Phase 1 complete (the interview).** schemas/profile.schema.json + tools/validate.ts landed (Node/TS per build addenda: schema, cross-field consistency, body-section checks; 7 unit tests; npm run gate wired). Three golden personas committed (Sam Park, Priya Nair, Marcus Webb) with expected briefs. Acceptance: two simulated interviews (Sam happy path, Priya pushback path) produced valid, distinct profiles matching golden briefs exactly on all structured fields - question budgets 6 and 7, probes ran, confirmation gates fired, Priya's scope pushback fired and resolved to orient. Profiles committed as fixtures (example-learner/rust-for-backend, golden-personas/priya-nair). Skill hardened from run feedback: partial-opener rule, silent-pass feasibility, pushback counting, cascading-pushback recompute, Diagnose probe pattern, floor scaling table, time-question bundling.
 - 2026-08-05 - **Phase 0 complete (skeleton and entry points).** Guides landed (how-meno-works, extending-meno, content-schema stub), specs foundation landed (docs/architecture.md, docs/specs/ template + repo-and-tenancy spec), example-learner stub with the Sam Park persona and golden brief. Acceptance: cold-start `claude -p` run in a fresh clone named the interview as entry point, covered tenant privacy, and linked the user guide (after one AGENTS.md hardening iteration; only Claude Code installed, other CLIs designed-for but unverified); dummy tenant content invisible to `git status`; all five skill symlinks survive a fresh clone on macOS (Linux by construction, not machine-verified).
 - 2026-08-05 - design council at build start (4 specialists) locked the open build questions: one Node runtime for tools (validate.ts/eval.ts; mirror tooling stays shell), per-subsystem specs under docs/specs/, 8-event ledger taxonomy with authored check ids and byte-identical mastery rebuild, app design (node:http, unified/remark, walk-on-request, write authority by construction), eval judge with pinned model + anchor set. Details: docs/architecture.md and PLAN.md build addenda.
 - 2026-08-05 - three open items resolved at build start: (a) static-site-generator choice is moot, superseded by decision 17 (Vite + React + local file API); (b) maintainer-machine agent CLI census: only Claude Code is installed, so Phase 0/8 acceptance runs record Claude Code results and list other CLIs as unverified; (c) video and interactive resources: decided by default - a source is any URL, video included, with no dedicated content type in v1 (additive to revisit).
@@ -28,7 +29,6 @@ _Last updated: 2026-08-05_
 
 ## On the agenda (backlog, not started)
 
-- Phase 1 - harden elicit-needs: golden personas, profile JSON schema, acceptance runs.
 - Phase 2 - harden generate-curriculum: course/module JSON schemas, tools/validate.py, example skeleton.
 - Phase 3 - harden generate-module: lesson/ledger JSON schemas, example module 1, anatomy validation.
 - Phase 4 - the localhost app (Vite + React + file API; recognition checks, todos, progress, wikilink rendering).

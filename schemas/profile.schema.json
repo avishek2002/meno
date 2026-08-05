@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/avishek2002/meno/schemas/profile.schema.json",
+  "title": "Meno learning-contract frontmatter (profile.md)",
+  "description": "Machine-checkable half of the canonical format owned by .agents/skills/elicit-needs/references/profile-format.md. Cross-field rules (budget arithmetic, depth-to-bloom mapping) are enforced by tools/validate.ts.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "tenant",
+    "course",
+    "created",
+    "status",
+    "goal_category",
+    "outcome_statement",
+    "prior_level",
+    "probe_result",
+    "depth",
+    "bloom_ceiling",
+    "hours_per_week",
+    "total_weeks",
+    "budget_hours",
+    "format_prefs",
+    "user_sources",
+    "questions_asked"
+  ],
+  "properties": {
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "tenant": { "type": "string", "minLength": 1 },
+    "course": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "kebab-case slug, matches the course directory name"
+    },
+    "created": { "type": "string", "format": "date" },
+    "status": { "enum": ["draft", "confirmed", "superseded"] },
+    "goal_category": { "enum": ["build", "understand", "career", "teach"] },
+    "outcome_statement": { "type": "string", "minLength": 1 },
+    "prior_level": { "enum": ["none", "vocabulary", "built-small-things", "comfortable"] },
+    "probe_result": { "enum": ["confirmed-at-level", "adjusted-down", "adjusted-up"] },
+    "depth": { "enum": ["orient", "build", "work-ready", "teach"] },
+    "bloom_ceiling": { "enum": ["understand", "apply", "analyze", "create"] },
+    "hours_per_week": { "type": "number", "exclusiveMinimum": 0 },
+    "total_weeks": { "type": "integer", "minimum": 1 },
+    "budget_hours": { "type": "number", "exclusiveMinimum": 0 },
+    "format_prefs": { "type": "string", "minLength": 1 },
+    "user_sources": { "type": "boolean" },
+    "questions_asked": { "type": "integer", "minimum": 1 }
+  },
+  "additionalProperties": true
+}
