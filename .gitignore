@@ -1,0 +1,13 @@
+# OS / editor
+.DS_Store
+
+# Maintainer-local agent memory (public repo; workspace-specific context stays local)
+CLAUDE.local.md
+
+# Secrets - never committed
+.env
+
+# Tenant content: everything a user generates or supplies is theirs and stays local.
+# The committed example tenant lives under examples/, outside content/, on purpose:
+# no gitignore rule can ever hide it or leak a real tenant alongside it.
+content/
