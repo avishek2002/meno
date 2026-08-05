@@ -31,7 +31,7 @@ Map to `prior_level`: a->none, b->vocabulary, c->built-small-things, d->comforta
 Live probe - one pattern per claimed level (no judgment call needed):
 
 - Level a -> **Explain-back**: "In one or two sentences, what do you think <core term> means?" Pick the topic's most load-bearing term. (At level a this mostly confirms rather than filters; keep it light.)
-- Level b -> **Predict**: show a 3-5 line snippet, config, or scenario; "What happens here?" or "What would you expect this to do?"
+- Level b -> **Predict**: show a 3-5 line snippet, config, or scenario; "What happens here?" or "What would you expect this to do?" Or **Diagnose**: show a snippet that fails; "in one sentence, why?" - same difficulty, better when the topic's classic beginner wall is an error.
 - Level c -> **Odd-one-out**: four items where one breaks the concept; "Which doesn't belong, and why?"
 - Level d -> **Odd-one-out, hard variant**: the odd item fails for a subtle reason (an edge case, not a category error).
 - Non-technical topics: replace snippets with a tiny scenario judgment ("A patient presents with... what do you check first?" style) at the same difficulty.
@@ -60,11 +60,11 @@ Time (anchored bands, pick or adjust):
 
 ### Scope pushback (mandatory when triggered)
 
-Rough floor heuristics: orient >= 5 hours, build >= 15, work-ready >= 40, teach >= 80 - scaled up for large fields (a language, a discipline) and down for narrow tools. When budget < floor:
+Rough floor heuristics: orient >= 5 hours, build >= 15, work-ready >= 40, teach >= 80. Scale by topic size: a narrow tool (one library, one feature) roughly halves the floors; a typical subject uses them as stated; a whole language or discipline roughly doubles them. When budget < floor:
 
 > "Honest check: <depth> on <topic> doesn't fit <budget> hours - that mismatch is the number-one reason self-paced learning dies. Two real options: (1) keep <budget> hours and target <one level down> - you can always extend; (2) keep <depth> and stretch to roughly <floor> hours over <weeks>. Which fits your life better?"
 
-Never proceed on the impossible contract; never silently thin the content to make it "fit".
+If one level down still does not clear its own floor, offer the nearest depth that does - both options presented must actually be feasible. Never proceed on the impossible contract; never silently thin the content to make it "fit".
 
 ## Phase 4 - Format and own materials
 

@@ -11,3 +11,7 @@ CLAUDE.local.md
 # The committed example tenant lives under examples/, outside content/, on purpose:
 # no gitignore rule can ever hide it or leak a real tenant alongside it.
 content/
+
+# Node
+node_modules/
+app/client/dist/
