@@ -1,0 +1,126 @@
+#!/bin/sh
+# meno-mirror - back a tenant's private vault up to a private repository you own,
+# and restore it on a fresh machine. Plain git plus optional gh; no daemons.
+#
+# Design (docs/specs/durability.md): content/<tenant>/ becomes an INDEPENDENT git
+# repository nested inside the gitignored path - the public meno repo never learns
+# the mirror exists. Mirror pushes run with hooks scoped off: a backup is
+# machine-managed, and a personal policy hook that blocks it is a backup that
+# silently stops happening.
+#
+# Usage:
+#   tools/meno-mirror init <tenant> [remote-url]   set up the mirror (creates a
+#                                                  private GitHub repo via gh when
+#                                                  no URL is given)
+#   tools/meno-mirror push <tenant>                verify, snapshot, push
+#   tools/meno-mirror restore <remote-url> <tenant>  clone the mirror on a fresh machine
+#   tools/meno-mirror status <tenant>              unpushed changes, last push
+#   tools/meno-mirror verify <tenant>              the privacy guard, standalone
+set -eu
+
+ROOT=$(cd "$(dirname "$0")/.." && pwd)
+CONTENT="$ROOT/content"
+
+# git invocations inside the tenant repo: personal global hooks scoped off
+tgit() {
+  tenant_dir=$1; shift
+  git -C "$tenant_dir" -c core.hooksPath= "$@"
+}
+
+die() { echo "meno-mirror: $*" >&2; exit 1; }
+
+need_tenant() {
+  [ -n "${1:-}" ] || die "which tenant? (directories under content/)"
+  TENANT_DIR="$CONTENT/$1"
+  [ -d "$TENANT_DIR" ] || die "no tenant at content/$1"
+}
+
+verify_remote() {
+  # $1 = tenant dir. Refuses unless the remote is provably safe to receive a
+  # private vault: a PRIVATE GitHub repo, or a local path (the drill case).
+  url=$(tgit "$1" remote get-url origin 2>/dev/null) || die "no mirror remote configured (run init first)"
+  case "$url" in
+    /*|file://*)
+      echo "verify: local-path remote ($url) - no visibility concept, allowed"
+      return 0
+      ;;
+    *github.com*)
+      command -v gh >/dev/null 2>&1 || die "verify: gh is required to assert a GitHub repo's visibility - refusing to push blind"
+      slug=$(echo "$url" | sed -E 's#(git@github\.com:|https://github\.com/)##; s#\.git$##')
+      vis=$(gh repo view "$slug" --json visibility --jq .visibility 2>/dev/null) || die "verify: cannot read $slug visibility - refusing to push blind"
+      [ "$vis" = "PRIVATE" ] || die "verify: $slug visibility is $vis, not PRIVATE - refusing to push your vault"
+      echo "verify: $slug is PRIVATE"
+      return 0
+      ;;
+    *)
+      die "verify: remote $url is not GitHub and not a local path - cannot assert privacy, refusing"
+      ;;
+  esac
+}
+
+cmd=${1:-help}
+case "$cmd" in
+  init)
+    need_tenant "${2:-}"
+    if [ ! -d "$TENANT_DIR/.git" ]; then
+      tgit "$TENANT_DIR" init -q
+      echo "initialized nested repository at content/$2/.git"
+    fi
+    url=${3:-}
+    if [ -z "$url" ]; then
+      command -v gh >/dev/null 2>&1 || die "no remote URL given and gh is not installed - create a private repo by hand and rerun: tools/meno-mirror init $2 <url>"
+      owner=$(gh api user --jq .login)
+      slug="$owner/meno-$2-mirror"
+      echo "creating PRIVATE repository $slug ..."
+      gh repo create "$slug" --private >/dev/null
+      url="https://github.com/$slug.git"
+    fi
+    if tgit "$TENANT_DIR" remote get-url origin >/dev/null 2>&1; then
+      tgit "$TENANT_DIR" remote set-url origin "$url"
+    else
+      tgit "$TENANT_DIR" remote add origin "$url"
+    fi
+    echo "mirror remote: $url"
+    verify_remote "$TENANT_DIR"
+    ;;
+  push)
+    need_tenant "${2:-}"
+    [ -d "$TENANT_DIR/.git" ] || die "content/$2 is not mirrored yet (run init first)"
+    verify_remote "$TENANT_DIR"
+    tgit "$TENANT_DIR" add -A
+    if ! tgit "$TENANT_DIR" diff --cached --quiet || ! tgit "$TENANT_DIR" rev-parse HEAD >/dev/null 2>&1; then
+      tgit "$TENANT_DIR" -c user.name=meno-mirror -c user.email=meno-mirror@localhost \
+        commit -q -m "mirror snapshot $(date +%Y-%m-%dT%H:%M:%S%z)"
+    fi
+    branch=$(tgit "$TENANT_DIR" symbolic-ref --short HEAD)
+    tgit "$TENANT_DIR" push -q -u origin "$branch"
+    echo "pushed content/$2 to $(tgit "$TENANT_DIR" remote get-url origin)"
+    ;;
+  restore)
+    url=${2:-}; tenant=${3:-}
+    [ -n "$url" ] && [ -n "$tenant" ] || die "usage: meno-mirror restore <remote-url> <tenant>"
+    dest="$CONTENT/$tenant"
+    if [ -d "$dest" ] && [ -n "$(ls -A "$dest" 2>/dev/null)" ]; then
+      die "content/$tenant exists and is not empty - refusing to overwrite; move it aside first"
+    fi
+    mkdir -p "$CONTENT"
+    git -c core.hooksPath= clone -q "$url" "$dest"
+    echo "restored content/$tenant from $url"
+    ;;
+  status)
+    need_tenant "${2:-}"
+    [ -d "$TENANT_DIR/.git" ] || die "content/$2 is not mirrored yet"
+    echo "remote: $(tgit "$TENANT_DIR" remote get-url origin 2>/dev/null || echo none)"
+    echo "last snapshot: $(tgit "$TENANT_DIR" log -1 --format='%ci %s' 2>/dev/null || echo none)"
+    changes=$(tgit "$TENANT_DIR" status --porcelain | wc -l | tr -d ' ')
+    echo "unsnapshotted changes: $changes file(s)"
+    ;;
+  verify)
+    need_tenant "${2:-}"
+    verify_remote "$TENANT_DIR"
+    ;;
+  *)
+    sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'
+    exit 1
+    ;;
+esac

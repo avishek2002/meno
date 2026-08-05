@@ -1,0 +1,62 @@
+#!/bin/sh
+# meno-init - one-time setup after cloning meno. Idempotent; run it again anytime.
+#   - installs the leakage-guard pre-commit hook (blocks committing tenant content)
+#   - creates your tenant directory under content/
+#   - reports which agent CLIs are installed
+#   - points at the private-mirror walkthrough
+# Usage: tools/meno-init [tenant-name]   (default tenant: main)
+set -eu
+
+ROOT=$(cd "$(dirname "$0")/.." && pwd)
+TENANT=${1:-main}
+
+# 1. the leakage guard: gitignore already hides content/; this hook stops the one
+#    path around it (git add -f). It chains to any pre-existing hook.
+HOOK="$ROOT/.git/hooks/pre-commit"
+mkdir -p "$ROOT/.git/hooks"
+if [ -f "$HOOK" ] && grep -q meno-leakage-guard "$HOOK"; then
+  echo "leakage guard: already installed"
+else
+  [ -f "$HOOK" ] && mv "$HOOK" "$HOOK.pre-meno"
+  cat > "$HOOK" <<'EOF'
+#!/bin/sh
+# meno-leakage-guard: tenant content must never reach the public repository.
+staged=$(git diff --cached --name-only | grep '^content/' || true)
+if [ -n "$staged" ]; then
+  echo "meno: refusing to commit tenant content (private by design):" >&2
+  echo "$staged" | sed 's/^/  /' >&2
+  echo "unstage with: git restore --staged <path>  (use tools/meno-mirror for backups)" >&2
+  exit 1
+fi
+[ -x "$0.pre-meno" ] && exec "$0.pre-meno"
+exit 0
+EOF
+  chmod +x "$HOOK"
+  echo "leakage guard: installed at .git/hooks/pre-commit"
+fi
+
+# 2. tenant directory (vault files come from the interview's bootstrap)
+if [ -d "$ROOT/content/$TENANT" ]; then
+  echo "tenant: content/$TENANT already exists"
+else
+  mkdir -p "$ROOT/content/$TENANT"
+  echo "tenant: created content/$TENANT"
+fi
+
+# 3. agent CLI census
+echo "agent CLIs found:"
+found=0
+for cli in claude codex gemini; do
+  if command -v "$cli" >/dev/null 2>&1; then echo "  - $cli ($(command -v "$cli"))"; found=1; fi
+done
+[ "$found" = 1 ] || echo "  - none found; install an agent CLI (Claude Code is first-class)"
+
+# 4. next steps
+cat <<EOF
+
+next steps:
+  1. npm install && npm start        the study app on http://127.0.0.1:7373
+  2. ask your agent what you want to learn - the interview takes it from there
+  3. back your content up early:     tools/meno-mirror init $TENANT
+     (docs/how-meno-works.md explains the private mirror and the manual fallback)
+EOF
