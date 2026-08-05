@@ -90,10 +90,22 @@ without your confirmation.
 
 ### 9. Backing up: the private mirror
 
-Your content directory is gitignored - it can never be committed to this public repository.
-To survive a lost laptop, Meno ships mirror tooling that backs `content/<you>/` up to a
-private repository of your own and restores it on a fresh machine. Until you set that up,
-your content exists only on your machine - set it up early.
+Your content directory is gitignored - it can never be committed to this public
+repository (and `tools/meno-init` installs a hook that blocks even a forced attempt).
+To survive a lost laptop, back `content/<you>/` up to a private repository of your own:
+
+```
+tools/meno-init                      once, after cloning
+tools/meno-mirror init <you>         creates a private mirror repo (via gh) and wires it
+tools/meno-mirror push <you>         snapshot and push - run it after study sessions
+tools/meno-mirror restore <url> <you>   on a fresh machine
+```
+
+The mirror refuses to push unless it can prove the remote is private. Until you set it
+up, your content exists only on your machine - set it up early. No tooling handy? The
+manual fallback is four commands: create a private repo by hand, then inside
+`content/<you>/` run `git init`, `git remote add origin <url>`, and
+`git add -A && git commit -m backup && git push -u origin main`.
 
 ## What leaves your machine
 
