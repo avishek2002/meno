@@ -550,6 +550,72 @@ export function checkMastery(_target: string, files: string[]): Finding[] {
   return findings;
 }
 
+const INSIGHTS_SECTIONS = [
+  '## What the numbers say',
+  '## How you are using Meno',
+  '## Where you are stuck',
+  '## Suggestions',
+  '## Topics you might want',
+  '## Limits of this report',
+];
+
+// Every standalone numeric token in the body must trace back to the embedded
+// metrics_snapshot (docs/specs/insights.md, cite-your-numbers): strip fenced
+// and inline code, quoted strings, ISO dates, and id-shaped tokens (containing
+// "#" or "/") first, then literal-substring-match what remains against the
+// stringified snapshot. Deliberately literal, not percent-aware: a body that
+// paraphrases a rate as "62%" when the snapshot holds 0.62 is exactly the kind
+// of untraceable restatement this rule exists to catch (study-insights/SKILL.md
+// tells the writer to quote n/of or the raw decimal instead).
+function uncitedNumbers(body: string, metricsJson: string): string[] {
+  let text = body.replace(/```[\s\S]*?```/g, ' ').replace(/`[^`\n]*`/g, ' ');
+  text = text.replace(/"[^"\n]*"/g, ' ').replace(/'[^'\n]*'/g, ' ');
+  text = text.replace(/\d{4}-\d{2}-\d{2}/g, ' '); // dates, before id-stripping
+  text = text.replace(/\S*[#/]\S*/g, ' '); // item/concept ids (and n/of fractions, harmlessly)
+  const found = new Set<string>();
+  for (const m of text.matchAll(/\d+(?:\.\d+)?/g)) {
+    if (!metricsJson.includes(m[0])) found.add(m[0]);
+  }
+  return [...found];
+}
+
+export function checkInsights(_target: string, files: string[]): Finding[] {
+  const findings: Finding[] = [];
+  const validateInsights = loadSchema('insights.schema.json');
+
+  for (const file of files.filter((f) => /\/insights\/[^/]+-insights\.md$/.test(f))) {
+    const rel = relative(repoRoot, file);
+    const { frontmatter, body, warnings } = parseFrontmatter(readFileSync(file, 'utf8'));
+    for (const w of warnings) findings.push({ level: 'error', check: 'insights', path: rel, message: w });
+    if (!frontmatter) continue;
+
+    if (!validateInsights(frontmatter)) {
+      for (const err of validateInsights.errors ?? []) {
+        findings.push({ level: 'error', check: 'insights', path: rel, message: `${err.instancePath || '/'} ${err.message}` });
+      }
+    }
+
+    for (const section of INSIGHTS_SECTIONS) {
+      if (!body.includes(`\n${section}`) && !body.startsWith(section)) {
+        findings.push({ level: 'error', check: 'insights', path: rel, message: `missing required section "${section}"` });
+      }
+    }
+
+    if (frontmatter.metrics_snapshot !== undefined) {
+      const metricsJson = JSON.stringify(frontmatter.metrics_snapshot);
+      for (const tok of uncitedNumbers(body, metricsJson)) {
+        findings.push({
+          level: 'warning',
+          check: 'insights',
+          path: rel,
+          message: `number "${tok}" in the body does not appear in frontmatter metrics_snapshot (cite-your-numbers)`,
+        });
+      }
+    }
+  }
+  return findings;
+}
+
 type Check = (target: string, files: string[]) => Finding[];
 const CHECKS: Record<string, Check> = {
   profiles: checkProfiles,
@@ -557,6 +623,7 @@ const CHECKS: Record<string, Check> = {
   lessons: checkLessons,
   ledger: checkLedgers,
   mastery: checkMastery,
+  insights: checkInsights,
   tenancy: checkTenancy,
 };
 

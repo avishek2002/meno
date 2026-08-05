@@ -37,7 +37,9 @@ write-authority seam (decision 14) is enforced in code.
    `level: recognition`); dwelling on a lesson appends one `read` event. Transfer callouts
    render as styled prompts with a "graded in your next review session" badge and no
    input. Progress views derive mastery in memory from the ledger; the server never
-   writes `mastery.yml`.
+   writes `mastery.yml`. The Insights page (`#/t/:tenant/insights`) reads
+   `GET :tenant/insights` and renders it in one neutral palette with no pass/fail
+   coloring - see [insights.md](insights.md) for the metrics themselves.
 6. Wikilinks resolve against a basename index of the vault (unique basename wins,
    ambiguity is treated as unresolved) and navigate in-app; broken links render muted,
    never as errors. Mermaid fences render client-side.
@@ -67,7 +69,10 @@ One process, two halves, one root `package.json`:
 
 The HTTP surface (base `/api/v1`): reads - `health`, `tenants`, `:tenant/tree`,
 `:tenant/course/:course`, `:tenant/lesson/:course/:module/:file`, `:tenant/note?path=`,
-`:tenant/todos`, `:tenant/progress`, `:tenant/ledger`. Writes (the entire write surface) -
+`:tenant/todos`, `:tenant/progress`, `:tenant/insights`, `:tenant/ledger`. `:tenant/insights`
+has no write counterpart - it computes `lib/insights.ts`'s `computeInsights` fresh over the
+same walk and adds the list of narrative report files under `insights/` (spec:
+[insights.md](insights.md)). Writes (the entire write surface) -
 `POST :tenant/check/submit`, `POST :tenant/lesson/read`, `POST :tenant/todos`,
 `PATCH :tenant/todos/:line`, `POST :tenant/todos/:line/park`. There is deliberately no
 generic ledger endpoint: no route accepts `event`, `source`, or `level` from a client, and

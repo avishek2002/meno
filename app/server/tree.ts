@@ -70,9 +70,12 @@ export function walkTenant(tenantDir: string, tenant: string): TreeResponse {
 }
 
 // basename (without .md) -> vault-relative path; ambiguous basenames resolve to
-// null, mirroring Obsidian's shortest-unique behavior at our flat-enough scale
+// null, mirroring Obsidian's shortest-unique behavior at our flat-enough scale.
+// Path-style targets ([[modules/01-x/01-y]]) also resolve, exactly as Obsidian
+// resolves them - lib/vault.ts applies the same rule to the graph walk.
 export function vaultIndex(tenantDir: string): Map<string, string | null> {
   const index = new Map<string, string | null>();
+  const paths: string[] = [];
   const walk = (dir: string): void => {
     for (const entry of readdirSync(dir)) {
       if (entry.startsWith('.')) continue;
@@ -81,10 +84,12 @@ export function vaultIndex(tenantDir: string): Map<string, string | null> {
       else if (entry.endsWith('.md')) {
         const base = entry.slice(0, -3);
         const rel = relative(tenantDir, p);
+        paths.push(rel);
         index.set(base, index.has(base) ? null : rel);
       }
     }
   };
   if (existsSync(tenantDir)) walk(tenantDir);
+  for (const rel of paths) index.set(rel.slice(0, -3), rel);
   return index;
 }

@@ -10,6 +10,7 @@ import { CoursePage } from './pages/CoursePage';
 import { LessonPage } from './pages/LessonPage';
 import { TodosPage } from './pages/TodosPage';
 import { ProgressPage } from './pages/ProgressPage';
+import { InsightsPage } from './pages/InsightsPage';
 import { NotePage } from './pages/NotePage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
@@ -46,6 +47,9 @@ export default function App() {
       break;
     case 'progress':
       page = <ProgressPage tenant={route.params.tenant} />;
+      break;
+    case 'insights':
+      page = <InsightsPage tenant={route.params.tenant} />;
       break;
     case 'note':
       page = <NotePage tenant={route.params.tenant} path={route.params.path} />;

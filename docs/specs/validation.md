@@ -48,9 +48,9 @@ validate and the renderer can never disagree about what a file says.
 | `checks` | authored-id presence/uniqueness/shape, mcq ranges, cloze gaps, concepts resolve course-wide, interleaving warning | 3 |
 | `ledger` | per-line schema, strictly-increasing ts, write-authority at rest | 3 |
 | `mastery` | byte-identical rebuild vs committed mastery.yml | 3 |
+| `insights` | narrative insights-note frontmatter against schema, six required body sections, cite-your-numbers (every body number traces to the note's own `metrics_snapshot`) | v1.1 |
 
-Planned: `vault` (wikilink resolution, orphan detection - needs the app's resolver) and
-`insights` (future).
+Planned: `vault` (wikilink resolution, orphan detection - needs the app's resolver).
 
 ## Data touched
 

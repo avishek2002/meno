@@ -15,6 +15,7 @@ export function Header({ tenant, onRefresh }: { tenant?: string; onRefresh: () =
           <a href={`#/t/${encodeURIComponent(tenant)}`}>Courses</a>
           <a href={`#/t/${encodeURIComponent(tenant)}/todos`}>Todos</a>
           <a href={`#/t/${encodeURIComponent(tenant)}/progress`}>Progress</a>
+          <a href={`#/t/${encodeURIComponent(tenant)}/insights`}>Insights</a>
         </nav>
       )}
       <button type="button" className="refresh-btn" onClick={onRefresh}>
