@@ -92,8 +92,8 @@ looked up).
 
 | Path | Access | Owner | Format |
 |---|---|---|---|
-| `content/<tenant>/progress/ledger.jsonl` | append (server: ui events; agent: agent events) | split per decision 14 | ledger.schema.json |
-| `content/<tenant>/progress/mastery.yml` | write (tutor, rebuild tool); read (app) | agent | serializeMastery output |
+| `content/tenants/<tenant>/progress/ledger.jsonl` | append (server: ui events; agent: agent events) | split per decision 14 | ledger.schema.json |
+| `content/tenants/<tenant>/progress/mastery.yml` | write (tutor, rebuild tool); read (app) | agent | serializeMastery output |
 
 ## Invariants
 

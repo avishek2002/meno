@@ -9,16 +9,18 @@ ships in the repo.
 - **Skill improvements and base capabilities** - pull request against `main`. Read the
   invariants in `.agents/skills/extend-meno/SKILL.md` first; they bind upstream changes
   too.
-- **Topic packs** (pre-vetted curricula) - under `topic-packs/<domain>/<slug>/`, same manifest
-  formats as generated courses; spec in [topic-packs/README.md](topic-packs/README.md). A pack
+- **Topic packs** (pre-vetted curricula) - under `content/community/<domain>/<slug>/`, same
+  manifest formats as generated courses; spec in
+  [content/community/README.md](content/community/README.md). A pack
   built from an existing tenant course goes through
   [`publish-to-community`](.agents/skills/publish-to-community/SKILL.md) (search-first,
   transcribe-never-copy, sanitize, quality gate) and fills the pull request template's
   "Publishing to the community tier" block; a hand-authored pack uses `extend-meno`'s
   draft-a-topic-pack recipe instead.
-- **Your own learning content** - never contributed: everything under `content/` is
+- **Your own learning content** - never contributed: everything under `content/tenants/` is
   tenant-scoped and gitignored by design, and a pre-commit guard (installed by
-  `tools/meno-init`) blocks even a forced attempt.
+  `tools/meno-init`) blocks even a forced attempt - it refuses any staged path under
+  `content/` outside `content/community/` and `content/org/`.
 - **Org deployments** (a shared knowledge base for an organization, with roles and review) -
   not a change to this repository at all: see [docs/org-deployment.md](docs/org-deployment.md).
 

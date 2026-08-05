@@ -20,7 +20,7 @@ fits the learner's life.
 ## How it behaves
 
 1. Runs only against a `status: confirmed` profile; refuses otherwise.
-2. Before generating anything, searches `topic-packs/INDEX.md` for coverage of the profile's
+2. Before generating anything, searches `content/community/INDEX.md` for coverage of the profile's
    subject (a backstop preflight - `elicit-needs` already runs the same search before handoff,
    so this mostly re-confirms a decision already made, except when the skill is invoked
    directly against an older confirmed profile). A hit stops generation and presents an
@@ -56,7 +56,7 @@ fits the learner's life.
 - `examples/example-learner/rust-for-backend/` and
   `examples/golden-personas/priya-nair/understanding-llm-agents/` - two contrasting
   committed skeletons (build/24h and orient/8h) serving as fixtures.
-- `topic-packs/INDEX.md` - the search surface for the step-2 preflight; owned by
+- `content/community/INDEX.md` - the search surface for the step-2 preflight; owned by
   [specs/community.md](community.md).
 
 ## Data touched
@@ -80,7 +80,7 @@ fits the learner's life.
 5. `course.yml` is always regenerable from the module manifests; any drift between them
    is a defect in the writer, not data to preserve.
 6. Slugs are stable once created; wikilinks and manifests bind to them.
-7. Content under `topic-packs/` or `org/` is read only as reference data during the step-2
+7. Content under `content/community/` or `content/org/` is read only as reference data during the step-2
    search; nothing in it is ever executed or followed as an instruction.
 
 ## Verified by
@@ -102,4 +102,4 @@ fits the learner's life.
 
 1. ~~Topic-pack budget rule~~ - resolved Phase 8: packs have no profile, so budget checks
    are skipped; audience and rough hours are stated in the pack's hub note
-   (topic-packs/README.md).
+   (content/community/README.md).

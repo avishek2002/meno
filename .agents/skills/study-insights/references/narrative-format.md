@@ -1,6 +1,6 @@
 # Narrative insights-note format (canonical)
 
-One dated note per report at `content/<tenant>/insights/YYYY-MM-DD-insights.md`. The
+One dated note per report at `content/tenants/<tenant>/insights/YYYY-MM-DD-insights.md`. The
 machine-checkable half of this format is `schemas/insights.schema.json`; validate's
 `insights` check enforces both the frontmatter schema and the body rules below.
 

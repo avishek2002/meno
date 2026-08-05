@@ -40,8 +40,9 @@ gates, the Obsidian graph, todos, private backups - is in
 - **A living example** (`examples/example-learner/`) - a real generated Rust course
   carried through a real graded review session, override and all. It doubles as the test
   fixture, so the docs and the tests can never describe different systems.
-- **Your content stays yours** - `content/` is gitignored, hook-guarded, backed up only
-  to a private mirror you own (`tools/meno-mirror`), and never read by the base system.
+- **Your content stays yours** - `content/tenants/` is gitignored, hook-guarded, backed
+  up only to a private mirror you own (`tools/meno-mirror`), and never read by the base
+  system.
   Your agent's model provider processes what the agent handles - true of any agent
   workflow; the guide says so plainly.
 
@@ -53,7 +54,7 @@ gates, the Obsidian graph, todos, private backups - is in
 - [PLAN.md](PLAN.md) - the phased build plan and locked decision record.
 - [docs/RESEARCH.md](docs/RESEARCH.md) - the learning-science evidence base.
 - [docs/org-deployment.md](docs/org-deployment.md) - deploying Meno for an organization: a
-  private mirror-clone, a shared `org/` knowledge base, and roles mapped honestly onto your
+  private mirror-clone, a shared `content/org/` knowledge base, and roles mapped honestly onto your
   host - as a git-native pattern, not a hosted platform.
 - [CONTRIBUTING.md](CONTRIBUTING.md) - the gate, the eval, the smoke protocol.
 

@@ -1,8 +1,8 @@
 import { fileURLToPath } from 'node:url';
 // The Phase 7 end-to-end drill, automated against a file:// bare remote: fresh
-// clone, init, leakage-hook block, mirror push, wipe, restore, byte-identical
-// tree. What this deliberately cannot exercise (real GitHub visibility) is
-// stated in docs/specs/durability.md.
+// clone, init, leakage-hook block (tenant and stray paths under content/),
+// mirror push, wipe, restore, byte-identical tree. What this deliberately
+// cannot exercise (real GitHub visibility) is stated in docs/specs/durability.md.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -53,24 +53,61 @@ test('the full durability drill: init, hook block, push, wipe, restore byte-iden
   // meno-init: hook installed, tenant created
   const initOut = sh(clone, 'sh', ['tools/meno-init', 'drill-tenant']);
   assert.match(initOut, /leakage guard: installed/);
-  assert.ok(existsSync(join(clone, 'content', 'drill-tenant')));
+  assert.ok(existsSync(join(clone, 'content', 'tenants', 'drill-tenant')));
   // idempotent
   assert.match(sh(clone, 'sh', ['tools/meno-init', 'drill-tenant']), /already installed/);
 
   // generate some tenant content
-  const tenant = join(clone, 'content', 'drill-tenant');
+  const tenant = join(clone, 'content', 'tenants', 'drill-tenant');
   mkdirSync(join(tenant, 'rust-notes'), { recursive: true });
   writeFileSync(join(tenant, 'home.md'), '# Home\n\nNow learning: [[rust-notes]]\n');
   writeFileSync(join(tenant, 'todos.md'), '# Todos\n\n- [ ] first review #note\n');
   writeFileSync(join(tenant, 'rust-notes', 'ownership.md'), 'moves, not copies ✅\n');
 
   // the leakage hook blocks a force-added tenant file
-  sh(clone, 'git', ['add', '-f', 'content/drill-tenant/home.md']);
+  sh(clone, 'git', ['add', '-f', 'content/tenants/drill-tenant/home.md']);
   assert.throws(
     () => sh(clone, 'git', ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-m', 'leak']),
-    /refusing to commit tenant content/,
+    /refusing to commit content\/ paths outside/,
   );
-  sh(clone, 'git', ['restore', '--staged', 'content/drill-tenant/home.md']);
+  sh(clone, 'git', ['restore', '--staged', 'content/tenants/drill-tenant/home.md']);
+
+  // default-deny: a stray subdir under content/ is refused too - gitignore only
+  // covers content/tenants/, so this one stages without -f and the hook is the
+  // only thing standing in the way
+  mkdirSync(join(clone, 'content', 'stray'), { recursive: true });
+  writeFileSync(join(clone, 'content', 'stray', 'file.md'), 'x\n');
+  sh(clone, 'git', ['add', 'content/stray/file.md']);
+  assert.throws(
+    () => sh(clone, 'git', ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-m', 'stray']),
+    /refusing to commit content\/ paths outside/,
+  );
+  sh(clone, 'git', ['restore', '--staged', 'content/stray/file.md']);
+  rmSync(join(clone, 'content', 'stray'), { recursive: true, force: true });
+
+  // a non-ASCII stray is refused too: core.quotePath C-quotes such paths in
+  // git's porcelain output, which would evade a plain ^content/ grep - the
+  // hook reads null-delimited raw bytes precisely so this drill passes
+  mkdirSync(join(clone, 'content', 'josé'), { recursive: true });
+  writeFileSync(join(clone, 'content', 'josé', 'notes.md'), 'x\n');
+  sh(clone, 'git', ['add', 'content/josé/notes.md']);
+  assert.throws(
+    () => sh(clone, 'git', ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-m', 'unicode stray']),
+    /refusing to commit content\/ paths outside/,
+  );
+  sh(clone, 'git', ['restore', '--staged', 'content/josé/notes.md']);
+  rmSync(join(clone, 'content', 'josé'), { recursive: true, force: true });
+
+  // the allowlist: community packs under content/ commit normally, and so does
+  // the other allowlisted tier, content/org/
+  mkdirSync(join(clone, 'content', 'community', 'rust', 'ownership'), { recursive: true });
+  writeFileSync(join(clone, 'content', 'community', 'rust', 'ownership', 'README.md'), '# pack\n');
+  sh(clone, 'git', ['add', 'content/community/rust/ownership/README.md']);
+  sh(clone, 'git', ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '-m', 'community pack']);
+  mkdirSync(join(clone, 'content', 'org', 'data', 'warehouse'), { recursive: true });
+  writeFileSync(join(clone, 'content', 'org', 'data', 'warehouse', 'README.md'), '# org pack\n');
+  sh(clone, 'git', ['add', 'content/org/data/warehouse/README.md']);
+  sh(clone, 'git', ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '-m', 'org pack']);
 
   // a private mirror stand-in: a local bare repo (file:// - no visibility concept)
   const bare = join(work, 'mirror.git');
@@ -80,11 +117,11 @@ test('the full durability drill: init, hook block, push, wipe, restore byte-iden
   const initMirror = sh(clone, 'sh', ['tools/meno-mirror', 'init', 'drill-tenant', bare]);
   assert.match(initMirror, /local-path remote .* allowed/);
   const pushOut = sh(clone, 'sh', ['tools/meno-mirror', 'push', 'drill-tenant']);
-  assert.match(pushOut, /pushed content\/drill-tenant/);
+  assert.match(pushOut, /pushed content\/tenants\/drill-tenant/);
 
   // the outer repo stays ignorant: no tenant paths tracked, no mirror URL anywhere
   const status = sh(clone, 'git', ['status', '--porcelain']);
-  assert.ok(!status.includes('content/'), `outer repo saw tenant content:\n${status}`);
+  assert.ok(!status.includes('content/tenants/'), `outer repo saw tenant content:\n${status}`);
   const outerConfig = readFileSync(join(clone, '.git', 'config'), 'utf8');
   assert.ok(!outerConfig.includes('mirror.git'), 'outer repo config learned the mirror URL');
 
@@ -108,7 +145,7 @@ test('the full durability drill: init, hook block, push, wipe, restore byte-iden
 
   // restore on the "fresh machine"
   const restoreOut = sh(clone, 'sh', ['tools/meno-mirror', 'restore', bare, 'drill-tenant']);
-  assert.match(restoreOut, /restored content\/drill-tenant/);
+  assert.match(restoreOut, /restored content\/tenants\/drill-tenant/);
 
   // byte-identical content tree
   const afterRestore = contentTree(tenant);
@@ -124,7 +161,7 @@ test('verify refuses an unverifiable remote', () => {
   const work = mkdtempSync(join(tmpdir(), 'meno-verify-'));
   const clone = makeFreshMeno(work);
   sh(clone, 'sh', ['tools/meno-init', 't']);
-  const tenant = join(clone, 'content', 't');
+  const tenant = join(clone, 'content', 'tenants', 't');
   writeFileSync(join(tenant, 'home.md'), 'x\n');
   sh(clone, 'sh', ['tools/meno-mirror', 'init', 't', join(work, 'ok.git')]);
   sh(work, 'git', ['init', '-q', '--bare', 'ok.git']);
@@ -138,12 +175,12 @@ test('verify refuses when pushurl diverges from the fetch url', () => {
   const work = mkdtempSync(join(tmpdir(), 'meno-pushurl-'));
   const clone = makeFreshMeno(work);
   sh(clone, 'sh', ['tools/meno-init', 't']);
-  writeFileSync(join(clone, 'content', 't', 'home.md'), 'x\n');
+  writeFileSync(join(clone, 'content', 'tenants', 't', 'home.md'), 'x\n');
   const bare = join(work, 'ok.git');
   sh(work, 'git', ['init', '-q', '--bare', 'ok.git']);
   sh(clone, 'sh', ['tools/meno-mirror', 'init', 't', bare]);
   // a divergent pushurl is exactly the exfiltration foot-gun verify must catch
-  sh(join(clone, 'content', 't'), 'git', ['-c', 'core.hooksPath=', 'config', 'remote.origin.pushUrl', 'https://github.com/evil/leak.git']);
+  sh(join(clone, 'content', 'tenants', 't'), 'git', ['-c', 'core.hooksPath=', 'config', 'remote.origin.pushUrl', 'https://github.com/evil/leak.git']);
   assert.throws(() => sh(clone, 'sh', ['tools/meno-mirror', 'verify', 't']), /push url .* differs from fetch url/);
   rmSync(work, { recursive: true, force: true });
 });
@@ -165,11 +202,11 @@ test('the leakage guard survives a hostile global core.hooksPath', () => {
   assert.match(initOut, /WARNING: git is configured with core\.hooksPath/);
   // apply the printed remediation
   shEnv(clone, 'git', ['config', '--local', 'core.hooksPath', '.githooks']);
-  writeFileSync(join(clone, 'content', 't', 'home.md'), 'secret vault content\n');
-  shEnv(clone, 'git', ['add', '-f', 'content/t/home.md']);
+  writeFileSync(join(clone, 'content', 'tenants', 't', 'home.md'), 'secret vault content\n');
+  shEnv(clone, 'git', ['add', '-f', 'content/tenants/t/home.md']);
   assert.throws(
     () => shEnv(clone, 'git', ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-m', 'leak']),
-    /refusing to commit tenant content/,
+    /refusing to commit content\/ paths outside/,
   );
   rmSync(work, { recursive: true, force: true });
 });

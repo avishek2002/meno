@@ -1,6 +1,6 @@
 # Pack domains (closed vocabulary)
 
-Every pack lives at `topic-packs/<domain>/<slug>/`, and `<domain>` must be one of the
+Every pack lives at `content/community/<domain>/<slug>/`, and `<domain>` must be one of the
 slugs below - `tools/validate.ts` errors on anything else. Adding a domain is a pull
 request against this file that justifies why no existing domain fits; keeping the list
 closed is what stops the tier from degrading into a folksonomy where the same subject

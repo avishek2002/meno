@@ -14,7 +14,7 @@ const flag = (name: string): string | undefined => {
 };
 
 const port = Number(flag('--port') ?? 7373);
-const root = resolve(flag('--root') ?? 'content');
+const root = resolve(flag('--root') ?? 'content/tenants');
 const dev = args.includes('--dev');
 const clientDist = fileURLToPath(new URL('../client/dist', import.meta.url));
 

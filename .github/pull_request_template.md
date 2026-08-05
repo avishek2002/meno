@@ -10,12 +10,13 @@
 - [ ] Skill or entry-point change: fresh-clone smoke test run; CLI named
 - [ ] The owning spec under `docs/specs/` reflects the new behavior
 - [ ] Schema change: `schema_version` bumped + `docs/migrations.md` line
-- [ ] No content under `content/`; no format restated outside its canonical owner
+- [ ] No content under `content/tenants/` (and nothing under `content/` outside
+      `community/` or `org/`); no format restated outside its canonical owner
 
 ## Publishing to the community tier
 
-<!-- only for pull requests that add or amend a topic-pack under topic-packs/; delete this
-     section otherwise -->
+<!-- only for pull requests that add or amend a topic-pack under content/community/; delete
+     this section otherwise -->
 
 - **Search-first result:** none found / amending `<domain>/<slug>` / new pack, differs from
   `<domain>/<slug>` because \_\_\_
@@ -32,4 +33,4 @@
         by eye, it is not machine-checkable**
 - [ ] `audit-citations` run in full against the pack tree; verdicts pasted below
 - [ ] `npm run validate` clean on the pack tree
-- [ ] `node tools/packs.ts` run; `topic-packs/INDEX.md` diff included
+- [ ] `node tools/packs.ts` run; `content/community/INDEX.md` diff included

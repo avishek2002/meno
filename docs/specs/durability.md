@@ -13,25 +13,28 @@ vault). Everything else in Meno is regenerable; the learner's history is not.
 ## How it behaves
 
 1. `tools/meno-init` runs once after cloning: installs the leakage-guard pre-commit hook
-   into the clone, creates `content/<tenant>/`, reports which agent CLIs are installed,
+   into the clone, creates `content/tenants/<tenant>/`, reports which agent CLIs are installed,
    and offers the mirror walkthrough. Re-running is safe (idempotent).
-2. The leakage guard blocks any commit that stages a path under `content/` - the
-   gitignore already hides tenant files, so the hook exists to stop the one path around
-   it (`git add -f`). It prints why and how to undo, never deletes anything.
+2. The leakage guard is default-deny under `content/`: it blocks any commit that stages
+   a path under `content/` unless that path is under `content/community/` or
+   `content/org/` - the gitignore already hides `content/tenants/`, so the hook exists
+   to stop the paths around it (`git add -f` on a tenant file, or an unexpected sibling
+   like `content/alice/` that no ignore rule covers). It prints why and how to undo,
+   never deletes anything.
 3. `tools/meno-mirror` backs the tenant up to a private repository of the learner's own:
-   - `init <tenant> [remote-url]` - makes `content/<tenant>/` an independent git
+   - `init <tenant> [remote-url]` - makes `content/tenants/<tenant>/` an independent git
      repository (nested, invisible to the outer repo) and wires its remote; with `gh`
      installed and no URL given, offers to create a private GitHub repository.
    - `push <tenant>` - verify, then commit-all and push the tenant snapshot.
    - `restore <remote-url> <tenant>` - on a fresh machine: clone the mirror into
-     `content/<tenant>/`.
+     `content/tenants/<tenant>/`.
    - `status <tenant>` - what is unpushed, when the last push happened.
    - `verify <tenant>` - the guard: for a GitHub remote, asserts the repository's
      visibility is PRIVATE (via `gh repo view`) and refuses the push otherwise; a
      local-path remote (the drill case) is allowed with a note; an unverifiable remote
      is a hard stop, not a warning.
 4. Degraded path (the documented fallback, usable with zero Meno tooling): create a
-   private repository by hand, `git init` inside `content/<tenant>/`, add the remote,
+   private repository by hand, `git init` inside `content/tenants/<tenant>/`, add the remote,
    push. The guide shows the four commands.
 5. Privacy guidance lives in the guide: clone-don't-fork (a public fork can never be
    made private), and what leaves the machine (the model provider processes what the
@@ -39,7 +42,7 @@ vault). Everything else in Meno is regenerable; the learner's history is not.
 
 ## Architecture and design decisions
 
-- **The tenant directory is its own independent git repository** (`content/<tenant>/.git`),
+- **The tenant directory is its own independent git repository** (`content/tenants/<tenant>/.git`),
   nested inside the gitignored path. Not a submodule: a `.gitmodules` entry would commit
   the tenant's existence and its private URL into the public repo. Not a second remote on
   the outer repo: that would mean force-tracking ignored files, fighting the tenancy
@@ -62,15 +65,16 @@ vault). Everything else in Meno is regenerable; the learner's history is not.
 
 | Path | Access | Owner | Format |
 |---|---|---|---|
-| `content/<tenant>/**` | read (push), write (restore) | meno-mirror | the learner's vault |
-| `content/<tenant>/.git` | create, commit, push | meno-mirror | nested git repo |
+| `content/tenants/<tenant>/**` | read (push), write (restore) | meno-mirror | the learner's vault |
+| `content/tenants/<tenant>/.git` | create, commit, push | meno-mirror | nested git repo |
 | `.git/hooks/pre-commit` (the clone's) | install | meno-init | shell |
 | the private mirror remote | push, clone | meno-mirror | git |
 
 ## Invariants
 
-1. Nothing under `content/` is ever committable to the outer repository - gitignore by
-   default, the leakage hook against force-adds.
+1. Nothing under `content/tenants/` is ever committable to the outer repository -
+   gitignore by default, the default-deny leakage hook against force-adds and unexpected
+   `content/` siblings.
 2. The public repository never learns the mirror's URL or existence (no submodule, no
    config entry, no committed reference).
 3. `verify` precedes every push; a GitHub remote that is not PRIVATE refuses the push.

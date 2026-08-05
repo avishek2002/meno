@@ -37,7 +37,7 @@ never asks you open questions. It asks 5 to 7 closed questions with anchored opt
 prior knowledge, depth, weekly time), runs one small live probe to check your actual starting
 level rather than trusting self-report, and pushes back if your ambitions and your calendar
 disagree. It ends with a confirmation brief you approve explicitly. The result is a learning
-contract: `content/<you>/<course>/profile.md`.
+contract: `content/tenants/<you>/<course>/profile.md`.
 
 ### 3. The curriculum skeleton
 
@@ -75,7 +75,7 @@ into future reviews rather than quietly forgotten.
 
 ### 7. Your second brain
 
-`content/<you>/` is itself an Obsidian vault. Open it in Obsidian and every lesson, hub note,
+`content/tenants/<you>/` is itself an Obsidian vault. Open it in Obsidian and every lesson, hub note,
 and concept is connected by wikilinks; the graph view shows your knowledge as a network, not
 a syllabus. The agent maintains the hub notes and keeps the graph connected. You can write
 your own notes alongside - anything outside the marked derived regions is yours and is never
@@ -83,7 +83,7 @@ overwritten.
 
 ### 8. Todos
 
-`content/<you>/todos.md` is a shared queue between you, the app, and the agent - plain
+`content/tenants/<you>/todos.md` is a shared queue between you, the app, and the agent - plain
 markdown checkboxes. Jot "go deeper on X" there from the app or Obsidian; the agent scans it
 at session start and proposes acting on what it finds. It proposes - it never acts on a todo
 without your confirmation.
@@ -92,7 +92,7 @@ without your confirmation.
 
 Your content directory is gitignored - it can never be committed to this public
 repository (and `tools/meno-init` installs a hook that blocks even a forced attempt).
-To survive a lost laptop, back `content/<you>/` up to a private repository of your own:
+To survive a lost laptop, back `content/tenants/<you>/` up to a private repository of your own:
 
 ```
 tools/meno-init                      once, after cloning
@@ -104,7 +104,7 @@ tools/meno-mirror restore <url> <you>   on a fresh machine
 The mirror refuses to push unless it can prove the remote is private. Until you set it
 up, your content exists only on your machine - set it up early. No tooling handy? The
 manual fallback is four commands: create a private repo by hand, then inside
-`content/<you>/` run `git init`, `git remote add origin <url>`, and
+`content/tenants/<you>/` run `git init`, `git remote add origin <url>`, and
 `git add -A && git commit -m backup && git push -u origin main`.
 
 ## What leaves your machine
@@ -117,7 +117,7 @@ policy before starting.
 ## Owning your content
 
 The Meno base - skills, schemas, app, docs - is MIT licensed. Everything generated for you
-under `content/` belongs to you, full stop. It is gitignored so it cannot leak into the
+under `content/tenants/` belongs to you, full stop. It is gitignored so it cannot leak into the
 public repo, it is backed up only to a private mirror you own, and no part of the base system
 ever reads another tenant's content.
 
@@ -126,8 +126,8 @@ ever reads another tenant's content.
 Everything above describes one learner's own clone. An organization that wants a shared,
 curated knowledge base with roles and review - without a hosted platform, accounts, or a
 database, none of which this project builds - can deploy Meno as a git-native pattern
-instead: a private mirror-clone of this repository, a reserved `org/` knowledge base in the
-same pack format `topic-packs/` already uses, and roles mapped honestly onto your host's
+instead: a private mirror-clone of this repository, a reserved `content/org/` knowledge base in
+the same pack format `content/community/` already uses, and roles mapped honestly onto your host's
 real permissions. See [org-deployment.md](org-deployment.md) for the full pattern, including
 the one refusal that makes it trustworthy: an org deployment never sees an individual
 learner's progress, and cannot be configured to.

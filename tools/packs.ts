@@ -1,4 +1,4 @@
-// Pack index generation: topic-packs/INDEX.md is the committed, grep-shaped
+// Pack index generation: content/community/INDEX.md is the committed, grep-shaped
 // search surface for community content (skills search it offline before
 // generating anything). Deterministic, so validate can check freshness.
 // Usage: node tools/packs.ts [--check]
@@ -71,7 +71,7 @@ export function buildIndex(packsRoot: string): string {
 
 const isMain = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
 if (isMain) {
-  const packsRoot = join(repoRoot, 'topic-packs');
+  const packsRoot = join(repoRoot, 'content', 'community');
   const indexPath = join(packsRoot, 'INDEX.md');
   const fresh = buildIndex(packsRoot);
   if (process.argv.includes('--check')) {

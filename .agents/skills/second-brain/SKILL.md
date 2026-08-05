@@ -5,11 +5,11 @@ description: Own the Obsidian-vault side of tenant content - wikilink convention
 
 # Second brain
 
-This skill owns the connective tissue: the conventions that make `content/<tenant>/` a real Obsidian vault instead of a folder of files, and the operations that keep its graph honest as content grows. The generation skills follow the conventions defined here when they write; this skill is also invoked directly for vault work.
+This skill owns the connective tissue: the conventions that make `content/tenants/<tenant>/` a real Obsidian vault instead of a folder of files, and the operations that keep its graph honest as content grows. The generation skills follow the conventions defined here when they write; this skill is also invoked directly for vault work.
 
 ## The vault contract
 
-- `content/<tenant>/` opens directly in Obsidian as a vault. Every file in it is vault-native markdown; the localhost app resolves wikilinks exactly as Obsidian does.
+- `content/tenants/<tenant>/` opens directly in Obsidian as a vault. Every file in it is vault-native markdown; the localhost app resolves wikilinks exactly as Obsidian does.
 - Base content (docs, skills, examples) stays out of the vault on purpose: machinery does not belong in a knowledge graph.
 - The vault is also the app's data and the agent's workspace - three views, one set of files. Nothing here may break any of the three (a todo edit that mangles checkbox syntax breaks the app; a renamed note without link updates breaks the graph).
 
@@ -31,7 +31,7 @@ Shared rule for all of them: a proposal the user declines becomes an unchecked t
 - **Hub refresh**: regenerate a hub's derived parts (Mermaid map, link lists) from the manifests; preserve every human-written line. Hubs are part machine-view, part journal - only the machine part regenerates.
 - **Connection query** ("how does X relate to Y"): answer by walking actual links, citing the path (`[[X]] -> [[Z]] -> [[Y]]`); when the honest answer is "they aren't linked", say so and propose the missing link with a one-line why.
 - **Orphan sweep**: list notes unreachable from the home note, propose a hub or lateral home for each; delete nothing without the user's say.
-- **Todo processing** (session start, per AGENTS.md): read `content/<tenant>/todos.md` (format: [references/todo-format.md](references/todo-format.md)), surface actionable items, propose - "shall I generate that?", "want me to make that change?" - and act only on explicit confirmation. Completing an item: check it off, append the date; never delete lines.
+- **Todo processing** (session start, per AGENTS.md): read `content/tenants/<tenant>/todos.md` (format: [references/todo-format.md](references/todo-format.md)), surface actionable items, propose - "shall I generate that?", "want me to make that change?" - and act only on explicit confirmation. Completing an item: check it off, append the date; never delete lines.
 
 ## Done means
 

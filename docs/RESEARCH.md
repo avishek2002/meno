@@ -87,7 +87,7 @@ docs/                          architecture, extending, content-schema
 .claude/skills/                symlinks into .agents/skills/
 schemas/                       lesson.schema.json, curriculum.schema.json
 examples/example-learner/      committed fake-persona tenant, the living spec
-content/<tenant-id>/           gitignored
+content/tenants/<tenant-id>/   gitignored
   profile.md                   the elicited brief
   sources/                     user-supplied documents + manifest.md
   <course-slug>/course.yml, modules/NN-name/{module.yml, lessons/, activities/}
@@ -118,7 +118,7 @@ Citations carry a Wayback Machine `archived_url` captured at generation time via
 
 ## 8. Collaboration model
 
-A central upstream repo with pull-request-reviewed contributions, on the OSSU issue-driven precedent. Two contribution surfaces: `.agents/skills/` and optional `topic-packs/` (pre-vetted curricula for common subjects). Because "same review bar as code" is unactionable for generation quality, add a lightweight eval gate: each generation skill ships golden examples (a fixed brief in, a reference output judged on rubric criteria such as objective quality, citation presence, and template completeness), and the contributor checklist requires the three-CLI smoke test plus the eval run before merge. Tenant directories are untracked, so contributors' personal content never collides with PRs. The committed `examples/example-learner/` doubles as the living spec and the eval fixture. Licensing needs an owner decision (question 11): the repo license covers skills and docs; generated tenant content is the user's, and the guide should say so explicitly.
+A central upstream repo with pull-request-reviewed contributions, on the OSSU issue-driven precedent. Two contribution surfaces: `.agents/skills/` and optional `content/community/` topic packs (pre-vetted curricula for common subjects). Because "same review bar as code" is unactionable for generation quality, add a lightweight eval gate: each generation skill ships golden examples (a fixed brief in, a reference output judged on rubric criteria such as objective quality, citation presence, and template completeness), and the contributor checklist requires the three-CLI smoke test plus the eval run before merge. Tenant directories are untracked, so contributors' personal content never collides with PRs. The committed `examples/example-learner/` doubles as the living spec and the eval fixture. Licensing needs an owner decision (question 11): the repo license covers skills and docs; generated tenant content is the user's, and the guide should say so explicitly.
 
 ## 9. Risks and failure modes, ranked
 

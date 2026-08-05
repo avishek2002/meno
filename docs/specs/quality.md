@@ -2,7 +2,7 @@
 
 *Status: current as of Phase 8. Canonical formats owned elsewhere: fixtures are the
 committed example trees (their formats have their usual owners); the pack format in
-[topic-packs/README.md](../../topic-packs/README.md).*
+[content/community/README.md](../../content/community/README.md).*
 
 ## Purpose
 

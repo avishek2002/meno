@@ -144,13 +144,28 @@ export function checkTenancy(_target: string, _files: string[]): Finding[] {
     }
   }
   const gitignore = readFileSync(join(repoRoot, '.gitignore'), 'utf8');
-  if (!/^content\/$/m.test(gitignore)) {
+  if (!/^content\/tenants\/$/m.test(gitignore)) {
     findings.push({
       level: 'error',
       check: 'tenancy',
       path: '.gitignore',
-      message: 'missing the content/ tenancy rule',
+      message: 'missing the content/tenants/ tenancy rule',
     });
+  }
+  // default-deny under content/: only the three tiers may sit at its top level
+  const contentDir = join(repoRoot, 'content');
+  if (existsSync(contentDir)) {
+    const allowed = new Set(['community', 'org', 'tenants']);
+    for (const entry of readdirSync(contentDir)) {
+      if (!allowed.has(entry)) {
+        findings.push({
+          level: 'error',
+          check: 'tenancy',
+          path: `content/${entry}`,
+          message: 'unexpected entry under content/ - only community/, org/, and tenants/ are allowed',
+        });
+      }
+    }
   }
   return findings;
 }
@@ -640,7 +655,7 @@ const SAFETY_WARNING_PATTERNS: [RegExp, string][] = [
 const ANATOMY_HEADINGS = /^##\s+(Before you start|The idea|Worked example|Your turn|Recall|Apply it somewhere new)\b/m;
 
 function loadDomains(): Set<string> {
-  const path = join(repoRoot, 'topic-packs', 'DOMAINS.md');
+  const path = join(repoRoot, 'content', 'community', 'DOMAINS.md');
   if (!existsSync(path)) return new Set();
   const out = new Set<string>();
   for (const m of readFileSync(path, 'utf8').matchAll(/^\|\s*`([a-z0-9-]+)`\s*\|/gm)) out.add(m[1]);
@@ -651,7 +666,7 @@ export function checkPacks(_target: string, files: string[]): Finding[] {
   const findings: Finding[] = [];
   const packFiles = files.filter((f) => {
     const rel = relative(repoRoot, f);
-    return rel.startsWith('topic-packs/') || rel.startsWith('org/');
+    return rel.startsWith('content/community/') || rel.startsWith('content/org/');
   });
   if (packFiles.length === 0) return findings;
   const domains = loadDomains();
@@ -665,16 +680,16 @@ export function checkPacks(_target: string, files: string[]): Finding[] {
   for (const dir of packDirs) {
     const rel = relative(repoRoot, dir);
     const parts = rel.split('/');
-    const underOrg = parts[0] === 'org';
-    const expectLen = underOrg ? 4 : 3; // org/packs/<domain>/<slug> | topic-packs/<domain>/<slug>
-    if (parts.length !== expectLen || (underOrg && parts[1] !== 'packs')) {
-      findings.push({ level: 'error', check: 'pack-layout', path: rel, message: `pack directory must be ${underOrg ? 'org/packs' : 'topic-packs'}/<domain>/<slug>` });
+    const underOrg = parts[1] === 'org';
+    // content/community/<domain>/<slug> | content/org/<domain>/<slug>
+    if (parts.length !== 4) {
+      findings.push({ level: 'error', check: 'pack-layout', path: rel, message: `pack directory must be ${underOrg ? 'content/org' : 'content/community'}/<domain>/<slug>` });
       continue;
     }
-    const domain = parts[expectLen - 2];
-    const slug = parts[expectLen - 1];
+    const domain = parts[2];
+    const slug = parts[3];
     if (!underOrg && !domains.has(domain)) {
-      findings.push({ level: 'error', check: 'pack-layout', path: rel, message: `domain "${domain}" is not in topic-packs/DOMAINS.md (closed vocabulary)` });
+      findings.push({ level: 'error', check: 'pack-layout', path: rel, message: `domain "${domain}" is not in content/community/DOMAINS.md (closed vocabulary)` });
     }
     const packMd = join(dir, 'PACK.md');
     if (!existsSync(packMd)) {
@@ -797,8 +812,8 @@ if (isMain) {
   const json = args.includes('--json');
   const targets = args.filter((a) => !a.startsWith('--'));
   if (targets.length === 0) {
-    targets.push(join(repoRoot, 'examples'), join(repoRoot, 'topic-packs'));
-    if (existsSync(join(repoRoot, 'org'))) targets.push(join(repoRoot, 'org'));
+    targets.push(join(repoRoot, 'examples'), join(repoRoot, 'content', 'community'));
+    if (existsSync(join(repoRoot, 'content', 'org'))) targets.push(join(repoRoot, 'content', 'org'));
   }
 
   const findings = runValidation(targets);

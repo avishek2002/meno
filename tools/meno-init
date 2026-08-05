@@ -1,7 +1,8 @@
 #!/bin/sh
 # meno-init - one-time setup after cloning meno. Idempotent; run it again anytime.
-#   - installs the leakage-guard pre-commit hook (blocks committing tenant content)
-#   - creates your tenant directory under content/
+#   - installs the leakage-guard pre-commit hook (default-deny under content/:
+#     only content/community/ and content/org/ may be committed)
+#   - creates your tenant directory under content/tenants/
 #   - reports which agent CLIs are installed
 #   - points at the private-mirror walkthrough
 # Usage: tools/meno-init [tenant-name]   (default tenant: main)
@@ -10,16 +11,22 @@ set -eu
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 TENANT=${1:-main}
 
-# 1. the leakage guard: gitignore already hides content/; this hook stops the one
-#    path around it (git add -f). Installed in BOTH hook locations, because git
+# 1. the leakage guard: gitignore already hides content/tenants/; this hook is
+#    default-deny under content/ - any staged path there is refused unless it is
+#    under content/community/ or content/org/, which closes both the one path
+#    around the gitignore (git add -f) and unexpected subdirs like
+#    content/alice/. Installed in BOTH hook locations, because git
 #    consults exactly one of them: .git/hooks when no core.hooksPath is set, or
 #    the configured hooksPath directory otherwise (many setups point a global
 #    hooksPath at personal hooks that chain to the repo's .githooks/).
 GUARD='#!/bin/sh
-# meno-leakage-guard: tenant content must never reach the public repository.
-staged=$(git diff --cached --name-only | grep "^content/" || true)
+# meno-leakage-guard: default-deny under content/ - only community/ and org/ are
+# committable; tenant vaults and anything unexpected must never reach the public
+# repository. -z keeps paths as raw bytes: without it, core.quotePath C-quotes
+# non-ASCII names in surrounding double quotes and they evade the ^content/ grep.
+staged=$(git diff --cached --name-only -z | tr "\0" "\n" | grep "^content/" | grep -v -e "^content/community/" -e "^content/org/" || true)
 if [ -n "$staged" ]; then
-  echo "meno: refusing to commit tenant content (private by design):" >&2
+  echo "meno: refusing to commit content/ paths outside community/ and org/ (private by design):" >&2
   echo "$staged" | sed "s/^/  /" >&2
   echo "unstage with: git restore --staged <path>  (use tools/meno-mirror for backups)" >&2
   exit 1
@@ -64,11 +71,11 @@ case "$hooks_path" in
 esac
 
 # 2. tenant directory (vault files come from the interview's bootstrap)
-if [ -d "$ROOT/content/$TENANT" ]; then
-  echo "tenant: content/$TENANT already exists"
+if [ -d "$ROOT/content/tenants/$TENANT" ]; then
+  echo "tenant: content/tenants/$TENANT already exists"
 else
-  mkdir -p "$ROOT/content/$TENANT"
-  echo "tenant: created content/$TENANT"
+  mkdir -p "$ROOT/content/tenants/$TENANT"
+  echo "tenant: created content/tenants/$TENANT"
 fi
 
 # 3. agent CLI census
