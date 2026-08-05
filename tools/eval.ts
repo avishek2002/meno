@@ -6,7 +6,11 @@ import { fileURLToPath } from 'node:url';
 //   judged    - rubric scoring by a pinned claude judge (median of 3 on the
 //               quantized grid). Gates only under an identical judge
 //               (model + prompt hash) to the fixture's established_with.
-// Usage: node tools/eval.ts [--skill interview|curriculum|lessons] [--no-judge] [--rebaseline]
+// The auditor drill is judged-half machinery too: it runs the generate-module
+// self-audit prompt against the seeded accuracy fixture and scores whether the
+// auditor catches the plants, gated only under an identical auditor
+// (model + audit-prompt hash). --no-judge skips it along with the judge.
+// Usage: node tools/eval.ts [--skill interview|curriculum|lessons|audit] [--no-judge] [--rebaseline]
 import { readFileSync, writeFileSync, existsSync, appendFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -209,6 +213,135 @@ const ANCHORS = [
   { name: 'bad', path: 'evals/anchors/lesson-bad.md' },
 ];
 
+// --- the auditor drill --------------------------------------------------------
+// Drills the generate-module blocking self-audit against the seeded-fault tree
+// at examples/seeded-faults/accuracy-fixture/: run the audit prompt over each
+// seeded lesson and score whether it catches the planted faults named in
+// ANSWER-KEY.md. This measures the audit PROMPT, not a live generate-module run
+// (the skill executes in an agent loop the eval cannot reproduce); it is the
+// closest measurable proxy. See docs/specs/quality.md.
+
+const AUDITOR_MODEL = 'claude-sonnet-5';
+const ACCURACY_FIXTURE = 'examples/seeded-faults/accuracy-fixture';
+const DRILL_NAME = 'auditor-accuracy';
+
+interface Plant {
+  lesson: string;
+  type: 'uncited-claim' | 'wrong-key';
+  quote?: string;
+  check_id?: string;
+  marked?: string;
+  correct?: string;
+}
+interface AnswerKey { plants: Plant[]; controls: string[] }
+interface AuditFinding { type?: string; quote?: string; check_id?: string; authored?: string; resolved?: string }
+
+// the ANSWER-KEY.md frontmatter is the scoring contract; field names are binding
+function loadAnswerKey(): AnswerKey {
+  const { frontmatter } = parseFrontmatter(readFileSync(join(repoRoot, ACCURACY_FIXTURE, 'ANSWER-KEY.md'), 'utf8'));
+  const plants = frontmatter?.plants;
+  const controls = frontmatter?.controls;
+  if (!Array.isArray(plants) || plants.length === 0 || !Array.isArray(controls) || controls.length === 0) {
+    throw new Error(`${ACCURACY_FIXTURE}/ANSWER-KEY.md frontmatter is missing plants or controls`);
+  }
+  for (const p of plants as Plant[]) {
+    const shaped =
+      p.type === 'uncited-claim' ? typeof p.quote === 'string'
+      : p.type === 'wrong-key' ? typeof p.check_id === 'string'
+      : false;
+    if (typeof p.lesson !== 'string' || !shaped) throw new Error(`malformed plant in ANSWER-KEY.md: ${JSON.stringify(p)}`);
+  }
+  return { plants: plants as Plant[], controls: controls as string[] };
+}
+
+// operationalizes the generate-module self-audit: claim audit + check re-solve
+function auditPrompt(lessonContent: string): string {
+  return [
+    `You are the blocking self-audit a lesson generator runs against its own freshly drafted lesson.`,
+    `Audit the lesson below in two passes and report every failure you find.`,
+    `PASS A - claim audit. Extract the lesson's factual claims. A claim passes only if it either`,
+    `(1) is explicitly attributed to one of the lesson's cited sources (the frontmatter sources list), or`,
+    `(2) is level-appropriate common knowledge - something a competent reader at this lesson's level would accept without looking it up. A claim that is surprising, quantitative, version-specific, or safety-relevant NEVER passes as common knowledge.`,
+    `Report each failing claim as {"type":"uncited-claim","quote":"<the exact sentence, copied verbatim from the lesson>"}.`,
+    `PASS B - check re-solve. For every meno-check code block, answer its prompt fresh, WITHOUT looking at the authored answer or explain fields, then compare your answer with the authored one. For mcq checks answer with the 1-based index of the correct option, as a string. For cloze checks the text inside {{double braces}} in the prompt is the authored fill - blank it out and solve for the fill yourself. For flashcard and other free-text checks, report a disagreement only when the authored answer is factually wrong, not merely worded differently.`,
+    `Report each disagreement as {"type":"wrong-key","check_id":"<the check's id field>","authored":"<the authored answer>","resolved":"<your independent answer>"}.`,
+    `Respond with ONLY a JSON object, no prose, no code fences:`,
+    `{"findings":[{"type":"uncited-claim","quote":"..."},{"type":"wrong-key","check_id":"...","authored":"...","resolved":"..."}]}`,
+    `An empty findings array means the lesson passed both passes. Never report a claim or check that passes.`,
+    `--- LESSON TO AUDIT ---`,
+    lessonContent,
+  ].join('\n');
+}
+
+function runAuditor(prompt: string): AuditFinding[] {
+  // same isolation as the judge: outside the repo, project-only settings
+  const out = execFileSync('claude', ['-p', prompt, '--model', AUDITOR_MODEL, '--output-format', 'json', '--setting-sources', 'project'], {
+    encoding: 'utf8',
+    timeout: 240000,
+    maxBuffer: 10 * 1024 * 1024,
+    cwd: process.env.TMPDIR ?? '/tmp',
+  });
+  const jsonStart = out.indexOf('{');
+  if (jsonStart === -1) throw new Error(`auditor produced no JSON envelope: ${out.slice(0, 120)}`);
+  const envelope = JSON.parse(out.slice(jsonStart)) as { result?: string };
+  const text = (envelope.result ?? '').trim().replace(/^```(json)?\n?|```$/g, '');
+  // a non-parsing auditor response is an eval ERROR, never a zero
+  const parsed = JSON.parse(text) as { findings?: unknown };
+  if (!Array.isArray(parsed.findings)) throw new Error('auditor returned no findings array');
+  for (const f of parsed.findings as AuditFinding[]) {
+    if (f.type !== 'uncited-claim' && f.type !== 'wrong-key') throw new Error(`auditor finding type "${String(f.type)}" outside the contract`);
+  }
+  return parsed.findings as AuditFinding[];
+}
+
+const normalizeText = (s: string): string => s.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+
+// fuzzy quote match: normalized containment either way, else 0.6 token overlap
+// (an auditor that quotes a fragment or lightly paraphrases still gets credit)
+function quoteMatches(planted: string, reported: string): boolean {
+  const a = normalizeText(planted);
+  const b = normalizeText(reported);
+  if (!a || !b) return false;
+  if (b.includes(a)) return true;
+  // fragment credit (planted contains reported) needs a real fragment - three
+  // tokens minimum, or a stopword-sized report would match every plant
+  if (a.includes(b) && b.split(' ').length >= 3) return true;
+  const aTokens = new Set(a.split(' '));
+  const bTokens = b.split(' ');
+  const overlap = bTokens.filter((t) => aTokens.has(t)).length;
+  return overlap / Math.max(aTokens.size, bTokens.length) >= 0.6;
+}
+
+function plantCaught(plant: Plant, findings: AuditFinding[]): boolean {
+  return findings.some((f) => {
+    if (f.type !== plant.type) return false;
+    if (plant.type === 'uncited-claim') return quoteMatches(plant.quote ?? '', f.quote ?? '');
+    return normalizeText(f.check_id ?? '') === normalizeText(plant.check_id ?? '');
+  });
+}
+
+interface DrillPass { recall: number; caught: number; falseAlarms: number; missed: string[] }
+
+function runDrillPass(key: AnswerKey): DrillPass {
+  const lessons = [...new Set([...key.plants.map((p) => p.lesson), ...key.controls])];
+  const findingsByLesson = new Map<string, AuditFinding[]>();
+  for (const lesson of lessons) {
+    const content = readFileSync(join(repoRoot, ACCURACY_FIXTURE, lesson), 'utf8');
+    findingsByLesson.set(lesson, runAuditor(auditPrompt(content)));
+  }
+  let caught = 0;
+  const missed: string[] = [];
+  for (const plant of key.plants) {
+    if (plantCaught(plant, findingsByLesson.get(plant.lesson) ?? [])) caught++;
+    else missed.push(`${plant.lesson}: ${plant.type === 'wrong-key' ? plant.check_id : `"${(plant.quote ?? '').slice(0, 60)}"`}`);
+  }
+  // false alarms on the clean control lesson(s): informational, never gating.
+  // findings on seeded lessons that match no plant are unscored either way -
+  // the control is the drill's only precision sample (docs/specs/quality.md)
+  const falseAlarms = key.controls.reduce((n, c) => n + (findingsByLesson.get(c)?.length ?? 0), 0);
+  return { recall: Math.round((caught / key.plants.length) * 100) / 100, caught, falseAlarms, missed };
+}
+
 // --- main ---------------------------------------------------------------------
 
 const args = process.argv.slice(2);
@@ -217,9 +350,20 @@ const noJudge = args.includes('--no-judge');
 const rebaseline = args.includes('--rebaseline');
 
 const judgePromptSha = createHash('sha256').update(judgePrompt('X', LESSON_RUBRIC, '')).digest('hex').slice(0, 16);
+const auditPromptSha = createHash('sha256').update(auditPrompt('')).digest('hex').slice(0, 16);
 const baselinesPath = join(repoRoot, 'evals', 'baselines.json');
+interface BaselineEntry {
+  judged_min?: number | null;
+  recall_min?: number | null; // the auditor drill's baseline (plants-caught recall)
+  established_with?: {
+    judge_model?: string;
+    judge_prompt_sha256?: string;
+    auditor_model?: string;
+    audit_prompt_sha256?: string;
+  };
+}
 const baselines = existsSync(baselinesPath)
-  ? (JSON.parse(readFileSync(baselinesPath, 'utf8')) as Record<string, { judged_min: number | null; established_with?: { judge_model: string; judge_prompt_sha256: string } }>)
+  ? (JSON.parse(readFileSync(baselinesPath, 'utf8')) as Record<string, BaselineEntry>)
   : {};
 
 const claudeAvailable = ((): boolean => {
@@ -273,6 +417,35 @@ if (judging && (!skillFilter || skillFilter === 'lessons')) {
   if (!ranked || !separated) failed = true;
 }
 
+// auditor drill - judged-half machinery, so it runs only when judging
+// (skipped under --no-judge and when the claude CLI is unavailable)
+let drill: { recall: number; recalls: number[]; falseAlarms: number[]; missed: string[] } | null = null;
+if (judging && (!skillFilter || skillFilter === 'audit')) {
+  const key = loadAnswerKey();
+  const passes = [runDrillPass(key), runDrillPass(key), runDrillPass(key)];
+  const medianPass = [...passes].sort((a, b) => a.recall - b.recall)[1];
+  drill = {
+    recall: medianPass.recall,
+    recalls: passes.map((p) => p.recall),
+    falseAlarms: passes.map((p) => p.falseAlarms),
+    missed: medianPass.missed,
+  };
+  const base = baselines[DRILL_NAME];
+  const sameAuditor = base?.established_with?.auditor_model === AUDITOR_MODEL && base?.established_with?.audit_prompt_sha256 === auditPromptSha;
+  let drillFailed = false;
+  if (base?.recall_min != null) {
+    if (!sameAuditor) {
+      console.log(`  ~ ${DRILL_NAME}: auditor differs from baseline's established_with - drill informational only`);
+    } else if (drill.recall < base.recall_min) {
+      drillFailed = true;
+      failed = true;
+    }
+  }
+  console.log(`${drillFailed ? '✗' : '✓'} ${DRILL_NAME}: plants-caught recall ${drill.recall} (samples ${drill.recalls.join('/')}, median pass caught ${medianPass.caught}/${key.plants.length}), control false alarms ${drill.falseAlarms.join('/')} - informational`);
+  if (drillFailed) console.log(`    ✗ recall ${drill.recall} below baseline ${base?.recall_min}`);
+  for (const m of medianPass.missed) console.log(`    missed plant: ${m}`);
+}
+
 if (rebaseline) {
   for (const r of results) {
     // a 0.1 guard band under the observed median: judge medians vary a little
@@ -282,8 +455,15 @@ if (rebaseline) {
       ...(r.judged !== null ? { established_with: { judge_model: JUDGE_MODEL, judge_prompt_sha256: judgePromptSha } } : {}),
     };
   }
+  if (drill) {
+    // same 0.1 guard band as judged scores: recall varies a little run to run
+    baselines[DRILL_NAME] = {
+      recall_min: Math.max(0, Math.round((drill.recall - 0.1) * 100) / 100),
+      established_with: { auditor_model: AUDITOR_MODEL, audit_prompt_sha256: auditPromptSha },
+    };
+  }
   writeFileSync(baselinesPath, JSON.stringify(baselines, null, 2) + '\n');
-  console.log(`rebaselined ${results.length} fixture(s) -> evals/baselines.json (review the diff deliberately)`);
+  console.log(`rebaselined ${results.length + (drill ? 1 : 0)} fixture(s) -> evals/baselines.json (review the diff deliberately)`);
 }
 
 appendFileSync(
@@ -294,6 +474,9 @@ appendFileSync(
     judge_prompt_sha256: judging ? judgePromptSha : null,
     results: results.map((r) => ({ fixture: r.fixture, checklist_pass: r.checklist.every((c) => c.pass), judged: r.judged })),
     anchors: anchorScores,
+    auditor: drill
+      ? { model: AUDITOR_MODEL, prompt_sha256: auditPromptSha, recall: drill.recall, recall_samples: drill.recalls, control_false_alarms: drill.falseAlarms }
+      : null,
   }) + '\n',
 );
 

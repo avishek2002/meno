@@ -1,10 +1,10 @@
 # Seeded-fault fixtures
 
-This directory holds two deliberately compromised trees, each for a skill that must catch what
-schema validation cannot. Both are, on purpose, **structurally valid** -
-`tools/validate.ts` passes each tree clean - because that is the point in both cases: a
-hallucinated citation and a leaked worked example each look exactly like ordinary content
-until someone actually checks.
+This directory holds three deliberately compromised trees, each for a skill that must catch what
+schema validation cannot. All are, on purpose, **structurally valid** -
+`tools/validate.ts` passes each tree clean - because that is the point in every case: a
+hallucinated citation, a leaked worked example, and an invented fact with a confident answer
+key each look exactly like ordinary content until someone actually checks.
 
 ## audit-fixture (below): for `audit-citations`
 
@@ -36,3 +36,13 @@ of personal, employer, and real-work content that must never reach a topic pack.
 [README.md](publish-fixture/README.md) and [ANSWER-KEY.md](publish-fixture/ANSWER-KEY.md)
 explain the seeded leaks and score blind publish drills the same way this fixture's answer key
 scores blind audits.
+
+## accuracy-fixture: for the generate-module self-audit
+
+A validate-clean HTTP-fundamentals mini-course planted with uncited false claims (an invented
+RFC revision, a fabricated protocol rule, a wrong status-code origin story, a made-up numeric
+limit) and check items whose marked-correct answers are wrong, plus one clean control lesson;
+its source records are fabricated-but-plausible because this tree is a drill target, never
+studied or cited. [accuracy-fixture/ANSWER-KEY.md](accuracy-fixture/ANSWER-KEY.md) names every
+plant in machine-readable frontmatter for scoring auditor drills in `tools/eval.ts` -
+**auditors running the drill must not read it**.

@@ -1,6 +1,6 @@
 # Lessons spec
 
-*Status: current as of Phase 3 (stale-content flows live in [citations.md](citations.md)). Canonical formats
+*Status: current as of Phase 3 plus decision 19's accuracy guardrail (stale-content flows live in [citations.md](citations.md)). Canonical formats
 owned elsewhere: lesson frontmatter and the nine-part skeleton in
 [generate-module/references/lesson-format.md](../../.agents/skills/generate-module/references/lesson-format.md);
 check blocks and the transfer callout in
@@ -34,10 +34,19 @@ machine can verify, so quality does not depend on a generation run's mood.
    their module's verified anchors and record structured source objects. User material
    under `sources/` is read agentically before drafting and cited with vault-relative
    paths.
-6. Generation appends one `generated` ledger event per lesson and flips lesson and module
+6. After drafting each lesson, `generate-module` runs a blocking self-audit before the
+   lesson counts as generated: (a) a claim audit - every factual claim must trace to one
+   of the lesson's cited sources (anchor, user, or adopted-pack notes) or qualify as
+   level-appropriate common knowledge (a claim a competent reader at the profile's
+   starting point would accept without looking it up; anything surprising, quantitative,
+   version-specific, or safety-relevant never qualifies), else it is fixed, cited, or
+   removed; (b) a check re-solve - every check item is independently answered fresh,
+   before reading the authored key, and any disagreement blocks the lesson until the
+   item or the key is fixed.
+7. Generation appends one `generated` ledger event per lesson and flips lesson and module
    statuses, regenerating `course.yml` and the hub's derived block (lessons become
    wikilinks).
-7. Degraded path: a malformed check block renders as an inert code block and is reported
+8. Degraded path: a malformed check block renders as an inert code block and is reported
    by validate; it never crashes a renderer.
 
 ## Architecture
@@ -77,6 +86,9 @@ machine can verify, so quality does not depend on a generation run's mood.
    archive URLs.
 6. Lesson frontmatter `id` equals `course/module/file` and its concepts are a subset of
    the module's.
+7. No lesson lands with an unresolved self-audit finding: every factual claim traces to
+   a cited source or qualifies as level-appropriate common knowledge, and every check's
+   marked answer has survived an independent re-solve.
 
 ## Verified by
 
@@ -85,6 +97,11 @@ machine can verify, so quality does not depend on a generation run's mood.
 - Invariant 5: citations check (structural) + the Phase 3 acceptance run's live
   verification; ongoing liveness belongs to Phase 6's audit skill.
 - Invariant 4: lands with the app (Phase 4) - "not yet verified" here, honestly.
+- Invariant 7: procedural plus drill, honestly - no validate check can see semantic
+  accuracy, so enforcement is the skill's blocking self-audit step, kept honest by the
+  eval's auditor drill ([quality.md](quality.md)): it runs the audit against the
+  seeded-fault fixture at `examples/seeded-faults/accuracy-fixture/` and scores whether
+  the auditor catches the known plants.
 
 ## Open questions
 

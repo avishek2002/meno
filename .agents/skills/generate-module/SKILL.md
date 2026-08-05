@@ -38,6 +38,18 @@ Template with exact formatting: [references/lesson-format.md](references/lesson-
 - With `sources/` empty or absent, generate normally with web anchors only and zero `source_type: user` citations.
 - Frontmatter per the lesson format reference, `schema_version` included, `review_after` set from the offsets.
 
+## Self-audit (blocking, every lesson)
+
+After drafting a lesson - before moving to the next one - audit it. A lesson with an unresolved finding is a draft, not a lesson. Two passes, both mandatory:
+
+1. **Claim audit.** Extract the lesson's factual claims - anything that could be wrong, in any of the nine parts. Each claim must either:
+   - trace to one of the lesson's cited sources (anchor sources, `source_type: user` material, or adopted-pack notes) - the source supports that specific claim, not just the topic; or
+   - qualify as level-appropriate common knowledge: a claim a competent reader at the profile's starting point would accept without looking it up. Anything surprising, quantitative, version-specific, or safety-relevant never qualifies, however confident you feel.
+   Every other claim gets fixed, cited (fetch first, per the sourcing procedure), or removed. There is no fourth option.
+2. **Check re-solve.** Independently answer every check item fresh: read the question as the learner would and commit to your own answer in full before looking at the authored key. Then compare. Any disagreement blocks the lesson until the item or the key is fixed - never resolve one by assuming the key is right; work out which side is actually wrong.
+
+Same discipline as fetch-before-cite: procedural, no schema change, no new artifact. The eval's auditor drill (docs/specs/quality.md) runs this audit against seeded-fault lessons and scores whether it catches the plants - that drill is what keeps this step honest.
+
 ## After the last lesson
 
 - In `module.yml`: set each lesson's `status` and the module's own `status` to `generated`; then regenerate `course.yml` (it is a derived view - see the manifest spec linked above).
@@ -46,4 +58,4 @@ Template with exact formatting: [references/lesson-format.md](references/lesson-
 
 ## Done means
 
-Every lesson in the manifest has a body scoring 9 of 9 on the anatomy; frontmatter valid; both check levels present (recognition blocks plus the single transfer prompt) with interleaving once available; all citations fetched-and-archived this session or `source_type: user`; wikilinks resolve; hub updated; statuses and ledger events written; `tools/validate.py` run when it exists.
+Every lesson in the manifest has a body scoring 9 of 9 on the anatomy; frontmatter valid; both check levels present (recognition blocks plus the single transfer prompt) with interleaving once available; the self-audit clean on every lesson - every claim traced, common-knowledge, or removed, and every check key survived a fresh re-solve; all citations fetched-and-archived this session or `source_type: user`; wikilinks resolve; hub updated; statuses and ledger events written; `tools/validate.ts` run when it exists. An unaudited lesson is not done, whatever its anatomy score.

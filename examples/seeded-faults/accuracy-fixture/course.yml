@@ -1,0 +1,18 @@
+schema_version: 1
+slug: accuracy-fixture
+title: HTTP fundamentals (seeded-fault accuracy fixture)
+created: 2026-08-05
+status: draft
+hub: ./accuracy-fixture-hub.md
+objectives:
+  - id: O1
+    text: Explain how methods, status codes, and caching headers cooperate across one HTTP request-response cycle
+    bloom: understand
+    assessed_by: accuracy-fixture transfer prompts
+modules:
+  - n: 1
+    slug: 01-http-basics
+    title: How an HTTP exchange works
+    status: generated
+    est_hours: 2
+    serves: [O1]
