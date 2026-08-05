@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 // The ONLY code path through which the UI reaches the ledger. Three layers, all
 // here: (1) callers cannot pass event/source/level - the literals are
 // constructed below; (2) the assertion throws on anything but ui recognition
@@ -13,7 +14,7 @@ import { parseLedger, type LedgerEvent } from '../../lib/mastery.ts';
 const addFormats = ((addFormatsExport as unknown as { default?: unknown }).default ??
   addFormatsExport) as (ajv: Ajv2020) => void;
 
-const schemasDir = new URL('../../schemas/', import.meta.url).pathname;
+const schemasDir = fileURLToPath(new URL('../../schemas/', import.meta.url));
 let uiValidator: ValidateFunction | null = null;
 function validateUi(): ValidateFunction {
   if (!uiValidator) {
@@ -36,17 +37,34 @@ function rfc3339WithOffset(d: Date): string {
   );
 }
 
-let lastTs = '';
-function nextTs(): string {
-  // ts is unique per file (it is a join key); bump 1ms on collision
-  let d = new Date();
-  let ts = rfc3339WithOffset(d);
-  while (ts <= lastTs) {
-    d = new Date(d.getTime() + 1);
-    ts = rfc3339WithOffset(d);
+// ts must be strictly after the last line already IN THE FILE, not merely after
+// this process's last write - the agent appends to the same file between server
+// runs. Seed from the file tail once per tenant, then track in memory.
+const lastEpochByTenant = new Map<string, number>();
+
+function fileTailEpoch(ledgerPath: string): number {
+  if (!existsSync(ledgerPath)) return 0;
+  const lines = readFileSync(ledgerPath, 'utf8').trim().split('\n');
+  for (let i = lines.length - 1; i >= 0; i--) {
+    try {
+      const t = Date.parse((JSON.parse(lines[i]) as { ts?: string }).ts ?? '');
+      if (!Number.isNaN(t)) return t;
+    } catch {
+      // skip malformed tail lines; validate reports them
+    }
   }
-  lastTs = ts;
-  return ts;
+  return 0;
+}
+
+function nextTs(tenantDir: string, ledgerPath: string): string {
+  let last = lastEpochByTenant.get(tenantDir);
+  if (last === undefined) {
+    last = fileTailEpoch(ledgerPath);
+  }
+  // bump 1ms on collision - ts is a join key and unique per file
+  const epoch = Math.max(Date.now(), last + 1);
+  lastEpochByTenant.set(tenantDir, epoch);
+  return rfc3339WithOffset(new Date(epoch));
 }
 
 export interface UiScoredInput {
@@ -77,16 +95,21 @@ export function appendUiEvent(
   }
   const forbidden = input as unknown as Record<string, unknown>;
   for (const key of ['event', 'source', 'level', 'score']) {
-    if (key in forbidden && !(kind === 'scored' && key === 'level')) {
+    if (key in forbidden) {
       // no caller-supplied typing fields, ever - they are constructed below
       throw new Error(`appendUiEvent: caller may not supply "${key}"`);
     }
+  }
+  const ledgerPath = join(tenantDir, 'progress', 'ledger.jsonl');
+  if (!existsSync(tenantDir)) {
+    // tenant creation belongs to meno-init; a write route must never invent one
+    throw Object.assign(new Error(`no such tenant directory: ${tenantDir}`), { status: 404 });
   }
   const event: LedgerEvent =
     kind === 'scored'
       ? ({
           v: 1,
-          ts: nextTs(),
+          ts: nextTs(tenantDir, ledgerPath),
           event: 'scored',
           source: 'ui',
           level: 'recognition',
@@ -103,7 +126,7 @@ export function appendUiEvent(
         } as LedgerEvent)
       : ({
           v: 1,
-          ts: nextTs(),
+          ts: nextTs(tenantDir, ledgerPath),
           event: 'read',
           source: 'ui',
           course: (input as UiReadInput).course,
@@ -115,14 +138,16 @@ export function appendUiEvent(
   if (event.source !== 'ui' || (event.event === 'scored' && event.level !== 'recognition')) {
     throw new Error('appendUiEvent: constructed a non-ui-recognition event (bug)');
   }
+  // validate the SERIALIZED form - what is checked must be byte-identical to
+  // what is written (JSON.stringify silently turns Infinity into null)
+  const line = JSON.stringify(event);
   const check = validateUi();
-  if (!check(event)) {
+  if (!check(JSON.parse(line))) {
     const msg = (check.errors ?? []).map((e) => `${e.instancePath} ${e.message}`).join('; ');
     throw new Error(`appendUiEvent: event fails the narrowed ui schema: ${msg}`);
   }
-  const ledgerPath = join(tenantDir, 'progress', 'ledger.jsonl');
   mkdirSync(dirname(ledgerPath), { recursive: true });
-  appendLine(ledgerPath, JSON.stringify(event));
+  appendLine(ledgerPath, line);
   return event;
 }
 

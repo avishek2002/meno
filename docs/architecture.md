@@ -96,9 +96,10 @@ Decided at build start (2026-08-05) by a design council; these hold everywhere:
   resolution, and YAML parsing each exist exactly once, imported by app, validate, and eval
   alike. Two implementations of a function whose defining property is determinism is how
   silent divergence ships.
-- **Zero build step for the server and tools.** Node 26 runs TypeScript directly via type
-  stripping; `tsconfig` sets `erasableSyntaxOnly` so violations fail at typecheck, not at
-  runtime. Only the React client has a build (Vite).
+- **Zero build step for the server and tools.** Node runs TypeScript directly via type
+  stripping (engines floor is 24; built and verified on 26); `tsconfig` sets
+  `erasableSyntaxOnly` so violations fail at typecheck, not at runtime. Only the React
+  client has a build (Vite).
 - **The exception: `tools/meno-mirror` is POSIX shell.** It must work when `node_modules` is
   absent or the app is broken - that is precisely the disaster it exists for - and 150 lines
   of shell is auditable line-by-line before a user trusts it with private data.
@@ -131,11 +132,11 @@ spec row is stale.
 
 | Spec | Subsystem | Lands | Amended by |
 |---|---|---|---|
-| [specs/repo-and-tenancy.md](specs/repo-and-tenancy.md) | layout, entry points, tenancy boundary | Phase 0 | 7 |
-| [specs/interview.md](specs/interview.md) | elicit-needs, profile lifecycle | Phase 1 | 5 |
-| [specs/curriculum.md](specs/curriculum.md) | skeleton generation, sourcing, manifests | Phase 2 | 3 |
-| [specs/validation.md](specs/validation.md) | validate checks, exit codes, policy | Phase 2 | 3, 4, 5, 8 |
-| [specs/lessons.md](specs/lessons.md) | lesson generation, anatomy, checks | Phase 3 | 6 |
+| [specs/repo-and-tenancy.md](specs/repo-and-tenancy.md) | layout, entry points, tenancy boundary | Phase 0 | - |
+| [specs/interview.md](specs/interview.md) | elicit-needs, profile lifecycle | Phase 1 | - |
+| [specs/curriculum.md](specs/curriculum.md) | skeleton generation, sourcing, manifests | Phase 2 | - |
+| [specs/validation.md](specs/validation.md) | validate checks, exit codes, policy | Phase 2 | 3, 5 |
+| [specs/lessons.md](specs/lessons.md) | lesson generation, anatomy, checks | Phase 3 | - |
 | [specs/progress.md](specs/progress.md) | ledger events, mastery derivation, gates | Phase 3 | 5 |
 | [specs/app.md](specs/app.md) | server + client, API surface, write path | Phase 4 | - |
 | [specs/tutor-session.md](specs/tutor-session.md) | review sessions, grading, generate-ahead | Phase 5 | - |

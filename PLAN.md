@@ -1,6 +1,6 @@
 # Meno - Build Plan
 
-*Status: approved plan, pre-implementation. Evidence base: [docs/RESEARCH.md](docs/RESEARCH.md). Decisions locked 2026-08-05; plan written 2026-08-05.*
+*Status: v1 shipped 2026-08-05 - all eight phases complete (see PROGRESS.md and docs/specs/). The decision record and phase plan below are the historical record the build followed. Evidence base: [docs/RESEARCH.md](docs/RESEARCH.md).*
 
 ## What Meno is
 
@@ -270,6 +270,6 @@ A stranger with no context can: clone Meno, run init, be interviewed by their ag
 
 ## Open items
 
-- Mirror tooling design: Phase 7 design doc before code.
+- ~~Mirror tooling design~~ - resolved: docs/specs/durability.md written first, tooling landed Phase 7.
 - ~~Which agent CLIs beyond Claude Code exist on the maintainer machine~~ - resolved 2026-08-05: only Claude Code is installed; acceptance runs record it and list other CLIs as unverified.
 - ~~Whether linking external video and interactive resources is in scope as a content type~~ - resolved 2026-08-05 by default: a source is any URL (video included); no dedicated content type in v1.

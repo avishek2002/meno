@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 // The flagship suite: no sequence of UI actions - including actively hostile
 // request shaping - can produce an agent-typed or transfer-level ledger event,
 // or unlock a module.
@@ -57,9 +58,9 @@ test('appendUiEvent throws rather than write an agent-typed event', () => {
 });
 
 test('no route handler contains an agent source literal', () => {
-  const routes = readFileSync(new URL('../server/routes.ts', import.meta.url).pathname, 'utf8');
+  const routes = readFileSync(fileURLToPath(new URL('../server/routes.ts', import.meta.url)), 'utf8');
   assert.ok(!/source:\s*['"]agent['"]/.test(routes), 'routes.ts must never construct an agent-sourced event');
-  const ledger = readFileSync(new URL('../server/ledger.ts', import.meta.url).pathname, 'utf8');
+  const ledger = readFileSync(fileURLToPath(new URL('../server/ledger.ts', import.meta.url)), 'utf8');
   assert.ok(!/source:\s*['"]agent['"]/.test(ledger.replace(/\/\/.*$/gm, '')), 'ledger.ts must never construct an agent-sourced event');
 });
 
@@ -108,4 +109,11 @@ test('a full scripted UI session changes no gate-relevant state', async () => {
 test('a foreign Origin header is rejected', async () => {
   const { status } = await api(app, 'GET', '/api/v1/tenants', undefined, { origin: 'https://evil.example' });
   assert.equal(status, 403);
+});
+
+test('appendUiEvent refuses a caller-supplied level, even recognition', () => {
+  assert.throws(
+    () => appendUiEvent(app.tenantDir, 'scored', { level: 'recognition' } as never),
+    /may not supply "level"/,
+  );
 });

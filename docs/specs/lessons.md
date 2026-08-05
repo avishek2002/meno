@@ -1,6 +1,6 @@
 # Lessons spec
 
-*Status: current as of Phase 3; amended by Phase 6 (stale-content flows). Canonical formats
+*Status: current as of Phase 3 (stale-content flows live in [citations.md](citations.md)). Canonical formats
 owned elsewhere: lesson frontmatter and the nine-part skeleton in
 [generate-module/references/lesson-format.md](../../.agents/skills/generate-module/references/lesson-format.md);
 check blocks and the transfer callout in
@@ -89,4 +89,5 @@ machine can verify, so quality does not depend on a generation run's mood.
 ## Open questions
 
 1. Whether `practice` and `review` lesson types (reduced anatomy) need their own
-   detectors - resolved in Phase 5 when the tutor starts writing them.
+   detectors - Phase 5 landed without these types materializing; deferred until real
+   remediation sessions want written artifacts.

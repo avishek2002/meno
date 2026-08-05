@@ -20,7 +20,7 @@ database - files are the only source of truth, and the files are yours.
   [Owning your content](#owning-your-content)).
 - An agent CLI. Claude Code is first-class; any agent that can read files and follow
   instructions works, because every skill is plain markdown readable without special support.
-- Node.js 20 or newer, for the local study app.
+- Node.js 24 or newer, for the local study app.
 
 ## The journey
 

@@ -26,6 +26,7 @@ export interface ModuleNode {
 }
 
 export interface CourseNode {
+  dir: string; // on-disk directory name; may differ from slug in hand-made courses
   slug: string;
   title: string;
   status: string;

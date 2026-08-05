@@ -158,3 +158,25 @@ test('concurrent submits plus an agent appender never corrupt the ledger', async
     await fresh.close();
   }
 });
+
+test('line-addressed todo operations without If-Match are refused with 428', async () => {
+  const res = await api(app, 'POST', '/api/v1/example-learner/todos/2/park', {});
+  assert.equal(res.status, 428);
+  const patch = await api(app, 'PATCH', '/api/v1/example-learner/todos/2', { done: true });
+  assert.equal(patch.status, 428);
+});
+
+test('ledger limit is clamped and garbage limits fall back to the default', async () => {
+  for (const q of ['limit=0', 'limit=abc', 'limit=-5']) {
+    const { status, json } = await api(app, 'GET', `/api/v1/example-learner/ledger?${q}`);
+    assert.equal(status, 200);
+    assert.ok((json.events as unknown[]).length <= 200);
+  }
+});
+
+test('a read event for a nonexistent lesson is refused, and hostile seconds are rejected', async () => {
+  const missing = await api(app, 'POST', '/api/v1/example-learner/lesson/read', { course: 'rust-for-backend', module: '01-syntax-and-ownership-basics', lesson: '99-nope' });
+  assert.equal(missing.status, 404);
+  const inf = await api(app, 'POST', '/api/v1/example-learner/lesson/read', { course: 'rust-for-backend', module: '01-syntax-and-ownership-basics', lesson: '01-cargo-and-toolchain', seconds: 1e999 });
+  assert.equal(inf.status, 400);
+});

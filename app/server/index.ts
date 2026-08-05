@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 // Bootstrap: bind 127.0.0.1 only (this serves a private vault), fail loudly if
 // the port is taken, serve the built client statically. `--dev` lazily mounts
 // Vite in middleware mode: one process, one port, no CORS.
@@ -15,7 +16,7 @@ const flag = (name: string): string | undefined => {
 const port = Number(flag('--port') ?? 7373);
 const root = resolve(flag('--root') ?? 'content');
 const dev = args.includes('--dev');
-const clientDist = new URL('../client/dist', import.meta.url).pathname;
+const clientDist = fileURLToPath(new URL('../client/dist', import.meta.url));
 
 const ctx: Ctx = {
   root,
@@ -28,11 +29,15 @@ const handler = makeHandler(ctx);
 async function main(): Promise<void> {
   type Middleware = (req: unknown, res: unknown, next: () => void) => void;
   let viteMiddleware: Middleware | null = null;
-  if (dev) {
+  // no built client (fresh clone): fall back to vite middleware automatically
+  // so the documented `npm install && npm start` actually serves the app
+  const needsFallback = !ctx.clientDist && !dev;
+  if (needsFallback) console.log('no built client found - mounting vite middleware (run `npm run build` once to skip this)');
+  if (dev || needsFallback) {
     try {
       const { createServer: createVite } = await import('vite');
       const vite = await createVite({
-        configFile: new URL('../client/vite.config.ts', import.meta.url).pathname,
+        configFile: fileURLToPath(new URL('../client/vite.config.ts', import.meta.url)),
         server: { middlewareMode: true },
         appType: 'spa',
       });

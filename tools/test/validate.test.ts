@@ -1,4 +1,5 @@
 import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -84,6 +85,6 @@ test('invalid frontmatter YAML reports, never throws', () => {
 });
 
 test('runValidation on the committed examples tree is clean', () => {
-  const findings = runValidation([new URL('../../examples', import.meta.url).pathname]);
+  const findings = runValidation([fileURLToPath(new URL('../../examples', import.meta.url))]);
   assert.deepEqual(findings.filter((f) => f.level === 'error'), []);
 });

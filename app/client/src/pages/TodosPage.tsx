@@ -41,7 +41,7 @@ export function TodosPage({ tenant }: { tenant: string }) {
     setBusy('new');
     setNotice(null);
     try {
-      await postJson(base, { text: newText.trim(), type: newType });
+      await postJson(base, { text: newText.trim(), type: newType }, ifMatch);
       setNewText('');
       revalidate();
     } catch (e) {
@@ -82,7 +82,7 @@ export function TodosPage({ tenant }: { tenant: string }) {
     setBusy(line);
     setNotice(null);
     try {
-      await postJson(`${base}/${line}/park`, {});
+      await postJson(`${base}/${line}/park`, {}, ifMatch);
       revalidate();
     } catch (e) {
       handleFailure(e);

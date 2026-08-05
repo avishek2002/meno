@@ -86,5 +86,6 @@ fits the learner's life.
 
 ## Open questions
 
-1. Whether topic packs need a relaxed budget rule (no profile to sum against) - resolved
-   in Phase 8 when the pack spec lands.
+1. ~~Topic-pack budget rule~~ - resolved Phase 8: packs have no profile, so budget checks
+   are skipped; audience and rough hours are stated in the pack's hub note
+   (topic-packs/README.md).

@@ -30,8 +30,19 @@ const json = (res: ServerResponse, status: number, body: unknown): void => {
 };
 
 const httpError = (res: ServerResponse, e: unknown): void => {
-  const status = (e as { status?: number }).status ?? 500;
-  json(res, status, { error: (e as Error).message });
+  const status = (e as { status?: number }).status;
+  if (status) return json(res, status, { error: (e as Error).message });
+  // unexpected errors log server-side; clients never see filesystem paths
+  console.error('internal error:', e);
+  json(res, 500, { error: 'internal error' });
+};
+
+// every date in the system is local (ledger ts carries the local offset);
+// "today" must be local too or due reviews hide for hours around midnight UTC
+const localToday = (): string => {
+  const d = new Date();
+  const pad = (n: number): string => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 };
 
 async function readBody(req: IncomingMessage): Promise<Record<string, unknown>> {
@@ -69,13 +80,20 @@ const getTree: Handler = (_req, res, p, ctx) => {
   json(res, 200, walkTenant(safePath(ctx.root, p.tenant), p.tenant));
 };
 
+// courses are addressed by slug, but live in a directory that may differ
+// (hand-made courses); the walk is the resolver
+function resolveCourse(ctx: Ctx, tenant: string, courseSlug: string) {
+  const tenantDir = safePath(ctx.root, tenant);
+  const tree = walkTenant(tenantDir, tenant);
+  const course = tree.courses.find((c) => c.slug === courseSlug);
+  if (!course) throw Object.assign(new Error(`no course "${courseSlug}"`), { status: 404 });
+  return { tenantDir, course };
+}
+
 const getCourse: Handler = (_req, res, p, ctx) => {
-  const tenantDir = safePath(ctx.root, p.tenant);
-  const tree = walkTenant(tenantDir, p.tenant);
-  const course = tree.courses.find((c) => c.slug === p.course);
-  if (!course) throw Object.assign(new Error(`no course "${p.course}"`), { status: 404 });
+  const { tenantDir, course } = resolveCourse(ctx, p.tenant, p.course);
   let hubHtml = '';
-  const hubPath = safePath(ctx.root, p.tenant, p.course, course.hub.replace(/^\.\//, ''));
+  const hubPath = safePath(ctx.root, p.tenant, course.dir, course.hub.replace(/^\.\//, ''));
   if (course.hub && existsSync(hubPath)) {
     hubHtml = renderMarkdown(readFileSync(hubPath, 'utf8'), vaultIndex(tenantDir)).html;
   }
@@ -85,8 +103,8 @@ const getCourse: Handler = (_req, res, p, ctx) => {
 };
 
 const getLesson: Handler = (_req, res, p, ctx) => {
-  const tenantDir = safePath(ctx.root, p.tenant);
-  const file = safePath(ctx.root, p.tenant, p.course, 'modules', p.module, `${p.file}.md`);
+  const { tenantDir, course } = resolveCourse(ctx, p.tenant, p.course);
+  const file = safePath(ctx.root, p.tenant, course.dir, 'modules', p.module, `${p.file}.md`);
   if (!existsSync(file)) throw Object.assign(new Error('no such lesson'), { status: 404 });
   const text = readFileSync(file, 'utf8');
   const lesson = parseLesson(text);
@@ -131,7 +149,7 @@ const getProgress: Handler = (_req, res, p, ctx) => {
   const tenantDir = safePath(ctx.root, p.tenant);
   const events = readLedgerEvents(tenantDir);
   const mastery = deriveMastery(events);
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localToday();
   const due: { course: string; concept: string; next_review: string }[] = [];
   for (const [course, c] of Object.entries(mastery.courses)) {
     for (const [concept, st] of Object.entries(c.concepts)) {
@@ -144,7 +162,8 @@ const getProgress: Handler = (_req, res, p, ctx) => {
 const getLedger: Handler = (req, res, p, ctx) => {
   const url = new URL(req.url ?? '/', 'http://x');
   const since = url.searchParams.get('since');
-  const limit = Number(url.searchParams.get('limit') ?? 200);
+  const rawLimit = Number(url.searchParams.get('limit') ?? 200);
+  const limit = Number.isInteger(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 5000) : 200;
   let events = readLedgerEvents(safePath(ctx.root, p.tenant));
   if (since) events = events.filter((e) => e.ts > since);
   const truncated = events.length > limit;
@@ -161,7 +180,8 @@ const postCheckSubmit: Handler = async (req, res, p, ctx) => {
   const checkId = str(body.check_id, 'check_id');
   const response = str(body.response, 'response');
 
-  const file = safePath(ctx.root, p.tenant, course, 'modules', module_, `${lessonSlug}.md`);
+  const { course: courseNode } = resolveCourse(ctx, p.tenant, course);
+  const file = safePath(ctx.root, p.tenant, courseNode.dir, 'modules', module_, `${lessonSlug}.md`);
   if (!existsSync(file)) throw Object.assign(new Error('no such lesson'), { status: 404 });
   const lesson = parseLesson(readFileSync(file, 'utf8'));
   const check = lesson.checks.find((c) => c.id === checkId);
@@ -187,10 +207,20 @@ const postCheckSubmit: Handler = async (req, res, p, ctx) => {
 
 const postLessonRead: Handler = async (req, res, p, ctx) => {
   const body = await readBody(req);
+  const course = str(body.course, 'course');
+  const module_ = str(body.module, 'module');
+  const lessonSlug = str(body.lesson, 'lesson');
+  // a read event must point at a lesson that exists - same rule as submit
+  const { course: courseNode } = resolveCourse(ctx, p.tenant, course);
+  const file = safePath(ctx.root, p.tenant, courseNode.dir, 'modules', module_, `${lessonSlug}.md`);
+  if (!existsSync(file)) throw Object.assign(new Error('no such lesson'), { status: 404 });
+  if (body.seconds !== undefined && (!Number.isFinite(body.seconds as number) || (body.seconds as number) < 0)) {
+    throw Object.assign(new Error('seconds must be a finite non-negative number'), { status: 400 });
+  }
   const event = appendUiEvent(safePath(ctx.root, p.tenant), 'read', {
-    course: str(body.course, 'course'),
-    module: str(body.module, 'module'),
-    lesson: str(body.lesson, 'lesson'),
+    course,
+    module: module_,
+    lesson: lessonSlug,
     ...(typeof body.seconds === 'number' ? { seconds: body.seconds } : {}),
   });
   json(res, 200, { event_ts: event.ts });
@@ -201,10 +231,15 @@ function withTodosFile(
   tenant: string,
   req: IncomingMessage,
   mutate: (raw: string) => string,
+  opts: { requireMatch?: boolean } = {},
 ): { raw_sha256: string } {
   const file = safePath(ctx.root, tenant, 'todos.md');
   const raw = existsSync(file) ? readFileSync(file, 'utf8') : '# Todos\n';
   const ifMatch = req.headers['if-match'];
+  if (opts.requireMatch && (typeof ifMatch !== 'string' || ifMatch === '')) {
+    // a line index is only meaningful against a known file version
+    throw Object.assign(new Error('If-Match required for line-addressed todo operations'), { status: 428 });
+  }
   if (typeof ifMatch === 'string' && ifMatch !== '' && ifMatch !== sha256(raw)) {
     throw Object.assign(new Error('todos.md changed since you read it (409)'), { status: 409 });
   }
@@ -226,15 +261,17 @@ const postTodos: Handler = async (req, res, p, ctx) => {
 
 const patchTodoRoute: Handler = async (req, res, p, ctx) => {
   const body = await readBody(req);
-  const today = new Date().toISOString().slice(0, 10);
-  const result = withTodosFile(ctx, p.tenant, req, (raw) =>
-    patchTodo(raw, Number(p.line), { done: body.done as boolean | undefined, text: body.text as string | undefined }, today),
+  const today = localToday();
+  const result = withTodosFile(
+    ctx, p.tenant, req,
+    (raw) => patchTodo(raw, Number(p.line), { done: body.done as boolean | undefined, text: body.text as string | undefined }, today),
+    { requireMatch: true },
   );
   json(res, 200, result);
 };
 
 const postTodoPark: Handler = async (req, res, p, ctx) => {
-  const result = withTodosFile(ctx, p.tenant, req, (raw) => parkTodo(raw, Number(p.line)));
+  const result = withTodosFile(ctx, p.tenant, req, (raw) => parkTodo(raw, Number(p.line)), { requireMatch: true });
   json(res, 200, result);
 };
 

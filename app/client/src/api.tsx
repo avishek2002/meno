@@ -32,10 +32,10 @@ export function getJson<T>(url: string): Promise<T> {
   return request<T>(url);
 }
 
-export function postJson<T>(url: string, body: unknown): Promise<T> {
+export function postJson<T>(url: string, body: unknown, extraHeaders?: Record<string, string>): Promise<T> {
   return request<T>(url, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', ...extraHeaders },
     body: JSON.stringify(body),
   });
 }
