@@ -11,29 +11,57 @@ ROOT=$(cd "$(dirname "$0")/.." && pwd)
 TENANT=${1:-main}
 
 # 1. the leakage guard: gitignore already hides content/; this hook stops the one
-#    path around it (git add -f). It chains to any pre-existing hook.
-HOOK="$ROOT/.git/hooks/pre-commit"
-mkdir -p "$ROOT/.git/hooks"
-if [ -f "$HOOK" ] && grep -q meno-leakage-guard "$HOOK"; then
-  echo "leakage guard: already installed"
-else
-  [ -f "$HOOK" ] && mv "$HOOK" "$HOOK.pre-meno"
-  cat > "$HOOK" <<'EOF'
-#!/bin/sh
+#    path around it (git add -f). Installed in BOTH hook locations, because git
+#    consults exactly one of them: .git/hooks when no core.hooksPath is set, or
+#    the configured hooksPath directory otherwise (many setups point a global
+#    hooksPath at personal hooks that chain to the repo's .githooks/).
+GUARD='#!/bin/sh
 # meno-leakage-guard: tenant content must never reach the public repository.
-staged=$(git diff --cached --name-only | grep '^content/' || true)
+staged=$(git diff --cached --name-only | grep "^content/" || true)
 if [ -n "$staged" ]; then
   echo "meno: refusing to commit tenant content (private by design):" >&2
-  echo "$staged" | sed 's/^/  /' >&2
+  echo "$staged" | sed "s/^/  /" >&2
   echo "unstage with: git restore --staged <path>  (use tools/meno-mirror for backups)" >&2
   exit 1
 fi
 [ -x "$0.pre-meno" ] && exec "$0.pre-meno"
-exit 0
-EOF
-  chmod +x "$HOOK"
-  echo "leakage guard: installed at .git/hooks/pre-commit"
+exit 0'
+
+install_guard() {
+  hook_file=$1
+  mkdir -p "$(dirname "$hook_file")"
+  if [ -f "$hook_file" ] && grep -q meno-leakage-guard "$hook_file"; then
+    return 1
+  fi
+  [ -f "$hook_file" ] && mv "$hook_file" "$hook_file.pre-meno"
+  printf '%s\n' "$GUARD" > "$hook_file"
+  chmod +x "$hook_file"
+  return 0
+}
+
+installed=""
+install_guard "$ROOT/.git/hooks/pre-commit" && installed=".git/hooks"
+install_guard "$ROOT/.githooks/pre-commit" && installed="$installed .githooks"
+if [ -n "$installed" ]; then
+  echo "leakage guard: installed at$installed"
+else
+  echo "leakage guard: already installed"
 fi
+
+# an active core.hooksPath overrides .git/hooks entirely - warn when neither
+# installed location would actually run
+hooks_path=$(git -C "$ROOT" config --get core.hooksPath 2>/dev/null || true)
+case "$hooks_path" in
+  ""|.githooks|"$ROOT/.githooks") ;;
+  *)
+    echo ""
+    echo "WARNING: git is configured with core.hooksPath=$hooks_path, so repo hooks in"
+    echo ".git/hooks are IGNORED. The leakage guard will only run if that hook chains to"
+    echo "this repo's .githooks/pre-commit. If it does not, either add that chaining or"
+    echo "run:  git -C \"$ROOT\" config --local core.hooksPath .githooks"
+    echo "(note: a local hooksPath disables your global hooks for this repo)"
+    ;;
+esac
 
 # 2. tenant directory (vault files come from the interview's bootstrap)
 if [ -d "$ROOT/content/$TENANT" ]; then

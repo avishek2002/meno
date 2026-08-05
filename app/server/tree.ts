@@ -57,6 +57,7 @@ export function walkTenant(tenantDir: string, tenant: string): TreeResponse {
     }
 
     courses.push({
+      dir: entry,
       slug: String(course.slug ?? entry),
       title: String(course.title ?? entry),
       status: String(course.status ?? 'active'),

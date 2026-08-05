@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 // Test harness: boot the real server on an ephemeral port against a throwaway
 // copy of the committed example tenant. Never mutates examples/ itself.
 import { createServer, type Server } from 'node:http';
@@ -14,7 +15,7 @@ export interface TestApp {
   close: () => Promise<void>;
 }
 
-const EXAMPLE = new URL('../../examples/example-learner', import.meta.url).pathname;
+const EXAMPLE = fileURLToPath(new URL('../../examples/example-learner', import.meta.url));
 
 export async function withTenant(opts: { empty?: boolean } = {}): Promise<TestApp> {
   const root = mkdtempSync(join(tmpdir(), 'meno-app-'));

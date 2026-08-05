@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 // Deterministic, offline validation of every content format Meno defines.
 // Usage: node tools/validate.ts [targetDir ...] [--strict] [--json]
 //   targets default to examples/ - every course tree found under each target
@@ -25,7 +26,7 @@ export interface Finding {
   message: string;
 }
 
-const repoRoot = new URL('..', import.meta.url).pathname;
+const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(dir)) {
@@ -247,6 +248,15 @@ export function checkCourses(_target: string, files: string[]): Finding[] {
       for (const err of validateCourse.errors ?? []) {
         findings.push({ level: 'error', check: 'manifests', path: relCourse, message: `${err.instancePath || '/'} ${err.message}` });
       }
+    }
+    const courseDirName = courseDir.split('/').at(-1);
+    if (course.slug && course.slug !== courseDirName) {
+      findings.push({
+        level: 'error',
+        check: 'refs',
+        path: relCourse,
+        message: `course slug "${course.slug}" does not match its directory "${courseDirName}"`,
+      });
     }
 
     // profile context (topic packs have none)
@@ -506,7 +516,8 @@ export function checkLedgers(_target: string, files: string[]): Finding[] {
         const msgs = (validateEvent.errors ?? []).slice(0, 3).map((err) => `${err.instancePath || '/'} ${err.message}`);
         findings.push({ level: 'error', check: 'ledger', path: rel, message: `${at} (${eventName}): ${msgs.join('; ')}` });
       }
-      if (e.ts <= prevTs) {
+      // instants, not strings: offsets make lexicographic comparison lie
+      if (prevTs !== '' && (Number.isNaN(Date.parse(e.ts)) || Date.parse(e.ts) <= Date.parse(prevTs))) {
         findings.push({ level: 'error', check: 'ledger', path: rel, message: `${at}: ts "${e.ts}" not strictly after the previous line (ts is a join key; bump 1ms on collision)` });
       }
       prevTs = e.ts;

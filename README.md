@@ -18,7 +18,7 @@ is? The interview is the answer.
 git clone https://github.com/avishek2002/meno   # clone, don't fork - forks can't go private
 cd meno
 tools/meno-init                                 # leakage guard, tenant dir, CLI census
-npm install && npm start                        # the study app on http://127.0.0.1:7373
+npm install && npm run build && npm start       # the study app on http://127.0.0.1:7373
 ```
 
 Then open your agent in the repo and say what you want to learn. The interview takes it

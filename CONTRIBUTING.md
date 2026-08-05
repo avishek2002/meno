@@ -23,6 +23,7 @@ One runtime: Node 24+ (the server and tools run TypeScript directly - no build s
 ```
 npm run gate      typecheck (server + client) + all tests + validate - must be green
 npm run eval      the eval gate - required for any change to a generation skill
+npm run build     once, builds the study app client
 npm start         the study app, for seeing your change live
 ```
 

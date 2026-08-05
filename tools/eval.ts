@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 // The eval gate: does a change to a generation skill degrade what it generates?
 // Two halves, reported separately, never averaged (docs/specs/quality.md):
 //   checklist - deterministic, zero model calls, reuses the same shared
@@ -15,7 +16,7 @@ import { parseFrontmatter } from '../lib/frontmatter.ts';
 import { parseLesson, anatomyOf } from '../lib/lesson.ts';
 import { runValidation } from './validate.ts';
 
-const repoRoot = new URL('..', import.meta.url).pathname;
+const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 const JUDGE_MODEL = 'claude-sonnet-5';
 const GRID = [0, 0.25, 0.5, 0.75, 1];
 

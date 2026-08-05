@@ -18,7 +18,10 @@ write-authority seam (decision 14) is enforced in code.
 
 ## How it behaves
 
-1. `npm install && npm start` serves `http://127.0.0.1:7373` (`--port` to override; a busy
+1. `npm install && npm run build && npm start` serves `http://127.0.0.1:7373`; when no
+   built client exists (a fresh clone that skipped the build), the server mounts Vite in
+   middleware mode automatically so the documented start path always serves the app
+   (`--port` to override; a busy
    port fails loudly rather than silently hopping). `npm run dev` mounts Vite in
    middleware mode in the same process: one port, hot reload.
 2. Structure is derived by walking `content/` fresh on every request - new courses,

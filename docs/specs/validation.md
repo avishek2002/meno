@@ -44,10 +44,13 @@ validate and the renderer can never disagree about what a file says.
 | `citations` | source-record integrity: wayback-shaped archived_url for web sources, vault-relative paths for user sources, sane accessed dates | 2 |
 | `hub` | hub note exists, carries the mermaid dependency map, derived markers balanced | 2 |
 | `tenancy` | CLAUDE.md stays the one-line shim, content/ stays gitignored | 1 |
+| `lessons` | 9-part anatomy, frontmatter schema, id/path agreement, status drift | 3 |
+| `checks` | authored-id presence/uniqueness/shape, mcq ranges, cloze gaps, concepts resolve course-wide, interleaving warning | 3 |
+| `ledger` | per-line schema, strictly-increasing ts, write-authority at rest | 3 |
+| `mastery` | byte-identical rebuild vs committed mastery.yml | 3 |
 
-Planned: `lessons` and `checks` (anatomy, check blocks - Phase 3), `ledger` and `mastery`
-(event typing at rest, byte-identical rebuild - Phases 3/5), `vault` (wikilink
-resolution, orphan detection - Phase 4, needs the app's resolver).
+Planned: `vault` (wikilink resolution, orphan detection - needs the app's resolver) and
+`insights` (future).
 
 ## Data touched
 

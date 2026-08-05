@@ -179,8 +179,15 @@ export function deriveMastery(events: LedgerEvent[]): Mastery {
       const transferScore = nTransfer > 0 ? round2([...st.transfer.values()].reduce((a, b) => a + b, 0) / nTransfer) : null;
       const nRec = st.recognition.size;
       const recognitionRate = nRec > 0 ? round2([...st.recognition.values()].filter(Boolean).length / nRec) : null;
-      // weakness stays active until a transfer score lands after the override
-      const weakActive = st.lastWeakTs !== null && (st.lastTransferTs === null || st.lastTransferTs <= st.lastWeakTs);
+      // weakness stays active until a transfer score lands after the override;
+      // compare instants where parseable (offsets make lexicographic order lie),
+      // falling back to string order for non-RFC test fixtures
+      const tsLte = (a: string, b: string): boolean => {
+        const pa = Date.parse(a);
+        const pb = Date.parse(b);
+        return Number.isNaN(pa) || Number.isNaN(pb) ? a <= b : pa <= pb;
+      };
+      const weakActive = st.lastWeakTs !== null && (st.lastTransferTs === null || tsLte(st.lastTransferTs, st.lastWeakTs));
       let level: 'introduced' | 'practiced' | 'mastered' | 'shaky';
       if (nTransfer > 0) level = transferScore! >= 0.8 && !weakActive ? 'mastered' : 'shaky';
       else if (nRec > 0) level = 'practiced';

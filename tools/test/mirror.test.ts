@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 // The Phase 7 end-to-end drill, automated against a file:// bare remote: fresh
 // clone, init, leakage-hook block, mirror push, wipe, restore, byte-identical
 // tree. What this deliberately cannot exercise (real GitHub visibility) is
@@ -9,7 +10,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, readdirSyn
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 
-const repoRoot = new URL('../..', import.meta.url).pathname;
+const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
 
 function sh(cwd: string, cmd: string, args: string[]): string {
   return execFileSync(cmd, args, { cwd, encoding: 'utf8', env: { ...process.env, GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_SYSTEM: '/dev/null' } });
@@ -131,4 +132,59 @@ test('verify refuses an unverifiable remote', () => {
   sh(join(tenant), 'git', ['-c', 'core.hooksPath=', 'remote', 'set-url', 'origin', 'https://gitlab.example.com/x/y.git']);
   assert.throws(() => sh(clone, 'sh', ['tools/meno-mirror', 'verify', 't']), /cannot assert privacy, refusing/);
   rmSync(work, { recursive: true, force: true });
+});
+
+test('verify refuses when pushurl diverges from the fetch url', () => {
+  const work = mkdtempSync(join(tmpdir(), 'meno-pushurl-'));
+  const clone = makeFreshMeno(work);
+  sh(clone, 'sh', ['tools/meno-init', 't']);
+  writeFileSync(join(clone, 'content', 't', 'home.md'), 'x\n');
+  const bare = join(work, 'ok.git');
+  sh(work, 'git', ['init', '-q', '--bare', 'ok.git']);
+  sh(clone, 'sh', ['tools/meno-mirror', 'init', 't', bare]);
+  // a divergent pushurl is exactly the exfiltration foot-gun verify must catch
+  sh(join(clone, 'content', 't'), 'git', ['-c', 'core.hooksPath=', 'config', 'remote.origin.pushUrl', 'https://github.com/evil/leak.git']);
+  assert.throws(() => sh(clone, 'sh', ['tools/meno-mirror', 'verify', 't']), /push url .* differs from fetch url/);
+  rmSync(work, { recursive: true, force: true });
+});
+
+test('the leakage guard survives a hostile global core.hooksPath', () => {
+  const work = mkdtempSync(join(tmpdir(), 'meno-hookpath-'));
+  const clone = makeFreshMeno(work);
+  // a global hooksPath that does NOT chain to repo hooks - the environment that
+  // silently disabled the guard before the fix
+  const globalHooks = join(work, 'personal-hooks');
+  mkdirSync(globalHooks, { recursive: true });
+  const globalConfig = join(work, 'gitconfig');
+  writeFileSync(globalConfig, `[core]\n\thooksPath = ${globalHooks}\n`);
+  const env = { ...process.env, GIT_CONFIG_GLOBAL: globalConfig, GIT_CONFIG_SYSTEM: '/dev/null' };
+  const shEnv = (cwd: string, cmd: string, args: string[]): string =>
+    execFileSync(cmd, args, { cwd, encoding: 'utf8', env });
+
+  const initOut = shEnv(clone, 'sh', ['tools/meno-init', 't']);
+  assert.match(initOut, /WARNING: git is configured with core\.hooksPath/);
+  // apply the printed remediation
+  shEnv(clone, 'git', ['config', '--local', 'core.hooksPath', '.githooks']);
+  writeFileSync(join(clone, 'content', 't', 'home.md'), 'secret vault content\n');
+  shEnv(clone, 'git', ['add', '-f', 'content/t/home.md']);
+  assert.throws(
+    () => shEnv(clone, 'git', ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-m', 'leak']),
+    /refusing to commit tenant content/,
+  );
+  rmSync(work, { recursive: true, force: true });
+});
+
+test('no source file resolves repo paths via URL.pathname (breaks on spaces)', () => {
+  const roots = ['lib', 'tools', 'app'].map((d) => join(repoRoot, d));
+  const offenders: string[] = [];
+  const walk = (dir: string): void => {
+    for (const entry of readdirSync(dir)) {
+      if (entry === 'node_modules' || entry === 'dist') continue;
+      const p = join(dir, entry);
+      if (statSync(p).isDirectory()) walk(p);
+      else if (/\.(ts|tsx)$/.test(entry) && readFileSync(p, 'utf8').includes('import.meta.url)' + '.pathname')) offenders.push(p);
+    }
+  };
+  for (const r of roots) walk(r);
+  assert.deepEqual(offenders, []);
 });
