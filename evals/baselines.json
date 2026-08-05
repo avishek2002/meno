@@ -1,0 +1,22 @@
+{
+  "interview-sam": {
+    "judged_min": null
+  },
+  "interview-priya": {
+    "judged_min": null
+  },
+  "curriculum-rust": {
+    "judged_min": 0.4,
+    "established_with": {
+      "judge_model": "claude-sonnet-5",
+      "judge_prompt_sha256": "15b2e6d03d5b4cfd"
+    }
+  },
+  "lessons-module1": {
+    "judged_min": 0.7,
+    "established_with": {
+      "judge_model": "claude-sonnet-5",
+      "judge_prompt_sha256": "15b2e6d03d5b4cfd"
+    }
+  }
+}

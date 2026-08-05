@@ -10,9 +10,14 @@ Named for Plato's *Meno* and its paradox: how can you search for something when 
 
 Meno rests on three pillars: **Obsidian** as the second brain (each tenant's `content/<tenant>/` directory is itself a vault of connected markdown), **a localhost app** for daily study, tracking, and todos, and **the agent** (you) for creating content and extending the instance.
 
-## Current status: skills drafted, app and tooling pending
+## Current status: v1 built
 
-The five core skills exist as drafts in `.agents/skills/`; the localhost app, schemas as JSON files, validation tooling, and evals do not exist yet. Build work follows numbered phases from the plan - do not scaffold app code, schemas, or tooling unless the maintainer asks for a phase.
+All eight phases of the plan are complete: seven skills, JSON schemas with a validate
+gate (`npm run gate`), the localhost study app (`npm start`), the tutor loop with mastery
+gates, citation auditing, mirror tooling, and the eval gate (`npm run eval`). The example
+learner under `examples/` carries a real generated course through a real review session -
+it is the living spec. Changes follow [CONTRIBUTING.md](CONTRIBUTING.md); behavior
+changes amend their spec under `docs/specs/` in the same change.
 
 - [PLAN.md](PLAN.md) - the phased build plan, decision record, and acceptance criteria. Start here.
 - [docs/architecture.md](docs/architecture.md) - how the system works: pillars, component map, the write-authority seam, and the per-subsystem specs under docs/specs/.

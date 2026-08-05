@@ -1,25 +1,58 @@
 # Meno
 
-**An AI agent that interviews you, builds you a cited curriculum, and tutors you through it - all in a git repo you own.**
+**An AI agent that interviews you, builds you a cited curriculum, and tutors you through
+it - all in a git repo you own.**
 
-> **Status: planning phase.** The design is settled and researched; implementation has not started. Details below.
+You tell your coding agent (Claude Code first-class; any capable agent CLI) what you want
+to learn. Meno's skills make it interrogate you properly first - goal, prior knowledge,
+depth, time budget - because a novice can't spec their own curriculum. Then it generates a
+course with real, verified, archived sources, renders it in a local web app on your
+machine, and runs spaced review sessions that gate progress on actual mastery.
 
-You tell your coding agent (Claude Code, Codex, Gemini CLI, or any capable agent CLI) what you want to learn. Meno's skills will make it interrogate you properly first - goal, prior knowledge, depth, time budget - because a novice can't spec their own curriculum. Then it generates a course with real, verified sources, renders it in a local web app on your machine, and runs spaced review sessions that gate progress on actual mastery.
+The name is Plato's *Meno*: how can you search for something when you don't know what it
+is? The interview is the answer.
 
-Your content stays yours: everything generated for you is gitignored, never committed or published, and backed up only to your own private mirror. (Your agent's model provider does process what it generates for you - that's true of any agent workflow, and the guide will say so plainly.) The repo you clone will contain only the shared machinery - the skills, schemas, guide, and one example course.
+## Quickstart
 
-The name is Plato's *Meno*: how can you search for something when you don't know what it is? The interview is the answer.
+```
+git clone https://github.com/avishek2002/meno   # clone, don't fork - forks can't go private
+cd meno
+tools/meno-init                                 # leakage guard, tenant dir, CLI census
+npm install && npm start                        # the study app on http://127.0.0.1:7373
+```
 
-## Where things stand
+Then open your agent in the repo and say what you want to learn. The interview takes it
+from there; module 1 is readable the same sitting. The full journey - reviews, mastery
+gates, the Obsidian graph, todos, private backups - is in
+[docs/how-meno-works.md](docs/how-meno-works.md).
 
-Nothing to run yet. What exists is the full design:
+## What's inside
 
-- [PLAN.md](PLAN.md) - phased build plan with acceptance criteria and the locked decision record.
-- [docs/RESEARCH.md](docs/RESEARCH.md) - the evidence base: learning science, LMS landscape, prior art, architecture.
+- **Seven skills** (`.agents/skills/`) - the program an agent CLI executes: interview,
+  curriculum generation, lesson generation, tutoring with mastery gates, citation
+  auditing, vault upkeep, instance extension.
+- **A local-first study app** (`app/`) - Vite + React over a small Node file API; reads
+  and writes your markdown directly, grades recognition checks, tracks progress. No
+  database, no daemon, binds localhost only.
+- **Deterministic rails** (`schemas/`, `tools/`, `lib/`) - JSON Schema contracts,
+  `npm run gate` (typecheck + 48 tests + validate), `npm run eval` (the generation-quality
+  gate), byte-identical mastery derivation from an append-only ledger.
+- **A living example** (`examples/example-learner/`) - a real generated Rust course
+  carried through a real graded review session, override and all. It doubles as the test
+  fixture, so the docs and the tests can never describe different systems.
+- **Your content stays yours** - `content/` is gitignored, hook-guarded, backed up only
+  to a private mirror you own (`tools/meno-mirror`), and never read by the base system.
+  Your agent's model provider processes what the agent handles - true of any agent
+  workflow; the guide says so plainly.
 
-## Design in one paragraph
+## For the curious
 
-Evidence-backed generation (spaced retrieval, worked examples with fading, mastery gates at ~80 percent, desirable difficulties), a clarification interview built for people who don't know what they don't know (closed questions, anchored menus, one live probe), model-agnostic entry points (`AGENTS.md` canonical, `CLAUDE.md` a one-line shim), tenant-scoped content over a shared skill core, and citations that are fetched before they're cited and archived against link rot.
+- [docs/architecture.md](docs/architecture.md) - the three pillars, the component map,
+  and the write-authority seam that keeps mastery honest.
+- [docs/specs/](docs/specs/) - per-subsystem specs: how each piece behaves and why.
+- [PLAN.md](PLAN.md) - the phased build plan and locked decision record.
+- [docs/RESEARCH.md](docs/RESEARCH.md) - the learning-science evidence base.
+- [CONTRIBUTING.md](CONTRIBUTING.md) - the gate, the eval, the smoke protocol.
 
 ## License
 
