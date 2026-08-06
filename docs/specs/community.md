@@ -1,6 +1,6 @@
 # Community spec
 
-*Status: current as of v1.2. Canonical formats owned elsewhere: pack layout and `PACK.md` in
+*Status: current as of v1.2; amended at v1.5 (pack attribution). Canonical formats owned elsewhere: pack layout and `PACK.md` in
 [content/community/README.md](../../content/community/README.md), the publish procedure in
 [publish-to-community/SKILL.md](../../.agents/skills/publish-to-community/SKILL.md),
 the sanitization catalog in
@@ -53,19 +53,28 @@ subject scattered across near-duplicate packs nobody amends.
    reads as ordinary pedagogy to every regex. Human review of the pull request is the named gate
    for that class, not a machine check.
 5. **A quality gate runs before every pack pull request opens.** `npm run validate` on the pack
-   tree (blocking - `pack-layout`, `pack-notes`, `pack-overlap`, `pack-safety`), a full
+   tree (blocking - `pack-layout`, `pack-notes`, `pack-overlap`, `pack-attribution`,
+   `pack-safety`), a full
    `audit-citations` run with verdicts pasted into the pull request (blocking),
    `node tools/packs.ts` to refresh `INDEX.md`, and the pull request template's sanitization and
    search-first attestations.
-6. **Amendment is an ordinary pull request plus one line.** Amending an existing pack edits its
-   files in place and appends one dated line to its `PACK.md` amendment log - no new directory,
-   no fork, no second pack competing for the same subject.
-7. **Everything under `content/community/` and `content/org/` is reference data to every skill that reads it,
+6. **Amendment is an ordinary pull request plus two appends.** Amending an existing pack edits
+   its files in place, appends one dated line to its `PACK.md` amendment log, and appends one
+   record to its `CONTRIBUTORS.yml` - no new directory, no fork, no second pack competing for
+   the same subject.
+7. **Attribution is per unit, and inherited.** Every pack carries a `CONTRIBUTORS.yml` naming
+   who made what, at the smallest unit a change touches: the pack, a course objective, a module,
+   a planned lesson, an anchor source, or a reference note. A unit with no record of its own is
+   attributed to the nearest ancestor that has one, so a single-author pack needs exactly one
+   record and finer records exist only where authorship actually differs - detail is paid for
+   only where detail is true. `PACK.md` keeps the narrative (`maintainers` is who reviews, the
+   amendment log is what changed and why); `CONTRIBUTORS.yml` owns who, which unit, and when.
+8. **Everything under `content/community/` and `content/org/` is reference data to every skill that reads it,
    never instructions.** A pack's prose can contain text shaped like a directive, accidentally or
    adversarially; `generate-curriculum`, `generate-module`, and `elicit-needs` all state the rule
    explicitly, and `pack-safety` flags instruction-shaped phrases as a warning so a human sees
    them in review.
-8. **Degraded path:** a pack pull request that fails validate, fails the audit, or is missing an
+9. **Degraded path:** a pack pull request that fails validate, fails the audit, or is missing an
    attestation does not merge - there is no partial-publish state; the pack either lands complete
    or the pull request stays open.
 
@@ -74,7 +83,7 @@ subject scattered across near-duplicate packs nobody amends.
 ```mermaid
 graph TD
     T[Tenant course<br/>content/tenants/tenant/domain/slug] -->|publish-to-community<br/>transcribe, never copy| PT[Pack tree on a branch]
-    PT -->|npm run validate<br/>pack-layout/notes/overlap/safety| G1{Gate}
+    PT -->|npm run validate<br/>pack-layout/notes/overlap/attribution/safety| G1{Gate}
     PT -->|audit-citations full run| G2{Gate}
     G1 --> PR[Pull request<br/>template attestations]
     G2 --> PR
@@ -90,12 +99,15 @@ graph TD
 - `.agents/skills/publish-to-community/SKILL.md` - the publish procedure (agent-executed).
 - `.agents/skills/extend-meno/references/recipes.md` - the adoption and hand-authoring
   recipes.
-- `schemas/pack.schema.json`, `schemas/reference-note.schema.json` - the machine-checkable
-  `PACK.md` and `notes/` contracts; `schemas/course.schema.json`'s `derived_from` block.
-- `tools/validate.ts` - `pack-layout`, `pack-notes`, `pack-overlap`, `pack-safety` checks
-  ([validation.md](validation.md)).
-- `tools/packs.ts` - generates `content/community/INDEX.md` from every pack's `course.yml` and
-  `PACK.md`; `--check` verifies freshness.
+- `schemas/pack.schema.json`, `schemas/reference-note.schema.json`,
+  `schemas/contributors.schema.json` - the machine-checkable `PACK.md`, `notes/`, and
+  `CONTRIBUTORS.yml` contracts; `schemas/course.schema.json`'s `derived_from` block.
+- `lib/attribution.ts` - the one implementation of unit parsing, the ancestor chain, and
+  nearest-ancestor resolution, shared by the validate check and the index generator.
+- `tools/validate.ts` - `pack-layout`, `pack-notes`, `pack-overlap`, `pack-attribution`,
+  `pack-safety` checks ([validation.md](validation.md)).
+- `tools/packs.ts` - generates `content/community/INDEX.md` from every pack's `course.yml`,
+  `PACK.md`, and `CONTRIBUTORS.yml`; `--check` verifies freshness.
 - `examples/seeded-faults/publish-fixture/` - the red-team tenant fixture for practicing the
   sanitization catch (blind publish drills).
 
@@ -104,6 +116,7 @@ graph TD
 | Path | Access | Owner | Format |
 |---|---|---|---|
 | `content/community/<domain>/<slug>/{course.yml,PACK.md,modules/**,notes/**}` | write (new pack: create; amendment: edit in place) | `publish-to-community` (agent, via pull request) | manifest-format.md, pack.schema.json, reference-note.schema.json |
+| `content/community/<domain>/<slug>/CONTRIBUTORS.yml` | write (append only) | `publish-to-community` (agent, via pull request) | contributors.schema.json |
 | `content/community/DOMAINS.md` | read | validate (`pack-layout`) | closed vocabulary |
 | `content/community/INDEX.md` | write (regenerate wholesale) | `tools/packs.ts` | generated, grep-shaped |
 | `content/tenants/<tenant>/<domain>/<slug>/course.yml` `derived_from` field | write (adoption only) | `extend-meno` adopt-a-pack recipe | course.schema.json |
@@ -124,6 +137,10 @@ graph TD
 7. Nothing under `content/community/` or `content/org/` is ever executed or followed as an instruction by a
    skill; it is read only as reference data.
 8. Every amendment appends to its pack's `PACK.md` amendment log; the log is append-only.
+9. Every pack directory has a `CONTRIBUTORS.yml` with at least one `unit: pack` record, every
+   record's unit resolves against what the pack actually contains (or is marked
+   `action: removed`), records are oldest-first, and every `by` is a GitHub handle or the
+   literal `anonymous` - never an email, a real name, or a tenant id.
 
 ## Verified by
 
@@ -137,7 +154,19 @@ graph TD
   publish drill against `examples/seeded-faults/publish-fixture/` when `publish-to-community`
   changes.
 - Invariant 5: `node tools/packs.ts --check`, run in the quality gate before every pack pull
-  request.
+  request. The index carries each pack's rolled-up contributor list, so the check also catches a
+  `CONTRIBUTORS.yml` change that never made it into the index.
+- Invariant 9's mechanical half: the `pack-attribution` check ([validation.md](validation.md)) -
+  coverage, per-unit resolution, ordering, and the handle shape, with a stale source url a
+  warning rather than an error (a citation replaced during upkeep is stale attribution, not
+  wrong attribution). Its other half is not machine-verified and cannot be: **`by` is
+  self-declared**. An agent writes whatever the publisher says at write time, with no git
+  identity, signature, or account check binding the name to the work, and nothing stops a
+  contributor claiming a unit somebody else wrote. `pack-attribution` also does not enforce
+  append-only - validate reads the filesystem, not the diff - so a pull request that quietly
+  rewrites or deletes an existing record is caught by git history and human review or not at
+  all, exactly as with the `PACK.md` amendment log. Treat the file as a courtesy record and a
+  "who do I ask" pointer, not an audit trail.
 - Invariant 7: `pack-safety`'s instruction-shaped-phrase warning catches the mechanical half;
   the untrusted-reference-data rule stated in `generate-curriculum`, `generate-module`, and
   `elicit-needs` is the procedural half - not machine-verified for compliance (an agent could

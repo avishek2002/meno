@@ -8,6 +8,7 @@ import { useRegisterRevalidate } from '../RevalidateContext';
 import { EmptyState } from '../components/EmptyState';
 import { postJson, patchJson, ApiError } from '../api';
 import type { TodosResponse } from '../../../shared/types.ts';
+import { InfoTip } from '../components/InfoTip';
 
 const TYPES: Array<'gen' | 'repo' | 'note'> = ['gen', 'repo', 'note'];
 
@@ -99,7 +100,9 @@ export function TodosPage({ tenant }: { tenant: string }) {
 
   return (
     <section>
-      <h1>Todos</h1>
+      <h1>
+        Todos <InfoTip entry="todosShared" />
+      </h1>
       {notice && <p className="notice">{notice}</p>}
 
       <form className="todo-create" onSubmit={create}>

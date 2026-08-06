@@ -15,6 +15,9 @@ interface RouteDef {
 
 const ROUTES: RouteDef[] = [
   { name: 'home', pattern: /^#\/$/ },
+  // The optional trailing fragment is the guidebook's in-page section links:
+  // one hash router plus one document fragment, so a section stays linkable.
+  { name: 'guide', pattern: /^#\/guide(?:#(?<section>[\w-]+))?$/ },
   { name: 'lesson', pattern: /^#\/t\/(?<tenant>[^/]+)\/c\/(?<course>[^/]+)\/m\/(?<module>[^/]+)\/l\/(?<file>[^/]+)$/ },
   { name: 'course', pattern: /^#\/t\/(?<tenant>[^/]+)\/c\/(?<course>[^/]+)$/ },
   { name: 'todos', pattern: /^#\/t\/(?<tenant>[^/]+)\/todos$/ },

@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/avishek2002/meno/schemas/contributors.schema.json",
+  "title": "Meno pack attribution log (CONTRIBUTORS.yml)",
+  "description": "Who made what inside one pack, at the smallest unit a pull request actually touches. Canonical prose definition: content/community/README.md. Records are append-only and oldest-first; attribution resolves by nearest ancestor, so a pack written by one person needs exactly one record and finer records exist only where authorship differs. PACK.md's amendment log owns the narrative why; this file owns who, what, and when.",
+  "type": "object",
+  "required": ["schema_version", "contributions"],
+  "properties": {
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "contributions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["unit", "by", "date", "action"],
+        "properties": {
+          "unit": {
+            "type": "string",
+            "pattern": "^(pack|objectives/[A-Za-z0-9][A-Za-z0-9_-]*|modules/[0-9]{2}-[a-z0-9]+(-[a-z0-9]+)*(/lessons/[A-Za-z0-9-]+\\.md|/sources/\\S+)?|notes/[a-z0-9]+(-[a-z0-9]+)*\\.md)$",
+            "description": "pack | objectives/<course-objective-id> | modules/<slug> | modules/<slug>/lessons/<file.md> (resolves against that module.yml's lessons[].file, since packs ship no lesson bodies) | modules/<slug>/sources/<url> (keyed on the source url, which survives re-archiving and reordering) | notes/<file.md>"
+          },
+          "by": {
+            "type": "string",
+            "pattern": "^(@[A-Za-z0-9](-?[A-Za-z0-9])*|anonymous)$",
+            "description": "the contributor's GitHub handle, @-prefixed, or the literal anonymous - packs land only through pull requests, so a handle always exists. Never an email, a real name, a tenant id, or anything read off the publisher's machine."
+          },
+          "date": { "type": "string", "format": "date" },
+          "action": {
+            "enum": ["created", "amended", "removed"],
+            "description": "removed records are exempt from unit resolution - they record that a unit once existed, not that it still does"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "optional one line of context, sanitized like any other published prose"
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

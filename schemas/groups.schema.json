@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/avishek2002/meno/schemas/groups.schema.json",
+  "title": "Meno tenant course groups (groups.yml)",
+  "description": "A tenant's own groupings of their courses - display organization for the app's course list, nothing more. Canonical prose definition: .agents/skills/second-brain/references/vault-conventions.md. Membership is by course slug and is orthogonal to where a course directory sits on disk; a course named by no group is Ungrouped, derived by diffing this file against the tree walk. Array order is display order.",
+  "type": "object",
+  "required": ["schema_version", "groups"],
+  "properties": {
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "groups": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "courses"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+            "description": "kebab-case, derived from the title at creation and stable afterwards - a rename changes the title, never the id"
+          },
+          "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "courses": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+              "description": "a course slug as course.yml declares it, not a directory path"
+            }
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

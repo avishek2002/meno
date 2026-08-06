@@ -1,6 +1,6 @@
 # Validation spec
 
-*Status: current as of Phase 2. Canonical formats owned elsewhere: every format validate
+*Status: current as of Phase 2; amended at v1.5 (groups, pack-attribution). Canonical formats owned elsewhere: every format validate
 checks is owned by a skill reference or a schema - see
 [content-schema.md](../content-schema.md) for the index.*
 
@@ -15,8 +15,11 @@ calls the network and never calls a model.
 ## How it behaves
 
 1. `node tools/validate.ts [target ...] [--strict] [--json]` - targets default to
-   `examples/`. Every course tree found under a target is checked; a real tenant is
-   checked by passing `content/tenants/<tenant>`.
+   `examples/` and `content/community/` (plus `content/org/` where it exists). Every course tree
+   found under a target is checked; a real tenant is checked by passing
+   `content/tenants/<tenant>`. Tenant-tier checks like `groups` therefore run in the default
+   gate only against the committed fixtures under `examples/`, which is what those fixtures are
+   for - `examples/example-learner/groups.yml` is the living spec for the format.
 2. Findings are errors (the tree is broken) or warnings (the app will cope, but something
    deserves attention - permissive rendering is locked, so validate is deliberately
    stricter than the renderer).
@@ -53,6 +56,8 @@ validate and the renderer can never disagree about what a file says.
 | `pack-layout` | pack directory shape (`content/community\|content/org`/domain/slug), domain in the closed vocabulary, `PACK.md` present and schema-valid with a matching `pack` field, `course.yml` is `status: draft` with no `profile` field | v1.2 |
 | `pack-notes` | `notes/*.md` frontmatter against `reference-note.schema.json`, source records, and the no-pedagogy rule (no check blocks, no transfer callouts, no lesson-anatomy headings) | v1.2 |
 | `pack-overlap` | no two packs in a domain share a slug; objective-text token overlap above 60 percent between packs in a domain is flagged | v1.2 |
+| `pack-attribution` | every pack has a `CONTRIBUTORS.yml` with at least one `unit: pack` record; every record's unit resolves against what the pack contains (objective ids in `course.yml`, module directories, `lessons[].file` and `sources[].url` in `module.yml`, files under `notes/`) unless marked `action: removed`; records are oldest-first; `by` is a handle or `anonymous`. A source url the module no longer cites is a warning, not an error - citation upkeep makes attribution stale, not wrong | v1.5 |
+| `groups` | wherever a `groups.yml` is found: schema-valid entries, unique group ids, no course in two groups, every listed slug is a course in that tenant (at either accepted depth, matching `lib/course-dirs.ts`). A course in no group is a warning, not an error - it renders under its domain, which is the normal case | v1.5 |
 | `pack-safety` | community content is markdown/YAML only; error-level patterns (scripts, inline handlers, credential-shaped strings, private-key blocks, curl-pipe-to-shell, mermaid click/href) and warning-level patterns (instruction-shaped phrases, plain-http URLs) | v1.2 |
 
 Planned: `vault` (wikilink resolution, orphan detection - needs the app's resolver).

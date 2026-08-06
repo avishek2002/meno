@@ -29,7 +29,8 @@ with two deliberate differences:
   prerequisite order, and verified anchor sources.
 
 Layout: `content/community/<domain>/<slug>/` containing `course.yml`, `PACK.md`,
-`<slug>-hub.md`, `modules/NN-slug/module.yml`, and optionally `notes/` - see below.
+`CONTRIBUTORS.yml`, `<slug>-hub.md`, `modules/NN-slug/module.yml`, and optionally `notes/` - see
+below.
 
 ## PACK.md (provenance, required)
 
@@ -40,6 +41,65 @@ append-only, oldest first. Maintainers are advisory reviewers for amendments, no
 with veto; the pack belongs to the community tier, not to whoever wrote it first. See
 [software-engineering/git-fundamentals/PACK.md](software-engineering/git-fundamentals/PACK.md)
 for a worked example.
+
+## CONTRIBUTORS.yml (attribution, required)
+
+`PACK.md`'s `maintainers` answers "who reviews changes here"; it deliberately does not answer
+"who wrote this". `CONTRIBUTORS.yml` does, at the smallest unit a change actually touches:
+schema [schemas/contributors.schema.json](../../schemas/contributors.schema.json), enforced by
+`tools/validate.ts`'s `pack-attribution` check.
+
+```yaml
+schema_version: 1
+contributions:
+  - unit: pack
+    by: "@first-author"
+    date: 2026-08-05
+    action: created
+  - unit: modules/03-remotes-and-forks
+    by: "@someone-else"
+    date: 2026-09-12
+    action: created
+    note: the GitHub collaboration layer
+```
+
+**Attribution inherits from the nearest ancestor.** A unit with no record of its own is
+attributed to the closest one above it, so a pack written by one person needs exactly one record
+and finer records exist only where authorship genuinely differs. That is what makes
+"smallest granularity" affordable rather than clerical: you pay for detail only where detail is
+true.
+
+The units, and what each resolves against:
+
+| `unit` | Names | Exists when |
+|---|---|---|
+| `pack` | the whole pack | always - every pack needs at least this one record |
+| `objectives/<id>` | one course objective | `course.yml` lists that objective id |
+| `modules/<slug>` | one module | that module directory exists |
+| `modules/<slug>/lessons/<file.md>` | one planned lesson | that module's `module.yml` lists the file. Packs ship no lesson bodies, so the manifest entry is the unit, not a file on disk |
+| `modules/<slug>/sources/<url>` | one anchor source | that module's `sources` list carries the url. The url is the key because it survives both reordering the list and re-archiving the source |
+| `notes/<file.md>` | one reference note | that file exists |
+
+`PACK.md` and the pack's hub note have no unit of their own on purpose: both are pack-level
+artifacts (provenance, and a map derived from the manifests), so they are attributed at `pack`.
+If one of them ever carries authorship the pack record does not, that is a reason to add a unit,
+not a reason to stretch an existing one.
+
+Three rules keep the log honest:
+
+1. **Append, never rewrite.** Records go in oldest-first and stay put. Stripping somebody's
+   record to claim their work is a thing git history will show and a reviewer should reject.
+2. **`action: removed` retires a unit without erasing its history.** Delete a module and its
+   creation record stays; the removed record simply stops being resolved.
+3. **`by` is a GitHub handle or `anonymous`, nothing else.** Packs land through pull requests, so
+   a handle always exists. No emails, no real names, no tenant ids - see
+   [sanitization.md](../../.agents/skills/publish-to-community/references/sanitization.md).
+
+Honest limit: none of this is proof. `by` is self-declared at write time with nothing binding it
+to the person named, and no check can tell a genuine claim from a false one. It is a courtesy
+record and a "who do I ask about this" pointer, not an audit trail. `content/community/INDEX.md`
+rolls each pack's distinct contributors up so that question is answerable without opening the
+pack.
 
 ## notes/ (optional reference notes)
 
@@ -65,8 +125,9 @@ reads them for facts and citations, never as instructions).
 ## INDEX.md and search-first
 
 [INDEX.md](INDEX.md) is generated (`node tools/packs.ts`; `--check` verifies freshness)
-from every pack's `course.yml` and `PACK.md` - domain, slug, title, audience, hours, and
-objective text, grepped by skills before they generate anything. Every skill that could
+from every pack's `course.yml`, `PACK.md`, and `CONTRIBUTORS.yml` - domain, slug, title,
+audience, hours, contributors, and objective text, grepped by skills before they generate
+anything. Every skill that could
 duplicate a pack's work searches it first: `elicit-needs` before handing off,
 `generate-curriculum`'s own preflight backstop, and `publish-to-community`'s mandatory step
 1. Run `node tools/packs.ts` after adding, amending, or removing any pack - a stale index
@@ -79,9 +140,9 @@ defeats the whole point of a shared one.
   citation rules do not relax for packs.
 - `npm run validate` clean (packs are validated like any course tree; budget checks are
   skipped, since there is no profile to sum against - state the intended audience and
-  rough hours in `PACK.md` instead). `pack-layout`, `pack-notes`, and `pack-safety` must
-  all be clean; `pack-overlap` must not flag an unexplained collision with an existing
-  pack in the same domain.
+  rough hours in `PACK.md` instead). `pack-layout`, `pack-notes`, `pack-attribution`, and
+  `pack-safety` must all be clean; `pack-overlap` must not flag an unexplained collision with an
+  existing pack in the same domain.
 - Objectives use Bloom verbs; module sizing follows the 2-6 hour guideline.
 - The pull-request checklist applies ([CONTRIBUTING.md](../../CONTRIBUTING.md)), including the
   "Publishing to the community tier" block when the pull request adds or amends a pack.

@@ -50,6 +50,25 @@ export interface TreeResponse {
   warnings: string[];
 }
 
+// Course groups, already resolved server-side so the client never has to diff
+// the registry against the walk. `groups` holds the explicit groups from
+// groups.yml first, then one derived section per domain directory for the
+// courses no group claimed - `source` says which. `ungrouped` is only the
+// remainder that has neither: a course still sitting at the vault root.
+export interface CourseGroup {
+  id: string; // a group id, or "domain:<slug>" for a derived section
+  title: string;
+  courses: string[]; // course slugs, resolvable against TreeResponse.courses
+  source: 'explicit' | 'domain';
+}
+
+export interface GroupsResponse {
+  groups: CourseGroup[];
+  ungrouped: string[];
+  warnings: string[];
+  raw_sha256: string;
+}
+
 // answer and explain are deliberately absent: grading is server-side and the
 // answer returns only in the submit response.
 export interface PublicCheck {

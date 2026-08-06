@@ -1,6 +1,6 @@
 # App spec
 
-*Status: current as of Phase 4. Canonical formats owned elsewhere: check blocks and
+*Status: current as of Phase 4; amended at v1.5 (course groups). Canonical formats owned elsewhere: check blocks and
 callouts in
 [generate-module/references/check-formats.md](../../.agents/skills/generate-module/references/check-formats.md),
 todos in
@@ -48,8 +48,40 @@ write-authority seam (decision 14) is enforced in code.
 7. Todos: create, edit, complete, and park over `todos.md`, line-precise. Every mutation
    carries an `If-Match` content hash; an Obsidian edit between read and write returns
    409 and the client re-reads. Lines are never deleted - only checked off or parked.
-8. Degraded paths: malformed YAML or check payloads render inert with a warning attached
+8. Course groups, in two layers. A course already sits under a domain directory, so the course
+   list groups by domain with no setup at all; `groups.yml` holds the learner's own named groups
+   for what a domain cannot say ("Version Control", "Software Fundamentals"), and an explicit
+   group always wins over the domain a course would otherwise fall back to. Only a course with
+   no domain - one still at the vault root, from before the domain layout - lands in Ungrouped.
+   Both layers are resolved server-side into one ordered list of sections, each tagged
+   `source: explicit | domain`, so the client renders sections and never re-derives the rule.
+   Create, rename, and delete a group, and move a course between groups, from an inline manage
+   mode on the same page - not a route of its own, since it edits exactly the list already on
+   screen, and the manage panel lists only the explicit groups because a domain section is the
+   tree showing through and has nothing to rename. Deleting a group deletes the grouping and
+   nothing else: its courses fall back to their domains, the same spirit as a parked todo.
+   Membership joins to the tree walk, so a slug the walk no longer knows drops out with a
+   warning rather than a dangling entry, and a malformed `groups.yml` degrades to the domain
+   layer plus a warning rather than an error page. Every mutation carries the same `If-Match`
+   hash discipline as todos, including create - the whole file is rewritten each time, so a
+   create can clobber a hand edit exactly as a rename can - and the client runs one mutation at
+   a time, since a second write started from the same read would 409 by construction.
+9. Degraded paths: malformed YAML or check payloads render inert with a warning attached
    to the response; a partial curriculum never breaks a page.
+10. Self-explanation, in two layers. **Tooltips**: an `InfoTip` disclosure sits beside the
+   terms whose meaning is not self-evident (the "Re-read files" action, the mastery table's
+   Level / Transfer score / Recognition rate / Next review columns, Due for review, Todos,
+   Insights). It is a disclosure button, not a hover-only tooltip - it opens on hover, on
+   keyboard focus, or on click (click pins it so the pointer can leave), closes on Escape
+   returning focus to the trigger, and carries a 24 by 24 pixel hit area. The bubble is
+   positioned `fixed` from the trigger's rect because the mastery tables are
+   `display: block; overflow-x: auto` and would clip an absolutely positioned child.
+   **The guidebook**: `#/guide` explains what the app is, the four-step loop, what each
+   screen does, what the app deliberately will not do (the write-authority seam, in plain
+   language), and why re-reading is manual, plus a glossary. Its section links are real URLs
+   (`#/guide#glossary`), so the route pattern tolerates one trailing fragment and the page
+   scrolls to it, honoring `prefers-reduced-motion`. A "Guide" nav link is present on every
+   screen including the no-tenant empty state, which is exactly when help is most wanted.
 
 ## Architecture
 
@@ -61,23 +93,37 @@ One process, two halves, one root `package.json`:
   (walk-on-request + vault index), `markdown.ts` (unified pipeline: remark-parse,
   frontmatter, gfm, three local transforms - wikilinks, callouts, check mounts -
   remark-rehype, rehype-raw, rehype-sanitize, stringify), `checks.ts` (grading),
-  `ledger.ts` (the only UI write path), `todos.ts` (line-precise ops), `atomic.ts` (the
-  two write disciplines).
+  `ledger.ts` (the only UI write path to the ledger), `todos.ts` (line-precise ops),
+  `groups.ts` (the course-group file, over `lib/groups.ts`), `atomic.ts` (the two write
+  disciplines).
 - `app/client/` - Vite + React, dependencies react, react-dom, mermaid only; hash
-  routing and data fetching hand-rolled.
+  routing and data fetching hand-rolled. `src/guide/` holds the help copy as client-side
+  data: `glossary.ts` (one entry per explained term, read by both the tooltips and the
+  guidebook's glossary, so a term can never be explained two ways) and `content.ts` (the
+  guidebook's sections). Shipping this as data rather than markdown on disk is deliberate -
+  rendering it from the repository would mean a route that reads outside the content root,
+  which invariant 6 exists to prevent. Scope is equally deliberate: the guidebook explains
+  the app, and links out to `docs/how-meno-works.md` for the journey, rather than
+  duplicating a document that would then drift.
 - `app/shared/types.ts` - the transport shapes both halves compile against.
 - `app/test/` - `node --test` against a real server instance on an ephemeral port, over a
   throwaway copy of the example tenant.
 
 The HTTP surface (base `/api/v1`): reads - `health`, `tenants`, `:tenant/tree`,
 `:tenant/course/:course`, `:tenant/lesson/:course/:module/:file`, `:tenant/note?path=`,
-`:tenant/todos`, `:tenant/progress`, `:tenant/insights`, `:tenant/ledger`. `:tenant/insights`
+`:tenant/todos`, `:tenant/progress`, `:tenant/insights`, `:tenant/ledger`, `:tenant/groups`. `:tenant/insights`
 has no write counterpart - it computes `lib/insights.ts`'s `computeInsights` fresh over the
 same walk and adds the list of narrative report files under `insights/` (spec:
 [insights.md](insights.md)). Writes (the entire write surface) -
 `POST :tenant/check/submit`, `POST :tenant/lesson/read`, `POST :tenant/todos`,
-`PATCH :tenant/todos/:line`, `POST :tenant/todos/:line/park`. There is deliberately no
-generic ledger endpoint: no route accepts `event`, `source`, or `level` from a client, and
+`PATCH :tenant/todos/:line`, `POST :tenant/todos/:line/park`, `POST :tenant/groups`,
+`PATCH :tenant/groups/:id`, `DELETE :tenant/groups/:id`, and
+`PATCH :tenant/course/:course/group`. The four group writes are the todos class of write, not
+the ledger class: they write organization, never evidence. Decision 14 exists to stop the UI
+claiming a learner knows something, and no group operation appends an event, touches
+`mastery.yml`, or edits a course manifest - a fact `app/test/groups.test.ts` asserts directly by
+diffing the ledger and `course.yml` across a full round of group operations. There is
+deliberately no generic ledger endpoint: no route accepts `event`, `source`, or `level` from a client, and
 `ledger.appendUiEvent` - the single exported writer - hard-sets `source: ui`, asserts the
 shape, and validates against the narrowed `schemas/ledger.ui.schema.json` before any byte
 reaches disk. Three layers; a widening of the main ledger schema can never widen the UI's.
@@ -105,6 +151,8 @@ both run before routing so they cover writes and unrouted paths equally.
 | `content/tenants/**` (tree, lessons, notes, manifests) | read | server | owned formats |
 | `content/tenants/<tenant>/progress/ledger.jsonl` | append (ui events only) | server via `appendUiEvent` | ledger.ui.schema.json |
 | `content/tenants/<tenant>/todos.md` | replace (atomic, If-Match) | server | todo-format.md |
+| `content/tenants/<tenant>/groups.yml` | replace (atomic, If-Match) | server, and agents via second-brain | vault-conventions.md, groups.schema.json |
+| `content/tenants/<tenant>/<domain>/` (as the default grouping) | read | `lib/course-dirs.ts` walk | vault-conventions.md |
 | `content/tenants/<tenant>/progress/mastery.yml` | never (derives in memory) | tutor only | progress.md |
 | `app/client/dist` | read (static) | build | - |
 
@@ -121,11 +169,30 @@ both run before routing so they cover writes and unrouted paths equally.
 6. Every request-derived path stays under the content root after realpath.
 7. The server binds `127.0.0.1` only, rejects foreign-origin requests, and rejects any
    request whose `Host` header is not a loopback name - both checks run before routing.
-8. Exactly one implementation exists for grading, lesson parsing, mastery derivation, and
-   markdown rendering - the app imports `lib/`, never re-implements it.
+8. Exactly one implementation exists for grading, lesson parsing, mastery derivation, markdown
+   rendering, and course-group operations - the app imports `lib/`, never re-implements it.
+   `lib/groups.ts` is what the server writes through, what `tools/validate.ts` checks with, and
+   what defines the format an agent hand-edits.
+9. No group route builds a filesystem path from a client-supplied group id or course slug. The
+   only file they name is the tenant's own `groups.yml`; an unknown id is a 404 from a lookup,
+   never a path that resolves. Group ids are never used as object keys either, so no id can
+   reach `Object.prototype`.
+10. `groups.yml` is written through the YAML serializer, never string concatenation, and group
+   titles are normalized to one length-capped line - a title cannot introduce structure into the
+   document that holds it.
+11. Help content is client-side data only; no endpoint serves a file from outside the
+    content root to render the guidebook or a tooltip.
+12. Every explained term has exactly one definition, in `src/guide/glossary.ts`; tooltips
+    and the guidebook glossary both render from it rather than restating it.
 
 ## Verified by
 
+- Invariants 1-2, 9, 10: `app/test/groups.test.ts` - the full group lifecycle, the
+  never-touches-the-ledger and never-touches-`course.yml` assertions, 428 without `If-Match` and
+  409 on a stale one, a malformed file rendering inert, a deleted course dropping out with a
+  warning, a YAML-metacharacter title round-tripping as text, prototype-shaped ids and body keys,
+  traversal-shaped ids, and the title validation bounds. `write-authority.test.ts`'s
+  injected-typing-field battery covers the group write routes too.
 - Invariants 1-2: `app/test/write-authority.test.ts` - hostile injected fields on every
   write route, the appendUiEvent throw, a no-agent-literal source assertion, and a full
   scripted UI session asserting zero gates unlocked, zero transfer evidence gained.
@@ -137,16 +204,45 @@ both run before routing so they cover writes and unrouted paths equally.
   coverage of a write route and an unrouted path. Forging a `Host` header needs
   `helpers.ts`'s `rawRequest`, because `fetch` replaces a caller-supplied one.
 - Invariant 4: by construction (no code path); the ledger check re-asserts at rest.
+- Invariants 11-12: by construction (no route reads outside the content root; both
+  renderers import `GLOSSARY`). Not machine-asserted - a future contributor could add a
+  second copy of a definition and nothing would fail.
+- The guidebook and tooltips: typecheck, build, and the full suite pass, and the built
+  bundle was confirmed to carry the copy. **Not visually verified in a browser** - the
+  usual "drive it in both colour schemes" pass could not run in the session that added it
+  (no browser automation available), so keyboard operation, the pinned-open behavior, and
+  dark-mode contrast of the bubble are reasoned-about rather than observed. Worth one
+  manual pass before trusting them.
 - "Example course fully navigable": live smoke run recorded in the Phase 4 pull request
   (API walk of tree, course, lesson, submit, todos, progress against the example tenant,
   plus the built client served). Client-side rendering is smoke-verified, not
   unit-tested - a deliberate v1 economy (the logic lives server-side).
 
+- The grouped course list was driven live in a browser against a five-course vault: three
+  groups plus a fallback section, correct counts and ordering, dark mode, and the `Groups`
+  tooltip. The group routes were exercised live too (create, move, delete, over HTTP, against a
+  real vault). The two-layer resolution (explicit over domain, ordering, id collision, and the
+  Ungrouped remainder) is unit-tested in `tools/test/groups.test.ts` and asserted end to end
+  over HTTP in `app/test/groups.test.ts`.
+  **The inline manage-mode panel was not visually verified** - the browser automation available
+  in that session could not reach a loopback page to click the button, so its markup is asserted
+  only by the bundle carrying its copy and by its reuse of the todo page's primitives. Worth one
+  manual pass, in both colour schemes, as with the guidebook above.
+
 ## Open questions
 
-1. Whether the "Re-read files" action should gain a server-sent-events hint later - only
+1. Whether a course slug should carry a durable identity beyond the slug itself. Today, deleting
+   a course and later creating a different one that reuses its slug silently inherits the old
+   group membership. Renaming a course directory is a pre-existing non-goal (slugs are stable
+   once created, because wikilinks bind to them), so this is narrow - but it is a real, quiet
+   wrong answer rather than a visible failure, and worth revisiting if slug reuse ever happens.
+2. Whether group ordering should be editable from the app. Array order in `groups.yml` is display
+   order and a hand edit can change it, but the UI deliberately ships no reorder control: it is
+   not part of the create/rename/delete/move surface the feature was asked for, and it is the
+   first thing to add if a long shelf makes creation order feel wrong.
+3. Whether the "Re-read files" action should gain a server-sent-events hint later - only
    if the manual refresh becomes annoying in practice (cut from v1 by design).
-2. Whether the loopback `Host` allowlist needs a documented escape hatch. It deliberately
+4. Whether the loopback `Host` allowlist needs a documented escape hatch. It deliberately
    has none: reaching a `127.0.0.1`-bound socket under some other name is what rebinding
    looks like, so a custom `/etc/hosts` alias or a reverse proxy in front of the app is
    refused today. Revisit if a real deployment needs one, and add an explicit opt-in flag

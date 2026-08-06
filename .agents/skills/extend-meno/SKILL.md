@@ -18,7 +18,7 @@ This skill owns safe local modification: the difference between "Meno is a produ
 1. `CLAUDE.md` stays a one-line `@AGENTS.md` shim; agent-facing guidance lives in `AGENTS.md`.
 2. `content/tenants/` stays gitignored; nothing under it is committed or referenced from tracked content (base or pack).
 3. Schema changes bump `schema_version` and add a line to `docs/migrations.md`; consumers stay permissive with old versions.
-4. Canonical-format ownership stands (profile: elicit-needs; manifests and sourcing: generate-curriculum; lesson anatomy and checks: generate-module; vault and todos: second-brain). Extensions link to owners; they never fork a second copy of a spec.
+4. Canonical-format ownership stands (profile: elicit-needs; manifests and sourcing: generate-curriculum; lesson anatomy and checks: generate-module; vault, todos, and `groups.yml`: second-brain; pack provenance and `CONTRIBUTORS.yml`: content/community/README.md). Extensions link to owners; they never fork a second copy of a spec.
 5. New skills follow the Agent Skills shape: `name` + `description` frontmatter, body under 5,000 tokens, depth in `references/`, load-bearing instructions in plain prose - and get a `.claude/skills/` symlink plus an `AGENTS.md` listing line.
 
 ## Recipes

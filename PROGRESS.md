@@ -15,6 +15,111 @@ _Last updated: 2026-08-06_
 
 ## Done
 
+- 2026-08-06 - **Course groups (decision 20) and pack attribution (decision 21).** Two features,
+  one change. *Groups*: two layers. A course's **domain directory** is the default grouping, so
+  the course list is grouped from the moment a vault exists with no setup at all; a
+  `content/tenants/<tenant>/groups.yml` registry holds the learner's own named groups for what a
+  domain cannot say ("Version Control", "Software Fundamentals"), and an explicit group always
+  wins over the domain a course falls back to. Only a course with no domain - one still at the
+  vault root, pre-migration - is Ungrouped. Both layers resolve server-side into one ordered
+  section list tagged `source: explicit | domain`. An inline manage mode does create / rename /
+  delete / move, and lists only the explicit groups, because a domain section is the tree
+  showing through and has nothing to rename. This shape was **reconciled with #24** (which
+  landed the domain directories mid-build) rather than competing with it: one is where a course
+  *sits*, the other is what the learner *calls* it. Deliberately
+  a registry, not a field on `course.yml` (regenerated wholesale, so a hand-set field would be
+  lost) and not a directory move (wikilinks bind to slugs). Five new write routes, guarded by the
+  same atomic + `If-Match` discipline as todos and asserted not to touch the ledger or any course
+  file - the todos class of write, which is why this extends decision 16 rather than amending the
+  write-authority seam. `generate-curriculum` files new courses; the `extend-meno` recipes file
+  hand-made and adopted ones. *Attribution*: every pack carries `CONTRIBUTORS.yml` naming who made
+  what at pack / objective / module / planned-lesson / anchor-source / reference-note granularity,
+  resolved by nearest ancestor so a single-author pack needs one record. Source units key on the
+  url (survives reordering and re-archiving); lesson units resolve against the module manifest,
+  since packs ship no bodies. All five existing packs backfilled; `INDEX.md` now rolls contributors
+  up. New: `lib/groups.ts`, `lib/attribution.ts`, `app/server/groups.ts`,
+  `schemas/groups.schema.json`, `schemas/contributors.schema.json`, validate's `groups` and
+  `pack-attribution` checks, 77 new tests (164 total). Specs amended: app, curriculum, community,
+  validation, architecture's write-authority table, PLAN decisions 20-21, migrations.
+  **Verified live** - the two-layer grouping driven in a browser against a five-course,
+  four-domain vault (zero-setup domain sections with no groups.yml at all, then a "Version
+  Control" group overriding one of them), and the routes exercised over HTTP against a real
+  vault. **Not verified**: the manage-mode panel's
+  rendering (browser automation could not reach a loopback page to click into it) - one manual
+  pass wanted, noted in `docs/specs/app.md`.
+
+- 2026-08-06 - **A real tenant vault failed `validate`, and the skill that caused it is fixed.**
+  Pointing `node tools/validate.ts` at a real `content/tenants/<tenant>` (rather than its default
+  target, `examples/`) produced three errors: two `generated` events sharing a whole-second `ts`,
+  and a `mastery.yml` stale against the ledger. Root cause was a documentation defect, not a code
+  one - `generate-module/references/lesson-format.md` describes the seed event as appended *per
+  lesson*, so a three-lesson module writes three lines in one pass, but its only worked example
+  showed a whole-second timestamp and the collision rule ("bump 1 millisecond", owned by
+  `docs/specs/progress.md`) appeared in **no skill anywhere**, only in the spec and validate's
+  error string. An agent following the example naturally stamped all three identically. Fixed by
+  making the example self-demonstrating (three lines at `.000`/`.001`/`.002`) plus a note that
+  validate rejects the batch after the lessons are written, and by adding the rebuild-mastery step
+  the skill also never mentioned. `tutor-session`'s append rule already said "strictly later than
+  the last line" but not how to resolve a tie; extended with the same one-millisecond bump for its
+  own same-second batches. Data repaired in place: the two timestamps bumped with a byte-level
+  edit asserted to touch no other field and no other line, then `rebuild-mastery.ts`; tenant now
+  validates 0/0. Gate green (153 tests).
+- 2026-08-06 - **The real-GitHub mirror drill, finally run - `docs/specs/durability.md`'s one
+  standing "Not yet verified" gap.** Everything the gate exercises runs against a `file://` bare
+  remote, which has no visibility concept, so two things had never been executed once: `gh repo
+  create --private` against real GitHub, and `verify`'s PRIVATE-visibility assertion against a real
+  repository. Both were run end to end against a freshly created private repository - `verify`
+  correctly read `PRIVATE` and allowed the push - followed by a full restore drill: a fresh clone of
+  the pushed mirror diffed **byte-identical** against the live tenant tree (151 files), with every
+  restored `ledger.jsonl` line re-parsed as JSON. Invariant 4 now holds against real GitHub, not just
+  a local path. The spec's Verified-by section still carries the old caveat and should be amended to
+  match on the next durability change (deliberately not edited from an unrelated branch).
+- 2026-08-05 - **In-app self-explanation: tooltips + a guidebook (`#/guide`).** New `InfoTip`
+  disclosure (hover, focus, or click-to-pin; Escape closes and restores focus; 24px hit area;
+  `position: fixed` from the trigger rect because the mastery tables are `display: block;
+  overflow-x: auto` and would clip an absolute child) placed on the terms that actually confuse:
+  Re-read files, the mastery table's four columns, Due for review, Todos, Insights. New
+  `GuidePage` covering what the app is, the four-step loop, what each screen does, what the app
+  deliberately will not do (write-authority seam in plain language), why re-reading is manual,
+  and a glossary. Header gained a Guide link visible even with no tenant (help matters most on the
+  empty state) plus `aria-current="page"` on real anchors. Two design calls worth keeping: help
+  copy ships as client-side data in `app/client/src/guide/` rather than markdown read off disk,
+  because rendering repository files would need a route outside the content root that invariant 6
+  exists to forbid; and the guidebook is scoped to the app, linking out to `docs/how-meno-works.md`
+  for the journey rather than duplicating a doc that would drift. `glossary.ts` is the single owner
+  of every definition, read by both the tooltips and the guidebook glossary. Spec amended
+  (`docs/specs/app.md`: behavior 9, architecture, invariants 9-10, verified-by). Typecheck, build,
+  86 tests, validate all green. **Not visually verified** - no browser automation was available, so
+  the both-colour-schemes pass is still owed.
+- 2026-08-05 - **Fork-vs-privacy framing corrected across the guide and README.** The old
+  "clone, do not fork - a public fork can never be made private, and your learning content
+  deserves privacy" implied content lives in the clone, so a reader solving multi-device sync
+  was nudged toward the one irreversible mistake (un-ignoring `content/tenants/`, whose commits
+  stay reachable from upstream via the pull-request refs even after the PR closes). Replaced with
+  the two-repository mental model stated up front - the code clone is public and forkable, the
+  tenant vault is a separate private repo nested inside the gitignored path, and they never learn
+  about each other - so forking and privacy are not in tension. New
+  "Contributing to Meno from a machine that holds your content" subsection gives the fork-and-PR
+  flow and names the three fail-closed mechanisms that make it safe without care. `Owning your
+  content` and the README quickstart comment updated to match. `npm run validate` clean.
+- 2026-08-05 - **User-guide gaps closed: environment setup, multi-device study, the content-tier
+  model.** `docs/how-meno-works.md` gained a full "Setting up" section (prereqs with the reasons,
+  clone-not-fork, what each setup command actually does, a check-it-worked list, and the
+  `core.hooksPath` warning with its trade-off named), a commands-you-will-actually-use table, a
+  "Where your content lives" section explaining the three tiers and both directions of travel
+  (downstream = base + pack skeletons with no bodies; upstream = only via `publish-to-community`,
+  human-confirmed twice, skeleton only), and a new **"Studying on more than one device"** section -
+  previously undocumented anywhere. That section states the honest limitation that `meno-mirror push`
+  is backup, not sync (it never pulls, so a diverged second machine fails non-fast-forward), gives the
+  ledger-conflict resolution (union merge, then `node tools/rebuild-mastery.ts <tenant-dir>`, never
+  hand-merge the derived `mastery.yml`), and covers file-sync options for Obsidian mobile with their
+  three real costs (unencrypted consumer sync changes the privacy posture; consumer sync corrupts a
+  nested `.git`; no consistent snapshots can truncate a mid-append ledger line). `docs/specs/durability.md`
+  amended in the same change per the spec-with-behavior rule: new behavior item 6 (multi-device is a
+  documented manual procedure, not tooling) and a new open question on whether `meno-mirror` should
+  gain a `sync` verb - deliberately unbuilt, because a verb that auto-resolves ledger conflicts is a
+  writer of learner history and deserves write-authority-seam scrutiny. README quickstart points at
+  the new section. `npm run validate` clean.
 - 2026-08-06 - **Community tier trimmed to eight packs.** The seven packs whose subjects did
   not fit the maintainer's actual direction were removed from both the community tier and the
   tenant vault: `data/sql-joins-and-grain`, `data/analytics-engineering-with-dbt`,
@@ -121,7 +226,6 @@ _Last updated: 2026-08-06_
   with a test in `tools/test/courses.test.ts` (both consolidated roots accepted, both
   pre-consolidation forms rejected), since nothing under `examples/` carries a `derived_from` block -
   which is exactly why the change went unnoticed.
-
 - 2026-08-05 - **Content tier consolidation (decision 18): one root for all learning material.**
   `topic-packs/` -> `content/community/`, `org/packs/` -> `content/org/`, tenant vaults
   `content/<tenant>/` -> `content/tenants/<tenant>/`; the directory tree now mirrors the tier
@@ -352,3 +456,39 @@ _Last updated: 2026-08-06_
 - `tools/meno-mirror`'s help fallback prints `sed -n '2,16p'` but the usage block runs to line
   18, so the `status` and `verify` usage lines never appear in help output. Pre-existing
   off-by-two spotted during the tier-consolidation review; should be `2,18p`.
+- **Nothing ever validates a real tenant vault.** `tools/validate.ts` defaults to `examples/`,
+  `npm run gate` inherits that default, and no skill's session-close step points it at
+  `content/tenants/<tenant>`. A learner's vault can therefore drift out of spec indefinitely with
+  every gate green - which is how the 2026-08-06 ledger-collision bug survived: the fixtures were
+  perfect and the only real vault was broken. Cheapest fix is a documented
+  `node tools/validate.ts content/tenants/<tenant>` in the tutor-session and generate-module
+  session-close steps; the stronger one is having those skills run it. Deliberately not a gate
+  change: the gate runs in CI, which has no tenant.
+- **`examples/example-learner` never exercises the ts-collision rule** - all 12 fixture events sit
+  at distinct whole seconds, so nothing in the repository demonstrates the sub-second form, and a
+  regression here is invisible to 153 passing tests. Either seed a same-second pair into the
+  fixture (ripples into the byte-identical mastery rebuild) or add a targeted ledger unit test.
+- **`meno-mirror`'s two auth paths can silently disagree.** `verify` shells out to `gh`, which
+  follows the *ambient active gh account*, while the push itself authenticates through git's
+  credential helper. On a one-account machine they always agree; with two accounts `verify` fails
+  ("cannot read visibility - refusing to push blind") even when the push would have succeeded, so
+  a backup stops happening for a reason unrelated to the remote's actual privacy. Fails closed, so
+  it is a usability bug, not a safety one - but it makes the backup depend on shell state the
+  learner forgot they set. Consider reading the account from the tenant repo's own config.
+- **`meno-mirror verify` hard-stops on a remote URL carrying a username** (the
+  `https://<user>@github.com/owner/repo.git` form). Its slug regex strips only a bare
+  `https://github.com/` or `git@github.com:` prefix, so the userinfo survives, `gh repo view` is
+  handed a non-slug, and the push is refused with "cannot read visibility". It fails *closed*,
+  which is the right direction, so this is a usability bug rather than a safety one - but the
+  userinfo form is exactly what a learner with more than one GitHub account reaches for. Fix is
+  one `sed` clause (`s#^https://[^/@]*@#https://#`); found while setting up a real mirror,
+  worked around by keeping the URL clean and pinning credentials per-repo instead.
+- **Document the multi-account credential trap in the mirror section of
+  `docs/how-meno-works.md`.** On a machine where git uses a credential helper that stores one
+  account per host (macOS `osxkeychain` is the common case), `gh auth switch` does not change
+  which account `git push` authenticates as - so a mirror pushed to a private repo owned by the
+  *other* account fails with `remote: Repository not found`, which reads as a missing repo rather
+  than wrong-account. This bites precisely the privacy-conscious learner who keeps personal
+  learning separate from a work account. Worth three lines and the per-repo fix
+  (`git config credential.https://github.com.username <user>`), since the guide already promises
+  the mirror is four commands.

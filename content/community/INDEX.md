@@ -7,6 +7,8 @@
 
 Audience: developers who already use an agentic coding tool daily but drive it on defaults; want to shape its instructions, context, guardrails, and cost deliberately. Hours: 20-24.
 
+Contributors: @avishek2002.
+
 - Explain how an agent harness assembles base instructions, tool definitions, and conversation history into one context window, and trace one loop iteration from model tool call to returned result
 - Apply tiered instruction files and subagent delegation to keep a working session's context lean
 - Evaluate whether a recurring workflow deserves a reusable skill, an always-loaded instruction, or a one-off prompt, and structure a skill with progressive disclosure
@@ -16,6 +18,8 @@ Audience: developers who already use an agentic coding tool daily but drive it o
 ## ai-and-agents/intro-to-ai-and-agents - Intro to AI and agents
 
 Audience: developers fluent on the command line who are new to AI - comfortable with git, scripting, and APIs (application programming interfaces), no machine learning background assumed. Hours: 14-16.
+
+Contributors: @avishek2002.
 
 - Explain how a large language model works - tokenization, training vs inference, and why next-token prediction over vast text yields broad capability
 - Apply prompting, context-window management, sampling settings, and structured output to get reliable results from a model
@@ -27,6 +31,8 @@ Audience: developers fluent on the command line who are new to AI - comfortable 
 
 Audience: anyone who uses AI assistants to draft learning material or other deliverables; no machine-learning background needed. Hours: 14-16.
 
+Contributors: @avishek2002.
+
 - Explain why language models produce plausible but false content, classifying real examples with the survey taxonomies and naming a likely cause for each
 - Analyze model outputs for sycophancy, distinguishing agreement driven by the asker's stated view from agreement driven by evidence
 - Explain what cognitive offloading and automation bias cost the person doing the offloading, grounded in the memory and decision research
@@ -36,6 +42,8 @@ Audience: anyone who uses AI assistants to draft learning material or other deli
 ## ai-and-agents/llm-cost-and-token-engineering - LLM cost and token engineering
 
 Audience: developers already shipping large language model (LLM) calls who watch the bill climb without a clear picture of why; comfortable calling an API (application programming interface), no machine-learning background needed. Hours: 15-17.
+
+Contributors: @avishek2002.
 
 - Explain how a large language model bill is computed - separate input and output token rates, context length, and tokenizer differences - and attribute a real bill to those drivers before optimizing anything
 - Analyze a workload's task mix and design a routing plan that matches each task shape to the least expensive capability tier that clears its quality bar, with cascade and fallback paths for the uncertain cases
@@ -47,6 +55,8 @@ Audience: developers already shipping large language model (LLM) calls who watch
 
 Audience: developers who ship features backed by a large language model (LLM) and currently judge quality by eyeballing outputs; comfortable with code and tests, no evaluation background needed. Hours: 14-16.
 
+Contributors: @avishek2002.
+
 - Explain why informal spot-checking cannot regression-test a model-backed feature, and what a labelled eval set of golden examples provides that reading outputs cannot
 - Analyze an evaluation task to choose among exact match, programmatic checks, rubric scoring, and a model judge, justifying where each scorer's verdict can be trusted
 - Analyze model-judged comparisons for the documented judge biases - position, verbosity, self-enhancement - and contain them with fixed rubrics and pinned judge configurations
@@ -56,6 +66,8 @@ Audience: developers who ship features backed by a large language model (LLM) an
 ## ai-and-agents/rag-grounding-and-faithfulness - RAG grounding and faithfulness
 
 Audience: developers who can call a model API (application programming interface) and want to build a retrieval-augmented generation system whose answers they can prove are grounded; no information-retrieval background assumed. Hours: 15-17.
+
+Contributors: @avishek2002.
 
 - Explain why retrieval augmentation is the engineering response to parametric knowledge limits, covering long-tail gaps, stale training data, and missing attribution
 - Apply chunking, embedding, hybrid lexical-plus-semantic retrieval, and reranking choices to build a pipeline that surfaces the passages a question needs
@@ -67,6 +79,8 @@ Audience: developers who can call a model API (application programming interface
 
 Audience: developers who want to contribute to Meno itself - base changes or community packs; comfortable with git and a shell, new to this repository. Hours: 9-11.
 
+Contributors: @avishek2002.
+
 - Apply the repository's entry-point and one-owner rules to trace any convention to the file that owns it before proposing a change
 - Open a small documentation-fix pull request that clears the gate locally and in continuous integration
 - Draft a one-module topic-pack skeleton under content/community/ following the draft-a-pack recipe
@@ -75,6 +89,8 @@ Audience: developers who want to contribute to Meno itself - base changes or com
 ## software-engineering/git-fundamentals - Git fundamentals
 
 Audience: developers who use git daily but shallowly; comfortable in a shell. Hours: 20-24.
+
+Contributors: @avishek2002.
 
 - Apply the staging model to craft atomic, well-messaged commits that isolate one logical change each
 - Apply git log, diff, and blame to reconstruct why a specific line of code changed and who to ask about it

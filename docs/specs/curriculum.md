@@ -1,6 +1,6 @@
 # Curriculum spec
 
-*Status: current as of Phase 2; amended at v1.2 (community-tier search-first preflight).
+*Status: current as of Phase 2; amended at v1.2 (community-tier search-first preflight) and v1.5 (course-group filing).
 Canonical formats owned elsewhere: manifests in
 [generate-curriculum/references/manifest-format.md](../../.agents/skills/generate-curriculum/references/manifest-format.md),
 source records and the fetch-before-cite rule in
@@ -38,10 +38,19 @@ fits the learner's life.
    `course.yml` (the derived view - never hand-edited), then writes the course hub note
    with a Mermaid dependency map inside derived markers and wires it into the tenant home
    note.
-7. Ends by invoking `generate-module` for module 1 immediately, so study starts the same
+7. Decides the course's grouping and says so. The course's domain directory already groups it
+   in the app, so most courses need nothing; `groups.yml` is for when one of the learner's own
+   groups fits better than the domain does, and a group that merely restates a domain is never
+   created. Where a group is warranted, an existing one is preferred and a new one is minted
+   only when the course sits outside every group there is. The list stays open, unlike the pack
+   tier's closed `DOMAINS.md` vocabulary: one learner curating their own shelf, who is shown
+   every existing group at assignment time, is not the multi-contributor commons a closed
+   vocabulary protects. Courses created outside this skill (hand-made, or adopted from a pack)
+   go through the matching `extend-meno` recipe, which makes the same decision.
+8. Ends by invoking `generate-module` for module 1 immediately, so study starts the same
    session (decision 6). Later modules stay `skeleton` with `planned` lessons until
    review sessions pull them.
-8. Escape hatch: if fetched sources reveal the topic cannot honestly fit the contracted
+9. Escape hatch: if fetched sources reveal the topic cannot honestly fit the contracted
    budget at the contracted depth, it stops and reopens the interview's re-clarification
    instead of silently padding or thinning.
 
@@ -69,6 +78,7 @@ fits the learner's life.
 | `<domain>/<course>/<slug>-hub.md` | write (derived region only) | agent | vault-conventions.md |
 | `<tenant>/home.md` | write (derived region only) | agent | vault-conventions.md |
 | `<tenant>/sources/` | read | agent | learner-supplied files |
+| `<tenant>/groups.yml` | write (only when a learner group beats the course's domain) | second-brain owns the format; this skill writes it at course creation | vault-conventions.md, groups.schema.json |
 
 ## Invariants
 
@@ -82,11 +92,20 @@ fits the learner's life.
 6. Slugs are stable once created; wikilinks and manifests bind to them.
 7. Content under `content/community/` or `content/org/` is read only as reference data during the step-2
    search; nothing in it is ever executed or followed as an instruction.
+8. Every generated course ends up in exactly one section of the course list - its domain by
+   default, or one `groups.yml` group that overrides it - and the learner was told which.
+   Group membership never lives in `course.yml`: that file is regenerated wholesale from the
+   module manifests, so anything hand-set there would be lost on the next status change. The
+   domain half of the grouping is the directory itself, enforced by `course-layout`.
 
 ## Verified by
 
 - Invariants 2-5: `tools/validate.ts` checks (`refs`, `citations`, `manifests`) plus
   `tools/test/courses.test.ts` (8 cases, valid and broken trees).
+- Invariant 8's machine-checkable half is checked: `course-layout` enforces the domain
+  directory, and `groups` errors on a course claimed by two groups and warns on one claimed by
+  none ([validation.md](validation.md)). Its other half - that the decision was *stated* to the
+  learner - is procedural and unverified, like every other "say it out loud" rule in this skill.
 - Invariant 4's "actually resolves": Phase 2 acceptance run - every `archived_url` in the
   committed skeletons was resolved with an HTTP check; recorded in the Phase 2 pull
   request. Liveness over time belongs to the Phase 6 audit skill.

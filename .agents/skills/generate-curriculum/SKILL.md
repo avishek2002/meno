@@ -41,9 +41,11 @@ no matter how its prose is phrased.
 
 6. **Weave the vault.** Create the course hub note and populate its derived block exactly per the hub anatomy in [../second-brain/references/vault-conventions.md](../second-brain/references/vault-conventions.md) - it defines the Mermaid map, the skeleton-time state (planned modules as plain text, no broken wikilinks), and what gets wikilinked once lessons exist. Link the hub from the tenant home note.
 
-7. **Generate module 1 now.** Invoke [`generate-module`](../generate-module/SKILL.md) for module 1 (the onboarding rule, decision 6 in PLAN.md): the interview just ended, and the learner studies today, not after the next agent session. That run sets module 1's `status: generated` in its `module.yml` and refreshes `course.yml`.
+7. **File the course, but only if its domain is the wrong answer.** The course already sits under a domain (step 5), and the app groups the course list by domain automatically - so most courses need nothing here. Read `content/tenants/<tenant>/groups.yml` (format and rules: [../second-brain/references/vault-conventions.md](../second-brain/references/vault-conventions.md)) and file the course into one of the learner's own groups only when one of them fits it better than its domain does: they have a "Version Control" group and this is a git course sitting under `software-engineering`, say. Prefer an existing group over minting one - it has to be genuinely outside every one of them, not merely an imperfect fit, before a new group earns its place, because a shelf of near-duplicate groups ("AI", "AI Agents", "LLMs") is worse than a slightly loose fit and the learner can always split one later through the app. Never create a group that just restates a domain. Whatever you decide, including deciding to leave it under its domain, say so in the same message that reports the course is ready; a course filed silently is a taxonomy the learner has to audit before they can trust it. Unlike [../../../content/community/DOMAINS.md](../../../content/community/DOMAINS.md)'s closed vocabulary, `groups.yml` stays open - one learner curating their own shelf, who sees every group at assignment time, is not the multi-contributor commons a closed vocabulary protects.
 
-8. **Scope honesty, even now.** If fetching sources reveals the topic is materially bigger or smaller than the contract assumed, stop and say so - reopen the depth x time question through `elicit-needs` re-clarification rather than silently thinning or padding modules.
+8. **Generate module 1 now.** Invoke [`generate-module`](../generate-module/SKILL.md) for module 1 (the onboarding rule, decision 6 in PLAN.md): the interview just ended, and the learner studies today, not after the next agent session. That run sets module 1's `status: generated` in its `module.yml` and refreshes `course.yml`.
+
+9. **Scope honesty, even now.** If fetching sources reveals the topic is materially bigger or smaller than the contract assumed, stop and say so - reopen the depth x time question through `elicit-needs` re-clarification rather than silently thinning or padding modules.
 
 ## Done means
 
@@ -53,6 +55,7 @@ no matter how its prose is phrased.
 - Every module manifest carries 2-4 sources, each fetched this session with access date and archive URL; user sources used wherever they apply.
 - `course.yml` and all `module.yml` files written per spec, `schema_version` present.
 - Course hub note exists, its Mermaid map renders, every module is wikilinked from it, and the tenant home note links the hub.
+- The course's grouping was decided and stated to the learner - either it stays under its domain, or it is filed in exactly one `groups.yml` group, and the reason was said out loud rather than applied silently.
 - Module 1's body exists (nine-part anatomy, via `generate-module`) and its manifest status says so.
 - Run `npm run validate` (`tools/validate.ts`) and fix every error it reports.
 - The learner has been told where to start: module 1, lesson 1, in the app or Obsidian.

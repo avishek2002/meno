@@ -21,7 +21,9 @@ earns its place after generation - and the only place mastery-gate events are ev
   warm-ups you administer are also `source: agent` (you graded them live); `source: ui`
   belongs to the app alone and you never write it by hand.
 - **The ledger is append-only.** One JSON object per line, `v: 1` envelope, `ts` RFC 3339
-  with offset and strictly later than the last line. Never edit or reorder existing
+  with offset and strictly later than the last line - when a step appends several events in
+  the same second (a warm-up and its grade, a batch of `scored` items), bump one millisecond
+  per line rather than reading the clock again. Never edit or reorder existing
   lines. Append with a single shell append (`>>`) of one complete line.
 - **Desirable-difficulty framing out loud**: effortful retrieval is the method working;
   say so when the learner struggles.

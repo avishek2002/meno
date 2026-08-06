@@ -93,8 +93,14 @@ disjoint authority:
 
 | Writer | May write | May never write |
 |---|---|---|
-| App server (on the UI's behalf) | todos, reading progress, recognition-level check results (`source: ui`, `level: recognition`) | any agent-typed event, any transfer-level result, any gate event, `mastery.yml` |
+| App server (on the UI's behalf) | todos, course groups (`groups.yml`), reading progress, recognition-level check results (`source: ui`, `level: recognition`) | any agent-typed event, any transfer-level result, any gate event, `mastery.yml`, any course manifest or lesson |
 | Agent (skills, direct file access) | everything an author and tutor needs: content, manifests, hub notes, agent-typed ledger events, `mastery.yml` | nothing structurally, but skills follow the same formats validate enforces |
+
+What the seam is actually about is **evidence**: who may claim a learner knows something.
+`todos.md` and `groups.yml` are the other class - organization the learner owns, which the app
+writes under the same atomic, `If-Match`-guarded discipline and which no gate ever reads. A new
+app-writable file is legitimate when it falls in that second class and only then; if writing it
+could move a gate, it belongs to the agent.
 
 Enforcement is by construction, not by validation: the server exposes no endpoint that
 accepts `event`, `source`, or `level` from a client - those literals are hardcoded

@@ -9,6 +9,7 @@ import { useResource } from '../useResource';
 import { useRegisterRevalidate } from '../RevalidateContext';
 import { EmptyState } from '../components/EmptyState';
 import type { InsightsResponse, Rate } from '../../../shared/types.ts';
+import { InfoTip } from '../components/InfoTip';
 
 function RateText({ value }: { value: Rate }) {
   if (value.value === null) return <span className="rate-empty">not enough data ({value.n})</span>;
@@ -44,7 +45,9 @@ export function InsightsPage({ tenant }: { tenant: string }) {
 
   return (
     <section className="insights-page">
-      <h1>Insights</h1>
+      <h1>
+        Insights <InfoTip entry="insights" />
+      </h1>
       <p className="status-line">As of {data.as_of}, over {data.basis.ledger_lines} ledger lines.</p>
 
       <section className="insights-section">

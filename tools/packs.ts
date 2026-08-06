@@ -7,6 +7,7 @@ import { readdirSync, readFileSync, writeFileSync, existsSync, statSync } from '
 import { join } from 'node:path';
 import { parse as parseYaml } from 'yaml';
 import { parseFrontmatter } from '../lib/frontmatter.ts';
+import { parseContributors, contributorsOf } from '../lib/attribution.ts';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 
@@ -17,6 +18,7 @@ interface PackEntry {
   audience: string;
   hours: string;
   objectives: string[];
+  contributors: string[];
 }
 
 export function collectPacks(packsRoot: string): PackEntry[] {
@@ -35,6 +37,12 @@ export function collectPacks(packsRoot: string): PackEntry[] {
       };
       const packMd = join(packDir, 'PACK.md');
       const fm = existsSync(packMd) ? parseFrontmatter(readFileSync(packMd, 'utf8')).frontmatter : null;
+      // who made it, rolled up from the pack's own attribution log - the index
+      // is where "who do I ask about this pack" gets answered without opening it
+      const contributorsFile = join(packDir, 'CONTRIBUTORS.yml');
+      const contributors = existsSync(contributorsFile)
+        ? contributorsOf(parseContributors(readFileSync(contributorsFile, 'utf8')).doc)
+        : [];
       out.push({
         domain,
         slug,
@@ -42,6 +50,7 @@ export function collectPacks(packsRoot: string): PackEntry[] {
         audience: String(fm?.audience ?? 'unstated'),
         hours: String(fm?.hours ?? 'unstated'),
         objectives: (course.objectives ?? []).map((o) => o.text),
+        contributors,
       });
     }
   }
@@ -61,6 +70,8 @@ export function buildIndex(packsRoot: string): string {
     lines.push(`## ${p.domain}/${p.slug} - ${p.title}`);
     lines.push('');
     lines.push(`Audience: ${p.audience}. Hours: ${p.hours}.`);
+    lines.push('');
+    lines.push(`Contributors: ${p.contributors.length > 0 ? p.contributors.join(', ') : 'unstated'}.`);
     lines.push('');
     for (const o of p.objectives) lines.push(`- ${o}`);
     lines.push('');

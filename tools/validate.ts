@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 //
 // Checks grow phase by phase; docs/specs/validation.md is the spec.
 import { readdirSync, readFileSync, statSync, existsSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { join, relative, dirname } from 'node:path';
 import { Ajv2020, type ValidateFunction } from 'ajv/dist/2020.js';
 import addFormatsExport from 'ajv-formats';
 
@@ -18,6 +18,8 @@ import { parse as parseYaml } from 'yaml';
 import { parseFrontmatter } from '../lib/frontmatter.ts';
 import { parseLesson, anatomyOf } from '../lib/lesson.ts';
 import { parseLedger, deriveMastery, serializeMastery, type LedgerEvent } from '../lib/mastery.ts';
+import { parseContributors, parseUnit } from '../lib/attribution.ts';
+import { parseGroups } from '../lib/groups.ts';
 
 export interface Finding {
   level: 'error' | 'warning';
@@ -27,6 +29,11 @@ export interface Finding {
 }
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
+
+// findings name a repo-relative path when the file is in this repository, and
+// the plain path when it is not (a real tenant elsewhere on disk, a fixture in
+// a temp directory) - "../../../private/tmp/..." helps nobody
+const displayPath = (file: string): string => (file.startsWith(repoRoot) ? relative(repoRoot, file) : file);
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(dir)) {
@@ -688,6 +695,139 @@ function loadDomains(): Set<string> {
   return out;
 }
 
+/**
+ * Attribution for one pack directory. Exported so it can be exercised against a
+ * fixture tree: checkPacks scopes packs by their repo-relative path, which no
+ * temporary directory can satisfy.
+ *
+ * Resolution is per unit type, because "does this unit exist" means something
+ * different for each: a module is a directory, a note is a file, but a pack
+ * ships no lesson bodies, so a lesson is an entry in its module manifest, and a
+ * source is a url in that manifest (the key that survives both reordering and
+ * re-archiving).
+ */
+export function checkPackAttribution(packDir: string, rel: string): Finding[] {
+  const findings: Finding[] = [];
+  const file = join(packDir, 'CONTRIBUTORS.yml');
+  if (!existsSync(file)) {
+    findings.push({
+      level: 'error',
+      check: 'pack-attribution',
+      path: rel,
+      message: 'missing CONTRIBUTORS.yml (who made what, at least one unit: pack record)',
+    });
+    return findings;
+  }
+  const relFile = `${rel}/CONTRIBUTORS.yml`;
+  const raw = readFileSync(file, 'utf8');
+  const validateContributors = loadSchema('contributors.schema.json');
+  let parsedYaml: unknown;
+  try {
+    parsedYaml = parseYaml(raw);
+  } catch (e) {
+    findings.push({ level: 'error', check: 'pack-attribution', path: relFile, message: (e as Error).message });
+    return findings;
+  }
+  // a schema failure is reported and then the semantic checks still run: they
+  // read through the permissive parser, so they cope with a malformed record,
+  // and a contributor should not have to fix one defect per run to find the next
+  if (!validateContributors(parsedYaml)) {
+    for (const err of validateContributors.errors ?? []) {
+      findings.push({
+        level: 'error',
+        check: 'pack-attribution',
+        path: relFile,
+        message: `${err.instancePath || '/'} ${err.message}`,
+      });
+    }
+  }
+  const { doc } = parseContributors(raw);
+
+  if (!doc.contributions.some((c) => c.unit === 'pack')) {
+    findings.push({
+      level: 'error',
+      check: 'pack-attribution',
+      path: relFile,
+      message: 'no "unit: pack" record - every pack names who made it, and every finer unit inherits from there',
+    });
+  }
+
+  let previous = '';
+  for (const c of doc.contributions) {
+    if (c.date < previous) {
+      findings.push({
+        level: 'error',
+        check: 'pack-attribution',
+        path: relFile,
+        message: `record for "${c.unit}" dated ${c.date} follows ${previous} - the log is append-only and oldest-first`,
+      });
+      break;
+    }
+    previous = c.date;
+  }
+
+  // what the pack actually contains, read once
+  const course = existsSync(join(packDir, 'course.yml')) ? parseYamlFile(join(packDir, 'course.yml'), findings, 'pack-attribution') : null;
+  const objectiveIds = new Set(((course?.objectives as { id?: string }[]) ?? []).map((o) => String(o.id)));
+  const modules = new Map<string, { lessons: Set<string>; sources: Set<string> }>();
+  const modulesDir = join(packDir, 'modules');
+  if (existsSync(modulesDir)) {
+    for (const entry of readdirSync(modulesDir).sort()) {
+      const manifest = join(modulesDir, entry, 'module.yml');
+      if (!existsSync(manifest)) continue;
+      const mod = parseYamlFile(manifest, findings, 'pack-attribution');
+      modules.set(entry, {
+        lessons: new Set(((mod?.lessons as { file?: string }[]) ?? []).map((l) => String(l.file))),
+        sources: new Set(((mod?.sources as { url?: string }[]) ?? []).map((s) => String(s.url))),
+      });
+    }
+  }
+
+  for (const c of doc.contributions) {
+    // a removed record documents that a unit once existed, not that it still does
+    if (c.action === 'removed') continue;
+    const unit = parseUnit(c.unit);
+    if (!unit) {
+      findings.push({ level: 'error', check: 'pack-attribution', path: relFile, message: `unit "${c.unit}" is not a unit shape this pack format defines` });
+      continue;
+    }
+    const missing = (what: string): void => {
+      findings.push({ level: 'error', check: 'pack-attribution', path: relFile, message: `unit "${c.unit}" names ${what}, which this pack does not have - fix the reference, or mark the record action: removed` });
+    };
+    switch (unit.kind) {
+      case 'pack':
+        break;
+      case 'objective':
+        if (!objectiveIds.has(unit.key!)) missing(`course objective "${unit.key}"`);
+        break;
+      case 'note':
+        if (!existsSync(join(packDir, 'notes', unit.key!))) missing(`reference note "${unit.key}"`);
+        break;
+      case 'module':
+        if (!modules.has(unit.module!)) missing(`module "${unit.module}"`);
+        break;
+      case 'lesson':
+        if (!modules.has(unit.module!)) missing(`module "${unit.module}"`);
+        else if (!modules.get(unit.module!)!.lessons.has(unit.key!)) missing(`planned lesson "${unit.key}"`);
+        break;
+      case 'source':
+        if (!modules.has(unit.module!)) missing(`module "${unit.module}"`);
+        else if (!modules.get(unit.module!)!.sources.has(unit.key!)) {
+          // a source can legitimately be replaced during citation upkeep; the
+          // attribution is stale, not wrong, so it must not fail the gate
+          findings.push({
+            level: 'warning',
+            check: 'pack-attribution',
+            path: relFile,
+            message: `unit "${c.unit}" names a source url this module no longer cites - re-point it or mark it action: removed`,
+          });
+        }
+        break;
+    }
+  }
+  return findings;
+}
+
 // Tenant courses sit at <vault>/<domain>/<course-slug>/, the same shape and the same
 // closed vocabulary the community tier uses - one grouping, so a course keeps its place
 // in the tree whether it is being studied privately or published.
@@ -804,6 +944,7 @@ export function checkPacks(_target: string, files: string[]): Finding[] {
       list.push({ pack: rel, tokens });
       objectivesByDomain.set(domain, list);
     }
+    findings.push(...checkPackAttribution(dir, rel));
   }
 
   // reference notes
@@ -852,6 +993,63 @@ export function checkPacks(_target: string, files: string[]): Finding[] {
   return findings;
 }
 
+// --- course groups (tenant-tier, checked wherever a groups.yml is found) -----
+
+export function checkGroups(_target: string, files: string[]): Finding[] {
+  const findings: Finding[] = [];
+  for (const file of files.filter((f) => f.endsWith('/groups.yml'))) {
+    const tenantDir = dirname(file);
+    const rel = displayPath(file);
+    const raw = readFileSync(file, 'utf8');
+    const { doc, warnings } = parseGroups(raw);
+    // parseGroups is permissive by design (the app must render an edited file
+    // inert rather than break); validate is where that permissiveness is
+    // reported, since a dropped group is silent data loss from the user's side.
+    for (const w of warnings) findings.push({ level: 'error', check: 'groups', path: rel, message: w });
+
+    // courses sit at <vault>/<domain>/<slug>/, and a pre-migration vault still
+    // has them at <vault>/<slug>/ - the same two depths lib/course-dirs.ts
+    // accepts, so validate and the app can never disagree about what exists.
+    // course-layout is what insists on the move; this check only needs to know
+    // which slugs are real.
+    const slugs: string[] = [];
+    for (const courseFile of files) {
+      if (!courseFile.startsWith(`${tenantDir}/`) || !courseFile.endsWith('/course.yml')) continue;
+      const depth = relative(tenantDir, courseFile).split('/').length;
+      if (depth !== 2 && depth !== 3) continue;
+      const course = parseYamlFile(courseFile, findings, 'groups');
+      if (course) slugs.push(String(course.slug ?? ''));
+    }
+    const known = new Set(slugs);
+    const placed = new Set<string>();
+    for (const group of doc.groups) {
+      for (const slug of group.courses) {
+        if (!known.has(slug)) {
+          findings.push({
+            level: 'error',
+            check: 'groups',
+            path: rel,
+            message: `group "${group.id}" lists course "${slug}", which is not a course in this tenant`,
+          });
+          continue;
+        }
+        placed.add(slug);
+      }
+    }
+    for (const slug of slugs) {
+      if (!placed.has(slug)) {
+        findings.push({
+          level: 'warning',
+          check: 'groups',
+          path: rel,
+          message: `course "${slug}" is in no group - it renders under its domain`,
+        });
+      }
+    }
+  }
+  return findings;
+}
+
 type Check = (target: string, files: string[]) => Finding[];
 const CHECKS: Record<string, Check> = {
   profiles: checkProfiles,
@@ -861,6 +1059,7 @@ const CHECKS: Record<string, Check> = {
   mastery: checkMastery,
   insights: checkInsights,
   packs: checkPacks,
+  groups: checkGroups,
   'course-layout': checkCourseLayout,
   tenancy: checkTenancy,
 };

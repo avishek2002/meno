@@ -1,6 +1,8 @@
-// The whole HTTP surface. Writes are exactly four routes; none of them accepts
-// event, source, or level from the client - there is no generic ledger
-// endpoint, and that absence is the enforcement mechanism (decision 14).
+// The whole HTTP surface. Writes are exactly nine routes across three files -
+// the ledger (two), todos.md (three), and groups.yml (four) - and none of them
+// accepts event, source, or level from the client: there is no generic ledger
+// endpoint, and that absence is the enforcement mechanism (decision 14). The
+// group routes write organization, never evidence; see app/server/groups.ts.
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { readFileSync, existsSync, statSync } from 'node:fs';
 import { join, extname } from 'node:path';
@@ -10,11 +12,13 @@ import { renderMarkdown } from './markdown.ts';
 import { gradeCheck } from './checks.ts';
 import { appendUiEvent, readLedgerEvents } from './ledger.ts';
 import { parseTodos, addTodo, patchTodo, parkTodo, sha256 } from './todos.ts';
+import { readGroups, writeGroups } from './groups.ts';
+import { addGroup, renameGroup, removeGroup, setCourseGroup, resolveGroups, type GroupsDoc } from '../../lib/groups.ts';
 import { parseLesson } from '../../lib/lesson.ts';
 import { deriveMastery } from '../../lib/mastery.ts';
 import { computeInsights } from '../../lib/insights.ts';
 import { loadInsightsInputs } from '../../lib/insights-io.ts';
-import type { LessonResponse, PublicCheck, SubmitRequest, SubmitResponse, InsightsResponse } from '../shared/types.ts';
+import type { LessonResponse, PublicCheck, SubmitRequest, SubmitResponse, InsightsResponse, GroupsResponse } from '../shared/types.ts';
 import { writeFileAtomic } from './atomic.ts';
 
 interface Ctx {
@@ -291,6 +295,76 @@ const postTodoPark: Handler = async (req, res, p, ctx) => {
   json(res, 200, result);
 };
 
+// --- course groups (the second app-writable file; organization, not evidence) ---
+
+const getGroups: Handler = (_req, res, p, ctx) => {
+  const tenantDir = safePath(ctx.root, p.tenant);
+  const { raw, doc, warnings } = readGroups(tenantDir);
+  // the walk is the truth about which courses exist and where they sit; the
+  // registry only overrides how they are laid out, so the join happens here
+  // rather than in the file - and the course's domain directory is what an
+  // unclaimed course falls back to
+  const tree = walkTenant(tenantDir, p.tenant);
+  const resolved = resolveGroups(doc, tree.courses.map((c) => ({ slug: c.slug, dir: c.dir })));
+  const payload: GroupsResponse = {
+    groups: resolved.groups,
+    ungrouped: resolved.ungrouped,
+    warnings: [...warnings, ...resolved.warnings],
+    raw_sha256: sha256(raw),
+  };
+  json(res, 200, payload);
+};
+
+// Every group write is If-Match guarded, not just the id-addressed ones: the
+// whole file is rewritten each time, so a create is exactly as capable of
+// clobbering an Obsidian edit as a rename is.
+function withGroupsFile(
+  ctx: Ctx,
+  tenant: string,
+  req: IncomingMessage,
+  mutate: (doc: GroupsDoc) => GroupsDoc,
+): { raw_sha256: string } {
+  const tenantDir = safePath(ctx.root, tenant);
+  if (!existsSync(tenantDir)) throw Object.assign(new Error(`no tenant "${tenant}"`), { status: 404 });
+  const { raw, doc } = readGroups(tenantDir);
+  const ifMatch = req.headers['if-match'];
+  if (typeof ifMatch !== 'string' || ifMatch === '') {
+    throw Object.assign(new Error('If-Match required for group operations'), { status: 428 });
+  }
+  if (ifMatch !== sha256(raw)) {
+    throw Object.assign(new Error('groups.yml changed since you read it (409)'), { status: 409 });
+  }
+  return { raw_sha256: sha256(writeGroups(tenantDir, mutate(doc))) };
+}
+
+const postGroup: Handler = async (req, res, p, ctx) => {
+  const body = await readBody(req);
+  json(res, 200, withGroupsFile(ctx, p.tenant, req, (doc) => addGroup(doc, body.title)));
+};
+
+const patchGroup: Handler = async (req, res, p, ctx) => {
+  const body = await readBody(req);
+  json(res, 200, withGroupsFile(ctx, p.tenant, req, (doc) => renameGroup(doc, p.id, body.title)));
+};
+
+// Deleting a group deletes the grouping and nothing else: its courses fall back
+// to Ungrouped on the next read. No course file is touched, ever.
+const deleteGroup: Handler = (req, res, p, ctx) => {
+  json(res, 200, withGroupsFile(ctx, p.tenant, req, (doc) => removeGroup(doc, p.id)));
+};
+
+const patchCourseGroup: Handler = async (req, res, p, ctx) => {
+  const body = await readBody(req);
+  if (body.group !== null && typeof body.group !== 'string') {
+    throw Object.assign(new Error('"group" must be a group id or null'), { status: 400 });
+  }
+  // a course can only be filed if it exists - resolveCourse is the same walk the
+  // rest of the surface resolves against, so a slug the app cannot see is a 404
+  // here rather than a dangling entry written to disk
+  const { course } = resolveCourse(ctx, p.tenant, p.course);
+  json(res, 200, withGroupsFile(ctx, p.tenant, req, (doc) => setCourseGroup(doc, course.slug, body.group as string | null)));
+};
+
 const getHealth: Handler = (_req, res, _p, ctx) => {
   json(res, 200, { ok: true, version: ctx.version, root: ctx.root, node: process.version });
 };
@@ -308,6 +382,11 @@ const ROUTES: [string, RegExp, Handler][] = [
   ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/progress$/, getProgress],
   ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/insights$/, getInsights],
   ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/ledger$/, getLedger],
+  ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/groups$/, getGroups],
+  ['POST', /^\/api\/v1\/(?<tenant>[^/]+)\/groups$/, postGroup],
+  ['PATCH', /^\/api\/v1\/(?<tenant>[^/]+)\/groups\/(?<id>[^/]+)$/, patchGroup],
+  ['DELETE', /^\/api\/v1\/(?<tenant>[^/]+)\/groups\/(?<id>[^/]+)$/, deleteGroup],
+  ['PATCH', /^\/api\/v1\/(?<tenant>[^/]+)\/course\/(?<course>[^/]+)\/group$/, patchCourseGroup],
   ['POST', /^\/api\/v1\/(?<tenant>[^/]+)\/check\/submit$/, postCheckSubmit],
   ['POST', /^\/api\/v1\/(?<tenant>[^/]+)\/lesson\/read$/, postLessonRead],
   ['POST', /^\/api\/v1\/(?<tenant>[^/]+)\/todos$/, postTodos],
