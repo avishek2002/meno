@@ -38,6 +38,22 @@ _Last updated: 2026-08-06_
   rendering (browser automation could not reach a loopback page to click into it) - one manual
   pass wanted, noted in `docs/specs/app.md`.
 
+- 2026-08-06 - **A real tenant vault failed `validate`, and the skill that caused it is fixed.**
+  Pointing `node tools/validate.ts` at a real `content/tenants/<tenant>` (rather than its default
+  target, `examples/`) produced three errors: two `generated` events sharing a whole-second `ts`,
+  and a `mastery.yml` stale against the ledger. Root cause was a documentation defect, not a code
+  one - `generate-module/references/lesson-format.md` describes the seed event as appended *per
+  lesson*, so a three-lesson module writes three lines in one pass, but its only worked example
+  showed a whole-second timestamp and the collision rule ("bump 1 millisecond", owned by
+  `docs/specs/progress.md`) appeared in **no skill anywhere**, only in the spec and validate's
+  error string. An agent following the example naturally stamped all three identically. Fixed by
+  making the example self-demonstrating (three lines at `.000`/`.001`/`.002`) plus a note that
+  validate rejects the batch after the lessons are written, and by adding the rebuild-mastery step
+  the skill also never mentioned. `tutor-session`'s append rule already said "strictly later than
+  the last line" but not how to resolve a tie; extended with the same one-millisecond bump for its
+  own same-second batches. Data repaired in place: the two timestamps bumped with a byte-level
+  edit asserted to touch no other field and no other line, then `rebuild-mastery.ts`; tenant now
+  validates 0/0. Gate green (153 tests).
 - 2026-08-06 - **The real-GitHub mirror drill, finally run - `docs/specs/durability.md`'s one
   standing "Not yet verified" gap.** Everything the gate exercises runs against a `file://` bare
   remote, which has no visibility concept, so two things had never been executed once: `gh repo
@@ -361,6 +377,25 @@ _Last updated: 2026-08-06_
 - `tools/meno-mirror`'s help fallback prints `sed -n '2,16p'` but the usage block runs to line
   18, so the `status` and `verify` usage lines never appear in help output. Pre-existing
   off-by-two spotted during the tier-consolidation review; should be `2,18p`.
+- **Nothing ever validates a real tenant vault.** `tools/validate.ts` defaults to `examples/`,
+  `npm run gate` inherits that default, and no skill's session-close step points it at
+  `content/tenants/<tenant>`. A learner's vault can therefore drift out of spec indefinitely with
+  every gate green - which is how the 2026-08-06 ledger-collision bug survived: the fixtures were
+  perfect and the only real vault was broken. Cheapest fix is a documented
+  `node tools/validate.ts content/tenants/<tenant>` in the tutor-session and generate-module
+  session-close steps; the stronger one is having those skills run it. Deliberately not a gate
+  change: the gate runs in CI, which has no tenant.
+- **`examples/example-learner` never exercises the ts-collision rule** - all 12 fixture events sit
+  at distinct whole seconds, so nothing in the repository demonstrates the sub-second form, and a
+  regression here is invisible to 153 passing tests. Either seed a same-second pair into the
+  fixture (ripples into the byte-identical mastery rebuild) or add a targeted ledger unit test.
+- **`meno-mirror`'s two auth paths can silently disagree.** `verify` shells out to `gh`, which
+  follows the *ambient active gh account*, while the push itself authenticates through git's
+  credential helper. On a one-account machine they always agree; with two accounts `verify` fails
+  ("cannot read visibility - refusing to push blind") even when the push would have succeeded, so
+  a backup stops happening for a reason unrelated to the remote's actual privacy. Fails closed, so
+  it is a usability bug, not a safety one - but it makes the backup depend on shell state the
+  learner forgot they set. Consider reading the account from the tenant repo's own config.
 - **`meno-mirror verify` hard-stops on a remote URL carrying a username** (the
   `https://<user>@github.com/owner/repo.git` form). Its slug regex strips only a bare
   `https://github.com/` or `git@github.com:` prefix, so the userinfo survives, `gh repo view` is
