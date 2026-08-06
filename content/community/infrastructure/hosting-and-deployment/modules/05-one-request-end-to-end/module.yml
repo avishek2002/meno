@@ -1,0 +1,53 @@
+schema_version: 1
+module: 05-one-request-end-to-end
+title: One request, end to end
+status: skeleton
+serves: [O3]
+prerequisites: [02-static-and-the-edge, 03-backend-compute]
+est_hours: 4
+concepts:                      # siblings: finding the machine, trusting the machine, being allowed to talk to it
+  - dns-resolution
+  - tls-and-certificates
+  - origins-and-cors
+objectives:
+  - id: M5-1
+    text: Trace a domain name to a running server through registrar, nameserver and resolver, and identify which step a described propagation failure sits in
+    bloom: analyze
+  - id: M5-2
+    text: Explain what a certificate proves and what it does not, and analyze how automated domain validation lets a host issue and renew one with no human involved
+    bloom: analyze
+  - id: M5-3
+    text: Diagnose a cross-origin failure from its browser symptoms, distinguishing a same-origin-policy block from a server error, and identify which side must change
+    bloom: analyze
+sources:                       # 3, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "What is a domain name? (MDN Web Docs)"
+    url: https://developer.mozilla.org/en-US/docs/Learn_web_development/Howto/Web_mechanics/What_is_a_domain_name
+    archived_url: https://web.archive.org/web/20260806032511/https://developer.mozilla.org/en-US/docs/Learn_web_development/Howto/Web_mechanics/What_is_a_domain_name
+    accessed: 2026-08-06
+    source_type: web
+    why: the label and top-level-domain structure read right to left, the registrar model and the point that you rent rather than buy a name, and the resolution walk from local cache to DNS server to negotiated content - lesson 1's spine
+  - title: "How Let's Encrypt Works"
+    url: https://letsencrypt.org/how-it-works/
+    archived_url: https://web.archive.org/web/20260806032556/https://letsencrypt.org/how-it-works/
+    accessed: 2026-08-06
+    source_type: web
+    why: the ACME protocol's stated objective of obtaining browser-trusted certificates "without any human intervention", and the two concrete domain-validation challenges (a DNS record under the domain, or an HTTP resource at a well-known URI) that lesson 2 uses to explain why hosts can offer automatic TLS as a checkbox
+  - title: "Cross-Origin Resource Sharing (CORS) (MDN Web Docs)"
+    url: https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS
+    archived_url: https://web.archive.org/web/20260806032635/https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS
+    accessed: 2026-08-06
+    source_type: web
+    why: the definition of an origin as scheme plus host plus port, the same-origin policy CORS relaxes, the Access-Control-Allow-Origin header, and the specific triggers for a preflight OPTIONS request - what lesson 3 needs for the classic "the frontend deployed fine but every API call fails" diagnosis
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-from-name-to-address.md
+    title: From a name to an address
+    concept: dns-resolution
+    status: planned
+  - file: 02-the-padlock.md
+    title: What the padlock actually proves
+    concept: tls-and-certificates
+    status: planned
+  - file: 03-origins-and-cors.md
+    title: Origins, and why the browser said no
+    concept: origins-and-cors
+    status: planned

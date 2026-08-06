@@ -1,0 +1,53 @@
+schema_version: 1
+module: 01-what-hosting-is
+title: What hosting actually is
+status: skeleton
+serves: [O1]
+prerequisites: []
+est_hours: 4
+concepts:                      # siblings: the machine, the ladder of abstraction, the responsibility line
+  - always-on-machine
+  - service-model-ladder
+  - shared-responsibility
+objectives:
+  - id: M1-1
+    text: Contrast hosting with tunnelling by identifying, for a described setup, whether the learner's own machine is still required to be running, and explain what that implies for availability
+    bloom: analyze
+  - id: M1-2
+    text: Place a described offering on the IaaS/PaaS/FaaS/SaaS ladder using what the consumer does and does not control, rather than the vendor's marketing name
+    bloom: analyze
+  - id: M1-3
+    text: Determine, for a given failure (an unpatched operating system, a leaked bucket, a bad deploy), which side of the shared-responsibility line it falls on
+    bloom: analyze
+sources:                       # 3, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "NIST Special Publication 800-145, The NIST Definition of Cloud Computing"
+    url: https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-145.pdf
+    archived_url: https://web.archive.org/web/20260801075420/https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-145.pdf
+    accessed: 2026-08-06
+    source_type: web
+    why: the primary, government-issued source of the SaaS/PaaS/IaaS definitions lesson 2 is built on - each carrying the "The consumer does not manage or control..." clause that makes the ladder a control question rather than a naming one - plus the five essential characteristics (on-demand self-service, broad network access, resource pooling, rapid elasticity, measured service) and the four deployment models
+  - title: "Shared Responsibility Model (AWS)"
+    url: https://aws.amazon.com/compliance/shared-responsibility-model/
+    archived_url: https://web.archive.org/web/20260730193745/https://aws.amazon.com/compliance/shared-responsibility-model/
+    accessed: 2026-08-06
+    source_type: web
+    why: states the security-OF-the-cloud versus security-IN-the-cloud split lesson 3 teaches, and explicitly documents that the boundary moves by service type - the customer patching guest operating systems on EC2 versus managing only data and IAM on abstracted services like S3 and DynamoDB
+  - title: "What is a web server? (MDN Web Docs)"
+    url: https://developer.mozilla.org/en-US/docs/Learn_web_development/Howto/Web_mechanics/What_is_a_web_server
+    archived_url: https://web.archive.org/web/20260731071232/https://developer.mozilla.org/en-US/docs/Learn_web_development/Howto/Web_mechanics/What_is_a_web_server
+    accessed: 2026-08-06
+    source_type: web
+    why: the hardware-versus-software senses of "web server", the static-versus-dynamic server distinction, and the dedicated-server properties (always connected, stable dedicated IP address) that lesson 1 uses to replace the tunnel-back-to-my-laptop mental model
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-your-laptop-is-not-the-server.md
+    title: Your laptop is not the server
+    concept: always-on-machine
+    status: planned
+  - file: 02-the-service-model-ladder.md
+    title: One ladder, not four products
+    concept: service-model-ladder
+    status: planned
+  - file: 03-who-is-responsible-for-what.md
+    title: The line that moves
+    concept: shared-responsibility
+    status: planned

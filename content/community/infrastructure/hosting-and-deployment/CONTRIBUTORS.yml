@@ -1,0 +1,10 @@
+# Who made what in this pack, at the smallest unit a change actually touches.
+# Attribution inherits from the nearest ancestor: this pack was written by one
+# person, so one record covers every module, lesson, source, and note in it.
+# Format owner: content/community/README.md. Append, never rewrite.
+schema_version: 1
+contributions:
+  - unit: pack
+    by: "@avishek2002"
+    date: 2026-08-06
+    action: created

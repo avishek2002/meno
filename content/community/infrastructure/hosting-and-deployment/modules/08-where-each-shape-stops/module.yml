@@ -1,0 +1,53 @@
+schema_version: 1
+module: 08-where-each-shape-stops
+title: Where each shape stops, and the standard bridges
+status: skeleton
+serves: [O4]
+prerequisites: [02-static-and-the-edge, 03-backend-compute, 04-managed-data-services, 07-hosting-an-llm]
+est_hours: 4
+concepts:                      # siblings: the catalogue of walls, the bridge you reach for most, and the bill you only see on the way out
+  - limit-catalogue
+  - queues-and-background-work
+  - egress-and-exit-cost
+objectives:
+  - id: M8-1
+    text: Diagnose which documented limit - execution ceiling, cold start, payload size, connection count, statelessness - breaks a described architecture, citing the vendor page that states it
+    bloom: analyze
+  - id: M8-2
+    text: Evaluate moving work off the request path into a queue, and name what the decoupling costs in latency, delivery semantics and operational surface
+    bloom: analyze
+  - id: M8-3
+    text: Analyze the costs a hosting choice defers rather than removes - egress charges, proprietary interfaces, managed-service coupling - and estimate what leaving would take
+    bloom: analyze
+sources:                       # 3, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "Vercel Functions Limits"
+    url: https://vercel.com/docs/functions/limitations
+    archived_url: https://web.archive.org/web/20260806033034/https://vercel.com/docs/functions/limitations
+    accessed: 2026-08-06
+    source_type: web
+    why: the worked example of a real limits page for lesson 1's catalogue, naming the failure mode alongside each number - 504 FUNCTION_INVOCATION_TIMEOUT past max duration, 413 FUNCTION_PAYLOAD_TOO_LARGE past 4.5 MB, and 1,024 file descriptors shared across concurrent executions with connection pooling named as the remedy
+  - title: "What is Amazon Simple Queue Service? (AWS Documentation)"
+    url: https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/welcome.html
+    archived_url: https://web.archive.org/web/20260806033118/https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/welcome.html
+    accessed: 2026-08-06
+    source_type: web
+    why: the canonical bridge in lesson 2 with its costs made explicit - producers and consumers decoupled, but standard queues offering only at-least-once delivery against FIFO's exactly-once, plus visibility timeouts, dead-letter queues and a default four-day retention the learner must reason about
+  - title: "Amazon EC2 On-Demand Pricing"
+    url: https://aws.amazon.com/ec2/pricing/on-demand/
+    archived_url: https://web.archive.org/web/20260806033203/https://aws.amazon.com/ec2/pricing/on-demand/
+    accessed: 2026-08-06
+    source_type: web
+    why: primary evidence for lesson 3's asymmetry - data transfer in is free while data transfer out to the internet is billed, with 100 GB free each month aggregated across services and Regions; the per-gigabyte tiers sit in a rendered table this fetch could not read, which is itself the lesson that pricing pages must be read on the vendor's site at decision time
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-the-limit-catalogue.md
+    title: The catalogue of walls
+    concept: limit-catalogue
+    status: planned
+  - file: 02-queues-and-background-work.md
+    title: Getting work off the request path
+    concept: queues-and-background-work
+    status: planned
+  - file: 03-egress-and-the-exit-cost.md
+    title: Egress, coupling, and the cost of leaving
+    concept: egress-and-exit-cost
+    status: planned

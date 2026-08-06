@@ -1,0 +1,53 @@
+schema_version: 1
+module: 07-hosting-an-llm
+title: Putting a language model inside a service
+status: skeleton
+serves: [O6]
+prerequisites: [03-backend-compute]
+est_hours: 5
+concepts:                      # siblings: rent the model, run the model, and the response shape that breaks your host
+  - hosted-inference-apis
+  - self-hosted-inference
+  - streaming-and-timeouts
+objectives:
+  - id: M7-1
+    text: Analyze what changes about a service when one of its calls is a metered, high-latency, third-party inference request rather than a local function call
+    bloom: analyze
+  - id: M7-2
+    text: Compare a hosted inference API against self-hosted open-weight serving for a stated workload, and name the specific constraint - cost floor, data residency, latency, model control - that decides it
+    bloom: analyze
+  - id: M7-3
+    text: Diagnose why a long language-model response fails on a given compute host, and evaluate streaming, background jobs and batch processing as the available bridges
+    bloom: analyze
+sources:                       # 3, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "Streaming Messages (Claude API documentation)"
+    url: https://platform.claude.com/docs/en/build-with-claude/streaming
+    archived_url: https://web.archive.org/web/20260806032920/https://platform.claude.com/docs/en/build-with-claude/streaming
+    accessed: 2026-08-06
+    source_type: web
+    why: the concrete server-sent-events contract lesson 3 traces - the message_start / content_block_delta / message_stop event flow - and the operationally important note that the SDKs require streaming for large max_tokens requests specifically to avoid HTTP timeouts, which is the exact collision this module is about
+  - title: "vLLM (project repository)"
+    url: https://github.com/vllm-project/vllm
+    archived_url: https://web.archive.org/web/20260806033840/https://github.com/vllm-project/vllm
+    accessed: 2026-08-06
+    source_type: web
+    why: the self-hosting side of lesson 2 - "efficient management of attention key and value memory with PagedAttention", continuous batching of incoming requests with chunked prefill and prefix caching, state-of-the-art serving throughput, and an OpenAI-compatible API server - which is what makes "run the weights yourself" a real option to compare rather than a hypothetical; the project's own docs site at docs.vllm.ai carries the same claims but could not be captured by the Wayback Machine, so the repository is cited as the archivable primary source
+  - title: "Vercel Functions Limits"
+    url: https://vercel.com/docs/functions/limitations
+    archived_url: https://web.archive.org/web/20260806033034/https://vercel.com/docs/functions/limitations
+    accessed: 2026-08-06
+    source_type: web
+    why: the host-side half of the collision, in numbers lesson 3 reasons against - a 300-second default duration with an 800-second maximum on paid plans, a 504 FUNCTION_INVOCATION_TIMEOUT when exceeded, a 4.5 MB request and response body cap, an Edge runtime that must begin responding within 25 seconds to keep streaming, and the note that waiting on model calls does not count as active CPU time
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-the-model-is-someone-elses-service.md
+    title: The model is somebody else's service
+    concept: hosted-inference-apis
+    status: planned
+  - file: 02-running-the-weights-yourself.md
+    title: Running the weights yourself
+    concept: self-hosted-inference
+    status: planned
+  - file: 03-streaming-past-the-timeout.md
+    title: Streaming past the timeout
+    concept: streaming-and-timeouts
+    status: planned

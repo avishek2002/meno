@@ -1,0 +1,45 @@
+schema_version: 1
+module: 09-full-stack-platforms
+title: "Full-stack platforms: what they bundle and what they hide"
+status: skeleton
+serves: [O5]
+prerequisites: [04-managed-data-services, 06-identity-config-and-secrets]
+est_hours: 3
+concepts:                      # siblings: the bundle, and the seams the bundle papers over
+  - bundled-platforms
+  - what-the-bundle-hides
+objectives:
+  - id: M9-1
+    text: Decompose a full-stack platform's offering back into the primitives of modules 2 through 6, and identify which primitive it is actually reselling under each feature name
+    bloom: analyze
+  - id: M9-2
+    text: Analyze what a bundled platform hides that will resurface under load or on exit - sleeping instances, ephemeral disks, proprietary interfaces - and evaluate how reversible each one is
+    bloom: analyze
+sources:                       # 3, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "Supabase Architecture"
+    url: https://supabase.com/docs/guides/getting-started/architecture
+    archived_url: https://web.archive.org/web/20260806033258/https://supabase.com/docs/guides/getting-started/architecture
+    accessed: 2026-08-06
+    source_type: web
+    why: the clearest worked decomposition for lesson 1 - a platform that names its own components (Postgres, PostgREST, GoTrue for auth, Realtime, Storage, Supavisor pooling, Deno edge functions) and states the portability claim "To avoid lock-in, we make it easy to migrate in and out", which lesson 2 tests against the exit-cost reasoning from module 8
+  - title: "Web Services (Render documentation)"
+    url: https://render.com/docs/web-services
+    archived_url: https://web.archive.org/web/20260806033340/https://render.com/docs/web-services
+    accessed: 2026-08-06
+    source_type: web
+    why: a mid-weight platform stating the same port-binding contract seen in module 3 - "Every Render web service must bind to a port on host 0.0.0.0", default 10000 - alongside bundled TLS, custom domains, zero-downtime deploys and persistent disks, so lesson 1 can map bundle features back to primitives one to one
+  - title: "Technical Specifications by Dyno Size (Heroku Dev Center)"
+    url: https://devcenter.heroku.com/articles/dyno-sizes
+    archived_url: https://web.archive.org/web/20260806033507/https://devcenter.heroku.com/articles/dyno-sizes
+    accessed: 2026-08-06
+    source_type: web
+    why: the original platform-as-a-service, and lesson 2's evidence that a bundle hides real behaviour - a published tier table where Eco dynos sleep while Basic and Standard do not, which is the same scale-to-zero cold-start trade-off from module 3 sold as a pricing tier
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-what-a-platform-bundles.md
+    title: Taking the bundle apart
+    concept: bundled-platforms
+    status: planned
+  - file: 02-what-the-bundle-hides.md
+    title: What the bundle hides
+    concept: what-the-bundle-hides
+    status: planned

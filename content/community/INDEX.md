@@ -75,6 +75,19 @@ Contributors: @avishek2002.
 - Evaluate a retrieval-augmented system with faithfulness and answer-relevance metrics over a labelled evaluation set, separating retrieval quality from generation quality
 - Analyze grounded-system failures, from retrieval misses through context-ignoring generation to deference to wrong premises in the query, and match each to the diagnostic that catches it
 
+## infrastructure/hosting-and-deployment - Hosting and deployment
+
+Audience: developers who build applications that run on localhost and now need to choose and defend where those applications should actually run; comfortable with a shell and an HTTP API, no operations background assumed. Hours: 40.
+
+Contributors: @avishek2002.
+
+- Classify the components of a running web application onto the hosting-shape map - static and content delivery network, edge runtime, serverless function, container or platform-as-a-service, virtual machine, managed data service, inference endpoint - and name the responsibility boundary separating each from its neighbour
+- Compare two candidate hosting shapes for a stated workload on the axes that actually differ - cold start, execution ceiling, statefulness, concurrency, data locality, egress - and defend the choice against the runner-up
+- Trace one user request end to end across name resolution, transport security, content delivery network and origin, the interface boundary, identity, and the database, and locate the layer at which a described failure surfaces
+- Diagnose which documented limit breaks a given architecture and select the standard bridge for it, naming what the bridge itself costs
+- Evaluate a named platform against a stated workload using its own published limits and pricing, stating where it excels, where it stops, and what leaving would cost
+- Determine how a language-model call should be hosted inside a service - hosted inference application programming interface, self-hosted open weights, or a proxy at the edge - given latency, streaming, timeout and cost constraints
+
 ## meta/contributing-to-meno - Contributing to Meno
 
 Audience: developers who want to contribute to Meno itself - base changes or community packs; comfortable with git and a shell, new to this repository. Hours: 9-11.

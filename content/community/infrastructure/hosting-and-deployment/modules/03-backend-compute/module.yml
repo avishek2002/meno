@@ -1,0 +1,59 @@
+schema_version: 1
+module: 03-backend-compute
+title: Backend compute, in four shapes
+status: skeleton
+serves: [O1, O2]
+prerequisites: [01-what-hosting-is]
+est_hours: 5
+concepts:                      # siblings: the four shapes, what happens when nobody is calling, what the platform assumes about your process
+  - compute-shapes
+  - cold-starts-and-lifecycle
+  - statelessness-contract
+objectives:
+  - id: M3-1
+    text: Place a described workload on the virtual-machine / container / platform-as-a-service / function spectrum, and name the specific property of the workload that rules out the neighbouring shape
+    bloom: analyze
+  - id: M3-2
+    text: Predict which invocations of a scale-to-zero service pay initialization cost, using a documented execution-environment lifecycle, and analyze what a stated latency requirement implies for that choice
+    bloom: analyze
+  - id: M3-3
+    text: Detect the assumptions in an application that break when the platform can stop, move, or duplicate its process at any moment
+    bloom: analyze
+sources:                       # 4, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "Lambda quotas (AWS Lambda Developer Guide)"
+    url: https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html
+    archived_url: https://web.archive.org/web/20260724162644/https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html
+    accessed: 2026-08-06
+    source_type: web
+    why: the hard numbers lesson 1 compares shapes with - a 900-second (15 minute) function timeout, 128 MB to 10,240 MB of memory with one vCPU at 1,769 MB, a default 1,000 concurrent executions, 6 MB synchronous request and response payloads against 1 MB asynchronous, and 250 MB unzipped deployment packages against 10 GB container images
+  - title: "Understanding the Lambda execution environment lifecycle (AWS)"
+    url: https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtime-environment.html
+    archived_url: https://web.archive.org/web/20260801093359/https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtime-environment.html
+    accessed: 2026-08-06
+    source_type: web
+    why: the Init/Invoke/Shutdown phases, the vendor's own definition of a cold start as downloading code plus setting up the environment, the stated figures that cold starts occur in under 1% of invocations and last from under 100 ms to over 1 second, the freeze-and-thaw reuse of environments including /tmp as a transient cache, and provisioned concurrency as the pre-warming remedy - lesson 2's entire evidence base
+  - title: "Container runtime contract (Google Cloud Run)"
+    url: https://docs.cloud.google.com/run/docs/container-contract
+    archived_url: https://web.archive.org/web/20260722081406/https://docs.cloud.google.com/run/docs/container-contract
+    accessed: 2026-08-06
+    source_type: web
+    why: a second, differently-shaped platform contract to compare against Lambda in lesson 1 - listening on 0.0.0.0 at the injected PORT, a 504 when the request timeout is exceeded, an ephemeral filesystem that consumes instance memory and does not persist when the instance stops, CPU allocated only during request processing under the default billing model, and multiple concurrent requests per instance
+  - title: "The Twelve-Factor App"
+    url: https://12factor.net/
+    archived_url: https://web.archive.org/web/20260803101708/https://12factor.net/
+    accessed: 2026-08-06
+    source_type: web
+    why: the long-lived statement of the contract lesson 3 teaches - factor VI executing the app as stateless processes, factor VIII scaling out via the process model, factor IX maximizing robustness with fast startup and graceful shutdown, and factor VII exporting services via port binding, which is why every platform in this course asks you to bind a port
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-the-four-shapes.md
+    title: Four shapes of backend compute
+    concept: compute-shapes
+    status: planned
+  - file: 02-cold-starts-and-lifecycles.md
+    title: Cold starts, freezes, and the execution ceiling
+    concept: cold-starts-and-lifecycle
+    status: planned
+  - file: 03-statelessness-as-a-contract.md
+    title: Statelessness is a contract, not a style
+    concept: statelessness-contract
+    status: planned
