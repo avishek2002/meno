@@ -63,45 +63,6 @@ Audience: developers who can call a model API (application programming interface
 - Evaluate a retrieval-augmented system with faithfulness and answer-relevance metrics over a labelled evaluation set, separating retrieval quality from generation quality
 - Analyze grounded-system failures, from retrieval misses through context-ignoring generation to deference to wrong premises in the query, and match each to the diagnostic that catches it
 
-## data/analytics-engineering-with-dbt - Analytics engineering with dbt
-
-Audience: developers comfortable with SQL and version control who are new to analytics engineering - they can query a warehouse but have not owned a transformation layer. Hours: 16-18.
-
-- Explain how dbt turns SELECT-statement model files, ref() calls, and declared sources into a dependency graph that builds warehouse objects in order
-- Apply generic and singular data tests plus schema.yml descriptions to a dbt project and generate its documentation site
-- Evaluate which materialization - view, table, incremental, or ephemeral - each model in a dbt project warrants, trading build time against query speed and freshness
-- Analyze raw warehouse tables into fact and dimension tables, declaring each fact table's grain and defending the star schema against a normalized alternative for analytics
-- Apply dbt snapshots to preserve dimension history as type 2 rows and query the resulting validity ranges as of any date
-
-## data/semantic-layers-and-metric-governance - Semantic layers and metric governance
-
-Audience: analysts and analytics engineers who ship dashboards from already-modeled warehouse tables and keep getting asked why two reports disagree; comfortable with SQL (Structured Query Language), no semantic-layer experience assumed. Hours: 13-15.
-
-- Analyze how one business metric label comes to mean several different numbers when each reporting tool embeds its own formula, and explain why tool-local definitions drift further apart over time
-- Explain how a semantic layer captures a metric definition once - as measures, dimensions, and entities - and exposes cubes or views as the single query interface every downstream consumer shares
-- Analyze when pre-aggregations are worth their build and refresh cost, and how an incoming query is matched to a pre-built rollup instead of scanning source tables
-- Evaluate a governance process for metric definitions - ownership, change review, versioned definitions, and parity testing - against the failure modes each control exists to prevent
-
-## data/sql-joins-and-grain - SQL joins and grain
-
-Audience: developers who can write basic SELECTs and want to combine tables without silently wrong numbers; no data-warehouse background needed. Hours: 13-15.
-
-- Explain the logical clause evaluation order of a query - FROM and JOIN, then WHERE, then GROUP BY and HAVING, then the select list, then ORDER BY and LIMIT - and use it to predict where a column alias is visible
-- Apply inner, left, right, full, and cross joins to combine tables on join keys, predicting the row count and NULL pattern each join type produces
-- Analyze a table by declaring its grain - exactly what one row represents - and verifying the declaration with primary-key and duplicate checks
-- Analyze a one-to-many join for fan-out that duplicates measures, detecting it with row counts and distinct checks and repairing it by pre-aggregating or rewriting with EXISTS
-- Evaluate whether a reporting question calls for GROUP BY, a window function, or both, honoring the contract that grouped columns define the output grain
-
-## infrastructure/observability-foundations - Observability foundations
-
-Audience: developers who run a service in production but have never set up monitoring deliberately; comfortable in a shell and with YAML, no observability background assumed. Hours: 16-18.
-
-- Analyze a production question and choose which of metrics, logs, and traces answers it, grounded in the OpenTelemetry signal definitions and the cost of cardinality
-- Apply Prometheus metric types and PromQL (Prometheus Query Language) selectors to turn counters, gauges, and histograms into queries that answer rate and latency questions
-- Design a dashboard of panels and template variables that tells one story to one audience, separating system-health views from business views
-- Evaluate alert rules written as query, threshold, and duration for symptom-versus-cause framing and fatigue risk
-- Explain how spans and context propagation assemble a distributed trace, and judge when tracing pays for itself in a given system
-
 ## meta/contributing-to-meno - Contributing to Meno
 
 Audience: developers who want to contribute to Meno itself - base changes or community packs; comfortable with git and a shell, new to this repository. Hours: 9-11.
@@ -110,26 +71,6 @@ Audience: developers who want to contribute to Meno itself - base changes or com
 - Open a small documentation-fix pull request that clears the gate locally and in continuous integration
 - Draft a one-module topic-pack skeleton under content/community/ following the draft-a-pack recipe
 - Apply the pack gate - validation checks, a citation audit, and the sanitization attestations - to a draft pack and resolve every finding that names it
-
-## product-and-design/web-accessibility-audits - Web accessibility audits
-
-Audience: developers and designers who ship web interfaces and want to audit them against WCAG (Web Content Accessibility Guidelines) 2.2 AA and fix what they find; comfortable with HTML and CSS, no prior accessibility work assumed. Hours: 16-18.
-
-- Explain how interfaces fail people with visual, motor, auditory, and cognitive disabilities, mapping each failure to the WCAG principle it violates and the assistive technology it blocks
-- Apply keyboard-only operation checks - tab order, visible focus, and focus management in modal dialogs - to find and repair operability failures
-- Apply the accessible name and role model to interface controls, choosing semantic HTML first and reaching for ARIA attributes only where no native element carries the needed semantics
-- Apply the WCAG 2.2 AA visual criteria - contrast minimums, the 24 by 24 pixel target size, and reduced-motion preferences - to a page's styling
-- Evaluate a complete interface audit, separating DOM-confirmed failures from high-confidence judgment calls and writing each finding with a severity and a fix a developer can act on
-
-## software-engineering/browser-e2e-testing-with-playwright - Browser end-to-end testing with Playwright
-
-Audience: developers who write unit tests but no end-to-end tests; comfortable with JavaScript or TypeScript and a terminal. Hours: 18-22.
-
-- Explain where browser end-to-end tests sit in a testing strategy, what only a real browser can catch, and why flaky ones cost more than they return
-- Write browser tests around role-based locators and web-first assertions, so they wait for the page instead of sleeping
-- Set up authentication once through saved storage state, and use fixtures so every test stays isolated from its neighbors
-- Control a test's network traffic and clock, mocking backend responses and time so the run is deterministic
-- Analyze a growing suite for speed and debuggability, tuning parameterization and worker allocation and reading traces to find a failure's breaking step
 
 ## software-engineering/git-fundamentals - Git fundamentals
 
@@ -142,13 +83,3 @@ Audience: developers who use git daily but shallowly; comfortable in a shell. Ho
 - Apply remotes, clones, and forks to move commits between repositories and keep a local copy in sync
 - Apply the pull request flow, branch, push, open, review, squash-merge, to land a change through code review
 - Apply repository hygiene settings, ignore rules, protected branches, branch auto-delete, to keep a shared repository clean
-
-## working-skills/evidence-based-bug-reporting - Evidence-based bug reporting
-
-Audience: anyone who files defects for someone else to fix - testers, developers, support staff, or users of any software project; no formal quality-assurance background needed. Hours: 14-16.
-
-- Apply the anatomy of a reproducible defect report - minimal reproduction steps, current versus expected behavior, and an environment record - to write a report a stranger can reproduce unaided
-- Analyze the claims in a defect report to separate verified observation from hypothesis, labeling each claim's confidence and attaching evidence that carries its provenance
-- Evaluate a defect's severity and its priority as separate axes - user impact versus scheduling urgency - and justify cases where the two diverge
-- Analyze a surface symptom down toward the failing layer before filing, choosing localization techniques and recognizing the point where further digging belongs to the fixer
-- Apply the report lifecycle after filing - retesting fixes before closing, publishing a correction when a retest refutes the original claim, and closing the loop with the fixer
