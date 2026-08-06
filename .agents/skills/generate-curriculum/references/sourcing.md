@@ -10,7 +10,23 @@ The citation-integrity procedure for every generation skill. Hallucinated citati
 
 1. Fetch the URL (WebFetch or your CLI's equivalent). If it 404s or the content does not match expectations, discard and find another. Resolve all redirects and record the final canonical URL in `url` - a search-indexed alias can die while the canonical page lives on.
 2. Read enough to verify it supports the specific claim or module it anchors.
-3. Archive it: request `https://web.archive.org/save/<url>` (Wayback Machine Save Page Now), then record the resulting snapshot URL. The snapshot URL arrives in the 302 response's Location header; if your fetch tool cannot reach web.archive.org, fall back to `curl -sI https://web.archive.org/save/<url>` and read the header. Save Page Now rate-limits aggressively - space saves about 20 seconds apart. To find an existing snapshot, the CDX API is the reliable lookup: `https://web.archive.org/cdx/search/cdx?url=<url>&from=<yyyymmdd>&to=<yyyymmdd>` (the simpler `archive.org/wayback/available` endpoint lags and can miss same-day snapshots). An empty `archived_url` is allowed only with a `why` note (paywall, robots-blocked) - never silently.
+3. Archive it. **Never use a page-fetching tool for anything on web.archive.org** - several agent harnesses (Claude Code's WebFetch among them) refuse that host outright, and the refusal is indistinguishable from a dead snapshot. Use `curl` throughout.
+
+   **Look for an existing snapshot first**, because most pages already have one and a lookup costs nothing:
+
+   ```sh
+   curl -s -o /dev/null -w '%{http_code} %{url_effective}\n' -L "https://web.archive.org/web/2/<url>"
+   ```
+
+   The serving-path redirect resolves to the nearest snapshot and, unlike the lookup APIs, is not rate-limited. Prefer it. The CDX API (`/cdx/search/cdx`) and the availability API (`/wayback/available`) are both throttled hard and return empty under load, which reads exactly like "no snapshot exists" - never conclude a page is unarchived from either one.
+
+   **Only if no snapshot exists**, mint one with Save Page Now (`curl -sI https://web.archive.org/save/<url>`, snapshot URL in the Location header). Save Page Now rate-limits aggressively; space saves about 20 seconds apart.
+
+   **Verify the snapshot captures the cited page**: its `link: <...>; rel="original"` response header is the archive stating which URL it captured, and it must match `url`. That header is also what `validate`'s `citations` check compares offline, so a mismatch here becomes a gate failure later. Archiving follows redirects, so if they disagree it is usually `url` that needs updating to where it now resolves.
+
+   **Concurrency is the trap.** archive.org throttles by client, not by agent: several agents archiving at once get connection refusals and empty responses for perfectly healthy snapshots. When a generation run spans multiple courses or agents, do the fetch-and-verify work in parallel but collect the URLs and run **one serial archiving pass** at the end, with backoff. Leave `archived_url` empty with a `why` note in the meantime and fill it in that pass - a batch of failures under load is throttling, never evidence that a page is unarchived.
+
+   An empty `archived_url` is allowed only with a `why` note (paywall, robots-blocked, or a pending batch pass) - never silently, and never left that way at the end of a run.
 4. Record the full source object: `title`, `url`, `archived_url`, `accessed` (today), `source_type`, `why` (one line: what this source anchors).
 
 ## User sources
