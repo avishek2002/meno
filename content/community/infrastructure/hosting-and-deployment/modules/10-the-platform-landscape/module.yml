@@ -1,0 +1,45 @@
+schema_version: 1
+module: 10-the-platform-landscape
+title: The platform landscape, and how to read it yourself
+status: skeleton
+serves: [O2, O5]
+prerequisites: [08-where-each-shape-stops, 09-full-stack-platforms]
+est_hours: 4
+concepts:                      # siblings: the map of who plays where, and the skill that outlives the map
+  - provider-categories
+  - reading-limits-and-pricing
+objectives:
+  - id: M10-1
+    text: Categorise a named provider as hyperscaler, developer platform, or specialist, and analyze what that category predicts about its strengths, its gaps and its pricing shape
+    bloom: analyze
+  - id: M10-2
+    text: Evaluate a platform against a stated workload from its own published limits and pricing pages, producing an excels-at, stops-at and exit-cost verdict with each claim traced to the page that supports it
+    bloom: analyze
+sources:                       # 3, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "Fly.io Architecture"
+    url: https://fly.io/docs/reference/architecture/
+    archived_url: https://web.archive.org/web/20260806033431/https://fly.io/docs/reference/architecture/
+    accessed: 2026-08-06
+    source_type: web
+    why: the specialist category in lesson 1, stated mechanically rather than in marketing terms - Firecracker microVMs, BGP Anycast routing a connection to the closest available microVM, a Rust proxy terminating TLS on every server, and WireGuard tunnels between datacenters - so category claims rest on architecture the learner can check
+  - title: "Vercel Functions Limits"
+    url: https://vercel.com/docs/functions/limitations
+    archived_url: https://web.archive.org/web/20260806033034/https://vercel.com/docs/functions/limitations
+    accessed: 2026-08-06
+    source_type: web
+    why: lesson 2's practice text for reading a limits page adversarially - it carries a last_updated date, splits limits by plan tier, marks features as beta, and names the error code for each ceiling, which is the anatomy the learner is taught to look for on any vendor's page
+  - title: "Amazon EC2 On-Demand Pricing"
+    url: https://aws.amazon.com/ec2/pricing/on-demand/
+    archived_url: https://web.archive.org/web/20260806033203/https://aws.amazon.com/ec2/pricing/on-demand/
+    accessed: 2026-08-06
+    source_type: web
+    why: the hyperscaler contrast in lesson 2 - pricing spread across instance families, Regions and separately-billed data transfer rather than plan tiers, demonstrating that the same question ("what will this cost me") is answered in structurally different places depending on the provider category
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-who-plays-where.md
+    title: Who plays where
+    concept: provider-categories
+    status: planned
+  - file: 02-reading-a-limits-page.md
+    title: Reading a limits page like a practitioner
+    concept: reading-limits-and-pricing
+    status: planned

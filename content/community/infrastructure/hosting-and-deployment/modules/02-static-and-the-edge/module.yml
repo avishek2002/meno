@@ -1,0 +1,53 @@
+schema_version: 1
+module: 02-static-and-the-edge
+title: Static hosting and the edge
+status: skeleton
+serves: [O1, O2]
+prerequisites: [01-what-hosting-is]
+est_hours: 4
+concepts:                      # siblings: shipping bytes, copying bytes closer, running code where the copies live
+  - static-hosting
+  - cdn-caching
+  - edge-runtimes
+objectives:
+  - id: M2-1
+    text: Determine whether a given feature can be served statically, and identify the specific dynamic dependency that disqualifies it when it cannot
+    bloom: analyze
+  - id: M2-2
+    text: Analyze a caching policy against a described update pattern, distinguishing private from shared caches and predicting who serves a stale response and for how long
+    bloom: analyze
+  - id: M2-3
+    text: Compare an edge runtime against a conventional server runtime using published limits, and identify a workload the edge cannot take
+    bloom: analyze
+sources:                       # 3, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "HTTP caching (MDN Web Docs)"
+    url: https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching
+    archived_url: https://web.archive.org/web/20260803075856/https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching
+    accessed: 2026-08-06
+    source_type: web
+    why: the private-versus-shared cache distinction lesson 2 turns into the CDN mental model, plus the concrete directives it teaches (max-age, no-store, private, no-cache, must-revalidate) and the cache-busting pattern with immutable versioned asset URLs against no-cache HTML
+  - title: "RFC 9111: HTTP Caching"
+    url: https://www.rfc-editor.org/rfc/rfc9111.html
+    archived_url: https://web.archive.org/web/20260802125945/https://www.rfc-editor.org/rfc/rfc9111.html
+    accessed: 2026-08-06
+    source_type: web
+    why: the standards-track definitions behind the MDN guide - cache, private cache, shared cache, the freshness_lifetime > current_age test, and s-maxage overriding max-age for shared caches only - which is exactly the CDN-versus-browser divergence lesson 2 asks the learner to predict
+  - title: "Cloudflare Workers limits"
+    url: https://developers.cloudflare.com/workers/platform/limits/
+    archived_url: https://web.archive.org/web/20260731094146/https://developers.cloudflare.com/workers/platform/limits/
+    accessed: 2026-08-06
+    source_type: web
+    why: the concrete edge-runtime ceiling lesson 3 reasons from - 10 ms CPU time on free and 5 min on paid, a 128 MB isolate shared by JavaScript heap and WebAssembly, 3 MB versus 10 MB compressed bundles, subrequest caps, and six simultaneous connections awaiting response headers
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-serving-bytes.md
+    title: Serving bytes, and what static really means
+    concept: static-hosting
+    status: planned
+  - file: 02-caching-at-the-edge.md
+    title: The cache is the product
+    concept: cdn-caching
+    status: planned
+  - file: 03-edge-runtimes.md
+    title: Code at the edge, and what it gives up
+    concept: edge-runtimes
+    status: planned
