@@ -41,7 +41,7 @@ export const GUIDE: GuideSection[] = [
     title: 'What each screen does',
     paras: [],
     list: [
-      { label: 'Courses', body: 'Every course in your vault, with how far through you are, grouped by the domain it sits under. Use "Manage groups" to make groups of your own - they win over the domain, and anything you have not filed keeps falling back to it. A group is a label on the list, never a change to the course.' },
+      { label: 'Courses', body: 'Every course in your vault, with how far through you are, grouped by the domain it sits under or by groups of your own. Fold a section away with its heading, or type in the filter to narrow the list to matching titles and slugs. Your groups live in groups.yml in your vault - ask your agent to change them, or edit the file directly.' },
       { label: 'A course', body: 'The module map, the dependency graph between modules, and the lessons inside each one. Modules with no lessons yet show as planned - your agent writes them one step ahead of you.' },
       { label: 'A lesson', body: 'The lesson body, its references, its recognition checks, and its transfer prompts. Dwelling on a lesson records that you read it.' },
       { label: 'Todos', body: 'The shared queue between you, this app, and your agent. Add, edit, complete, or park items.' },

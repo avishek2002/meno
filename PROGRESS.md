@@ -15,6 +15,43 @@ _Last updated: 2026-08-06_
 
 ## Done
 
+- 2026-08-06 - **v1.6: course-list collapse and filter, and the group write surface removed.**
+  The course list is now native `<details>`/`<summary>` sections with a `Collapse all` /
+  `Expand all` control and a filter input that substring-matches course titles and slugs,
+  case- and diacritic-insensitively; a section with no match hides entirely, a matching one
+  forces open without touching stored state, and Escape clears the filter. Open/closed state
+  persists per tenant in the browser's `localStorage` under one versioned key,
+  `meno.courseList.open.v1:<url-encoded tenant>`, holding only the sections that differ from
+  the default (open) - the app's only browser-persisted state, a view preference and never
+  evidence. All of this - the fold, the substring match, the section assembly, the default-open
+  rule, and the key scheme - lives in new `app/client/src/courseList.ts`, a module with no React
+  and no DOM references (the root tsconfig compiles `app/**/*.ts` without the DOM lib, so naming
+  one there fails typecheck), covered by new `app/test/course-list.test.ts` with `node --test` -
+  the one piece of client logic in this repo unit-tested rather than smoke-tested. Assembling the
+  view in that module fixes a real latent bug: the page used to print a section's raw
+  `courses.length` while separately skipping slugs `/tree` no longer knew about, so the header
+  count could exceed the rows actually rendered when the two fetches disagreed for one render;
+  the join now happens once, in the module, so the count is always the row count.
+  In the same change, the explicit-group write surface from decision 20 is removed: the four
+  write routes (`POST`/`PATCH`/`DELETE :tenant/groups*`, `PATCH :tenant/course/:course/group`)
+  and their handlers are gone from `app/server/routes.ts`, along with the inline manage panel,
+  `deleteJson` (its only caller), and the `addGroup`/`renameGroup`/`removeGroup`/
+  `setCourseGroup`/`serializeGroups` mutations and their private helpers from `lib/groups.ts` -
+  the explicit layer competes with the domain layer rather than complementing it, so a write
+  surface for it was never load-bearing, and the panel was never visually verified to begin with.
+  `GET :tenant/groups` survives byte-identical, `raw_sha256` included, and is now the entire
+  group surface; `groups.yml` is agent-edited and hand-edited only. Specs amended: app (behavior
+  8 rewritten, new behavior 9, invariants 8-10 rewritten, invariant 13 appended, data-touched and
+  verified-by updated), architecture's write-authority table, migrations (one sentence corrected
+  in the existing 2026-08-06 entry, no new entry), integration-surface (`:tenant/groups` named
+  stable), how-meno-works, `second-brain` and `generate-curriculum` skill copy, PLAN decision 20
+  amended. Gate green: typecheck, 163 tests (up from 153; `app/test/groups.test.ts` reduced from
+  16 to 6 route/structural tests with the parse- and resolve-level coverage re-homed to
+  `tools/test/groups.test.ts`), validate.
+  **The v1.6 collapse and filter behaviour is unit-tested but not yet visually verified in a
+  browser** - keyboard operation of the `<details>` summaries, focus-visible rings, and both
+  colour schemes are reasoned about rather than observed. Worth one manual pass.
+
 - 2026-08-06 - **Course groups (decision 20) and pack attribution (decision 21).** Two features,
   one change. *Groups*: two layers. A course's **domain directory** is the default grouping, so
   the course list is grouped from the moment a vault exists with no setup at all; a

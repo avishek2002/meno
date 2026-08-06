@@ -1,17 +1,15 @@
 // The tenant's groups.yml on disk. Reading is permissive (lib/groups.ts turns a
-// half-edited file into an empty document plus warnings, never a throw), and
-// writing is the whole-file atomic replace the todos path already uses, guarded
-// by the caller's If-Match content hash.
+// half-edited file into an empty document plus warnings, never a throw).
 //
-// This is the second file the app is allowed to write, and it is deliberately
-// the same class as the first: organization, not evidence. No group operation
-// appends a ledger event, touches mastery, or edits a course manifest - the
-// write-authority seam (decision 14) is about who may claim a learner knows
-// something, and grouping never makes that claim.
+// The app only reads this file (v1.6). It used to be the second file the app
+// was allowed to write, on the theory that grouping is organization, not
+// evidence - true, but the explicit layer competes with the domain layer
+// rather than complementing it, so a write surface for it was never
+// load-bearing. An agent following second-brain, or the learner in a text
+// editor, are the only authors now.
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { parseGroups, serializeGroups, type GroupsDoc } from '../../lib/groups.ts';
-import { writeFileAtomic } from './atomic.ts';
+import { parseGroups, type GroupsDoc } from '../../lib/groups.ts';
 
 export const GROUPS_FILE = 'groups.yml';
 
@@ -25,11 +23,4 @@ export function readGroups(tenantDir: string): { raw: string; doc: GroupsDoc; wa
   const raw = readGroupsRaw(tenantDir);
   const { doc, warnings } = parseGroups(raw);
   return { raw, doc, warnings };
-}
-
-/** Serialize through the YAML writer, never by hand - see lib/groups.ts. */
-export function writeGroups(tenantDir: string, doc: GroupsDoc): string {
-  const next = serializeGroups(doc);
-  writeFileAtomic(join(tenantDir, GROUPS_FILE), next);
-  return next;
 }

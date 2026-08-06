@@ -294,7 +294,8 @@ h3 {
   margin-bottom: 1.75rem;
 }
 
-.group-section h2 {
+.group-section summary {
+  cursor: pointer;
   font-size: 1rem;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -302,6 +303,11 @@ h3 {
   border-bottom: 1px solid var(--border);
   padding-bottom: 0.35rem;
   margin: 0 0 0.75rem;
+  list-style: revert;
+}
+
+.group-section[open] summary {
+  margin-bottom: 0.75rem;
 }
 
 .group-count {
@@ -325,72 +331,24 @@ h3 {
   letter-spacing: 0;
 }
 
-.group-manage {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--bg-subtle);
-  padding: 1rem 1.25rem;
-  margin-bottom: 1.75rem;
-}
-
-.group-manage h2 {
-  margin-top: 0;
-  font-size: 1.05rem;
-}
-
-.group-hint {
-  color: var(--text-muted);
-  font-size: 0.88rem;
-  margin: 0 0 0.75rem;
-}
-
-.group-manage-list {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 0.75rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.group-manage-row {
+.course-list-controls {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   flex-wrap: wrap;
+  margin-bottom: 1.25rem;
 }
 
-.group-manage-name {
-  flex: 1 1 12rem;
+.course-filter-input {
+  flex: 1 1 16rem;
 }
 
-.group-create {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.group-create input,
-.group-rename-input {
-  flex: 1 1 14rem;
-}
-
-.group-danger {
-  border-color: var(--incorrect-text);
-  color: var(--incorrect-text);
-}
-
-.course-move {
+.course-list-no-results {
+  color: var(--text-muted);
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  margin-top: 0.6rem;
-  font-size: 0.85rem;
-  color: var(--text-muted);
-}
-
-.group-actions {
-  margin-top: 1rem;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .course-card-meta {
