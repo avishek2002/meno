@@ -15,6 +15,32 @@ _Last updated: 2026-08-06_
 
 ## Done
 
+- 2026-08-06 - **Tenant courses group by domain: one grouping across all three tiers.**
+  `content/tenants/<t>/<course-slug>/` became `content/tenants/<t>/<domain>/<course-slug>/`,
+  matching `content/community/<domain>/<slug>/` exactly. The tiers had drifted: packs were
+  domain-grouped, tenant courses were a flat list, and adopt-a-pack *discarded* the domain
+  on the way in; adoption is now a straight mirror copy. `content/community/DOMAINS.md` is
+  promoted from a pack file to the shared vocabulary governing community, org, and tenant
+  trees. New `course-layout` validate check enforces shape and vocabulary, finding vault
+  roots by their `home.md` so bare course fixtures stay exempt. Both committed vaults moved
+  (`examples/example-learner`, `examples/seeded-faults/publish-fixture`) under
+  `software-engineering/`. Spec owner: `vault-conventions.md` (per `repo-and-tenancy.md`'s
+  delegation); `docs/migrations.md` carries the Was/Now table and the per-instance `mv`.
+  `elicit-needs` now classifies a course into a domain during the interview - nothing
+  computed a domain before, it was derived at publish time long after the directory existed.
+- 2026-08-06 - **The silent regression this nearly shipped.** `wikilinks.tsx` matched lesson
+  links with exactly one path segment before `/modules/`. A domain level would have made
+  every lesson wikilink fall through to the plain note route: link still resolves, page
+  still renders, checks silently gone - a correctness bug wearing a styling bug's clothes,
+  and no test covered it. The regex now takes an optional domain segment (it backtracks
+  correctly on ungrouped paths, since "modules" cannot satisfy the literal `/modules/`
+  that follows). Two deliberate asymmetries came out of the same review: the app reads a
+  course at either depth so an unmigrated vault renders instead of showing an empty list,
+  and the walk never consults DOMAINS.md - validate owns "is this a legal place for a
+  course", the runtime only answers "where are the course.yml files". The walk itself moved
+  to `lib/course-dirs.ts` rather than being patched into `tree.ts` and `insights-io.ts`
+  separately, per the repo's no-parallel-walks rule.
+
 - 2026-08-06 - **Community pack wave 2 (decision 19, workstream 4): ten packs, and the archive-match
   gate that wave 1 needed.** The tier goes from 5 packs to 15. New: `data/sql-joins-and-grain`,
   `data/analytics-engineering-with-dbt`, `data/semantic-layers-and-metric-governance`,

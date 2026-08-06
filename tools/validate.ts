@@ -688,6 +688,52 @@ function loadDomains(): Set<string> {
   return out;
 }
 
+// Tenant courses sit at <vault>/<domain>/<course-slug>/, the same shape and the same
+// closed vocabulary the community tier uses - one grouping, so a course keeps its place
+// in the tree whether it is being studied privately or published.
+//
+// Vault roots are discovered by their home.md rather than by path, because the default
+// targets are parents (examples/, content/community/) and a real tenant lives outside
+// the repo's tracked tree entirely. home.md is the right marker by definition:
+// vault-conventions.md calls it the tenant home note at the vault root, so anything with
+// one is a vault and anything without one (a bare course fixture, a golden persona) is not.
+export function checkCourseLayout(_target: string, files: string[]): Finding[] {
+  const findings: Finding[] = [];
+  const vaultRoots = files
+    .filter((f) => f.endsWith('/home.md'))
+    .map((f) => f.slice(0, -'/home.md'.length))
+    .sort((a, b) => b.length - a.length); // deepest first, so nested fixtures win
+  if (vaultRoots.length === 0) return findings;
+  const domains = loadDomains();
+
+  for (const file of files) {
+    if (!file.endsWith('/course.yml')) continue;
+    const dir = file.slice(0, -'/course.yml'.length);
+    const root = vaultRoots.find((r) => dir.startsWith(`${r}/`));
+    if (!root) continue;
+    const rel = relative(repoRoot, dir);
+    const parts = relative(root, dir).split('/');
+    if (parts.length !== 2) {
+      findings.push({
+        level: 'error',
+        check: 'course-layout',
+        path: rel,
+        message: `course directory must be <vault>/<domain>/<course-slug> (found ${parts.length} segment(s) below the vault root) - move it under a domain from content/community/DOMAINS.md`,
+      });
+      continue;
+    }
+    if (!domains.has(parts[0])) {
+      findings.push({
+        level: 'error',
+        check: 'course-layout',
+        path: rel,
+        message: `domain "${parts[0]}" is not in content/community/DOMAINS.md (closed vocabulary, shared with the community tier)`,
+      });
+    }
+  }
+  return findings;
+}
+
 export function checkPacks(_target: string, files: string[]): Finding[] {
   const findings: Finding[] = [];
   const packFiles = files.filter((f) => {
@@ -815,6 +861,7 @@ const CHECKS: Record<string, Check> = {
   mastery: checkMastery,
   insights: checkInsights,
   packs: checkPacks,
+  'course-layout': checkCourseLayout,
   tenancy: checkTenancy,
 };
 

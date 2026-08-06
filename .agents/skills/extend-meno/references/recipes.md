@@ -4,7 +4,7 @@ Ordered steps per recipe. All paths relative to the repo root; `<t>` is the tena
 
 ## Add a hand-made course
 
-1. `content/tenants/<t>/<course-slug>/` with: `profile.md` (write it honestly - even a hand-made course deserves a contract; format: `.agents/skills/elicit-needs/references/profile-format.md`), `course.yml` and `modules/NN-slug/module.yml` per `.agents/skills/generate-curriculum/references/manifest-format.md`.
+1. `content/tenants/<t>/<domain>/<course-slug>/` (`<domain>` from the closed vocabulary in `content/community/DOMAINS.md`) with: `profile.md` (write it honestly - even a hand-made course deserves a contract; format: `.agents/skills/elicit-needs/references/profile-format.md`), `course.yml` and `modules/NN-slug/module.yml` per `.agents/skills/generate-curriculum/references/manifest-format.md`.
 2. Lessons can be any markdown you want, but the closer to the nine-part anatomy (`.agents/skills/generate-module/references/lesson-format.md`), the more the app and tutor can do with them; at minimum give each lesson the frontmatter block so scheduling and progress work.
 3. Hub note wikilinking every module; link it from the tenant home note (`.agents/skills/second-brain/references/vault-conventions.md`).
 4. Validate: `npm run validate` (`tools/validate.ts`).
@@ -45,7 +45,8 @@ into a pack instead is a different job with real sanitization stakes -
 Full flow and the "why" of each step: `content/community/README.md`'s adoption section (canonical -
 this recipe only adds the extend-meno-side mechanics and links back rather than restating it).
 
-1. Copy the pack's tree from `content/community/<domain>/<slug>/` into `content/tenants/<t>/<slug>/`
+1. Mirror the pack's tree straight across, `content/community/<domain>/<slug>/` to
+   `content/tenants/<t>/<domain>/<slug>/`, preserving the domain instead of discarding it
    (this direction is a normal copy - `content/community/README.md`'s adoption flow, not the
    transcribe-never-copy rule that binds the opposite, publish direction).
 2. Run `elicit-needs` to produce the missing `profile.md` - the pack's scope gives the

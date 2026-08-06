@@ -5,6 +5,7 @@ The full spec for how tenant content hangs together as an Obsidian vault. Genera
 ## Naming and layout
 
 - Note filenames are kebab-case and stable once created (wikilinks bind to them). Lessons keep their `NN-` ordering prefix; hubs are `<slug>-hub.md`; the tenant home note is `home.md` at the vault root.
+- Courses are grouped by domain, and the grouping is **identical to the community tier's**: a course sits at `<domain>/<course-slug>/` here exactly as a pack sits at `content/community/<domain>/<slug>/`. `<domain>` comes from the same closed vocabulary in [DOMAINS.md](../../../../content/community/DOMAINS.md) - one list, both tiers, so a course keeps its place in the tree whether it is being studied privately or published, and adoption is a straight mirror copy rather than a reshuffle.
 - The vault tree mirrors the course structure - no separate "notes folder"; lessons ARE the notes:
 
 ```
@@ -13,14 +14,17 @@ content/tenants/<tenant>/
   todos.md                     shared queue (see todo-format.md)
   sources/                     user-supplied materials (never rewritten by agents)
   progress/                    ledger.jsonl, mastery.yml (data, not notes; no wikilinks needed)
-  <course-slug>/
-    profile.md                 the contract (wikilinks allowed in prose)
-    course.yml                 manifest (regenerable, never hand-edited)
-    <course-slug>-hub.md       course hub / map of content
-    modules/NN-slug/
-      module.yml
-      NN-lesson-name.md        lessons = notes
+  <domain>/                    one of DOMAINS.md's slugs; same vocabulary as content/community/
+    <course-slug>/
+      profile.md               the contract (wikilinks allowed in prose)
+      course.yml               manifest (regenerable, never hand-edited)
+      <course-slug>-hub.md     course hub / map of content
+      modules/NN-slug/
+        module.yml
+        NN-lesson-name.md      lessons = notes
 ```
+
+`progress/`, `sources/`, and `insights/` sit beside the domain directories, never inside one - none of their names is a domain slug, so the two never collide. `tools/validate.ts`'s `course-layout` check enforces the shape and the vocabulary; the app reads a course sitting directly at the vault root as a pre-grouping vault rather than hiding it, so an unmigrated vault still renders while validate names what to move.
 
 ## Link rules
 
@@ -40,8 +44,8 @@ The `meno:derived` markers are the contract for refreshes: regenerate only betwe
 # Home
 
 <!-- meno:derived:start -->
-Now learning: [[rust-for-backend/rust-for-backend-hub|Rust for backend]]
-- [[rust-for-backend/rust-for-backend-hub|Rust for backend]] - module 1 of 5, next review 2026-08-07
+Now learning: [[software-engineering/rust-for-backend/rust-for-backend-hub|Rust for backend]]
+- [[software-engineering/rust-for-backend/rust-for-backend-hub|Rust for backend]] - module 1 of 5, next review 2026-08-07
 <!-- meno:derived:end -->
 
 ## Notes to self

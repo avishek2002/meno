@@ -97,11 +97,13 @@ this by hand - the sanitization step is the part that is easy to get wrong.
 ## Adopting a pack (tenant side)
 
 Adoption is an `extend-meno` recipe
-([references/recipes.md](../../.agents/skills/extend-meno/references/recipes.md)): copy the
-pack's tree into `content/tenants/<you>/<slug>/`, run the interview to produce the missing
-`profile.md` (the pack's scope gives the interviewer a running start), set `status: active`
-and add the `profile` field, then let `generate-module` write module 1 against your
-contract.
+([references/recipes.md](../../.agents/skills/extend-meno/references/recipes.md)): mirror the
+pack's tree straight across to `content/tenants/<you>/<domain>/<slug>/` - both tiers use the
+same [domain grouping](DOMAINS.md), so the path is identical either side of the copy and the
+domain comes along rather than being discarded - run the interview to produce the missing
+`profile.md` (the pack's scope gives the interviewer a running start, and its domain is
+already settled), set `status: active` and add the `profile` field, then let
+`generate-module` write module 1 against your contract.
 
 Record where it came from: add a `derived_from` block to `course.yml`
 ([schemas/course.schema.json](../../schemas/course.schema.json)) - `pack` (the `domain/slug`

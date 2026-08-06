@@ -57,9 +57,9 @@ procedure the server cannot guard).
 |---|---|---|---|
 | `<tenant>/progress/ledger.jsonl` | append (agent-typed events) | tutor | progress.md / ledger.schema.json |
 | `<tenant>/progress/mastery.yml` | rebuild via tool | tutor | serializeMastery output |
-| `<tenant>/<course>/modules/**` | write via generate-module (generate-ahead) | generate-module | lesson-format.md |
+| `<tenant>/<domain>/<course>/modules/**` | write via generate-module (generate-ahead) | generate-module | lesson-format.md |
 | `<tenant>/todos.md` | read (propose only) | learner/app | todo-format.md |
-| `<course>/profile.md` | append via elicit-needs re-clarification | elicit-needs | profile-format.md |
+| `<domain>/<course>/profile.md` | append via elicit-needs re-clarification | elicit-needs | profile-format.md |
 
 ## Invariants
 

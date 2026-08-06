@@ -37,7 +37,7 @@ never asks you open questions. It asks 5 to 7 closed questions with anchored opt
 prior knowledge, depth, weekly time), runs one small live probe to check your actual starting
 level rather than trusting self-report, and pushes back if your ambitions and your calendar
 disagree. It ends with a confirmation brief you approve explicitly. The result is a learning
-contract: `content/tenants/<you>/<course>/profile.md`.
+contract: `content/tenants/<you>/<domain>/<course>/profile.md`.
 
 ### 3. The curriculum skeleton
 

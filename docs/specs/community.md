@@ -34,10 +34,12 @@ subject scattered across near-duplicate packs nobody amends.
    confirmed profile with no fresh handoff to check against; `publish-to-community`'s step 1 is
    the same search, mandatory and blocking. A hit is always presented as a choice - adopt or
    proceed independently - never resolved silently in either direction.
-2. **Adoption copies the pack to the tenant.** `extend-meno`'s adopt-a-pack recipe copies the
-   pack tree into `content/tenants/<tenant>/<slug>/`, runs the interview for the missing `profile.md`,
-   and records `derived_from` (`pack`, `pack_version`, `adopted_at`) in the adopted `course.yml`
-   - the provenance a later publish-back needs to find the right pack to amend.
+2. **Adoption mirrors the pack into the tenant.** `extend-meno`'s adopt-a-pack recipe is a
+   straight mirror copy, `content/community/<domain>/<slug>/` to
+   `content/tenants/<tenant>/<domain>/<slug>/`, preserving the domain instead of discarding it.
+   It then runs the interview for the missing `profile.md` and records `derived_from` (`pack`,
+   `pack_version`, `adopted_at`) in the adopted `course.yml` - the provenance a later
+   publish-back needs to find the right pack to amend.
 3. **Publishing transcribes, never copies.** `publish-to-community` builds a fresh pack tree on
    a feature branch by transcribing the tenant course's manifests field by field; `cp -r` of a
    tenant directory is forbidden by the skill's own hard rules, because copying would carry
@@ -71,7 +73,7 @@ subject scattered across near-duplicate packs nobody amends.
 
 ```mermaid
 graph TD
-    T[Tenant course<br/>content/tenants/tenant/slug] -->|publish-to-community<br/>transcribe, never copy| PT[Pack tree on a branch]
+    T[Tenant course<br/>content/tenants/tenant/domain/slug] -->|publish-to-community<br/>transcribe, never copy| PT[Pack tree on a branch]
     PT -->|npm run validate<br/>pack-layout/notes/overlap/safety| G1{Gate}
     PT -->|audit-citations full run| G2{Gate}
     G1 --> PR[Pull request<br/>template attestations]
@@ -81,7 +83,7 @@ graph TD
     IDX -.searched by.-> EN[elicit-needs]
     IDX -.searched by.-> GC[generate-curriculum]
     IDX -.searched by.-> PB[publish-to-community step 1]
-    P -->|extend-meno adopt-a-pack| C[content/tenants/tenant/slug<br/>derived_from recorded]
+    P -->|extend-meno adopt-a-pack| C[content/tenants/tenant/domain/slug<br/>derived_from recorded]
     C -->|later publish-back| T
 ```
 
@@ -104,7 +106,7 @@ graph TD
 | `content/community/<domain>/<slug>/{course.yml,PACK.md,modules/**,notes/**}` | write (new pack: create; amendment: edit in place) | `publish-to-community` (agent, via pull request) | manifest-format.md, pack.schema.json, reference-note.schema.json |
 | `content/community/DOMAINS.md` | read | validate (`pack-layout`) | closed vocabulary |
 | `content/community/INDEX.md` | write (regenerate wholesale) | `tools/packs.ts` | generated, grep-shaped |
-| `content/tenants/<tenant>/<slug>/course.yml` `derived_from` field | write (adoption only) | `extend-meno` adopt-a-pack recipe | course.schema.json |
+| `content/tenants/<tenant>/<domain>/<slug>/course.yml` `derived_from` field | write (adoption only) | `extend-meno` adopt-a-pack recipe | course.schema.json |
 | `content/org/<domain>/<slug>/**` | read (same shape, private org packs) | validate (`pack-layout`, when present) | same as content/community/ |
 
 ## Invariants

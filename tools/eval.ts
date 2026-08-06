@@ -164,7 +164,7 @@ const FIXTURES: Fixture[] = [
     name: 'interview-sam',
     skill: 'interview',
     checklist: () =>
-      profileChecklist('examples/example-learner/rust-for-backend/profile.md', {
+      profileChecklist('examples/example-learner/software-engineering/rust-for-backend/profile.md', {
         goal_category: 'build', prior_level: 'vocabulary', probe_result: 'confirmed-at-level',
         depth: 'build', bloom_ceiling: 'apply', hours_per_week: 4, total_weeks: 6,
         budget_hours: 24, user_sources: false, status: 'confirmed',
@@ -183,32 +183,32 @@ const FIXTURES: Fixture[] = [
   {
     name: 'curriculum-rust',
     skill: 'curriculum',
-    checklist: () => curriculumChecklist('examples/example-learner/rust-for-backend', 24, ['remember', 'understand', 'apply']),
+    checklist: () => curriculumChecklist('examples/example-learner/software-engineering/rust-for-backend', 24, ['remember', 'understand', 'apply']),
     judged: () =>
       median3(judgePrompt('course skeleton (objectives and module plan)', CURRICULUM_RUBRIC,
-        readFileSync(join(repoRoot, 'examples/example-learner/rust-for-backend/course.yml'), 'utf8'))),
+        readFileSync(join(repoRoot, 'examples/example-learner/software-engineering/rust-for-backend/course.yml'), 'utf8'))),
   },
   {
     name: 'lessons-module1',
     skill: 'lessons',
     checklist: () =>
       lessonsChecklist([
-        'examples/example-learner/rust-for-backend/modules/01-syntax-and-ownership-basics/01-cargo-and-toolchain.md',
-        'examples/example-learner/rust-for-backend/modules/01-syntax-and-ownership-basics/02-syntax-for-experienced-developers.md',
-        'examples/example-learner/rust-for-backend/modules/01-syntax-and-ownership-basics/03-ownership.md',
-        'examples/example-learner/rust-for-backend/modules/02-borrowing-in-practice/01-borrowing.md',
-        'examples/example-learner/rust-for-backend/modules/02-borrowing-in-practice/02-lifetimes.md',
+        'examples/example-learner/software-engineering/rust-for-backend/modules/01-syntax-and-ownership-basics/01-cargo-and-toolchain.md',
+        'examples/example-learner/software-engineering/rust-for-backend/modules/01-syntax-and-ownership-basics/02-syntax-for-experienced-developers.md',
+        'examples/example-learner/software-engineering/rust-for-backend/modules/01-syntax-and-ownership-basics/03-ownership.md',
+        'examples/example-learner/software-engineering/rust-for-backend/modules/02-borrowing-in-practice/01-borrowing.md',
+        'examples/example-learner/software-engineering/rust-for-backend/modules/02-borrowing-in-practice/02-lifetimes.md',
       ]),
     judged: () =>
       median3(judgePrompt('lesson', LESSON_RUBRIC,
-        readFileSync(join(repoRoot, 'examples/example-learner/rust-for-backend/modules/01-syntax-and-ownership-basics/03-ownership.md'), 'utf8'))),
+        readFileSync(join(repoRoot, 'examples/example-learner/software-engineering/rust-for-backend/modules/01-syntax-and-ownership-basics/03-ownership.md'), 'utf8'))),
   },
 ];
 
 // anchors: three reference lessons at known quality; the judged half is trusted
 // only while it still RANKS them correctly with real separation
 const ANCHORS = [
-  { name: 'good', path: 'examples/example-learner/rust-for-backend/modules/01-syntax-and-ownership-basics/03-ownership.md' },
+  { name: 'good', path: 'examples/example-learner/software-engineering/rust-for-backend/modules/01-syntax-and-ownership-basics/03-ownership.md' },
   { name: 'mediocre', path: 'evals/anchors/lesson-mediocre.md' },
   { name: 'bad', path: 'evals/anchors/lesson-bad.md' },
 ];

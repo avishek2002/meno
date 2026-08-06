@@ -20,6 +20,7 @@
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { parse as parseYaml } from 'yaml';
+import { findCourseDirs } from './course-dirs.ts';
 import { parseLedger, type LedgerEvent } from './mastery.ts';
 import { loadVaultFiles, buildVaultGraph, type VaultGraph } from './vault.ts';
 import { parseLesson } from './lesson.ts';
@@ -71,13 +72,12 @@ export function loadManifests(tenantDir: string): ManifestInfo[] {
   const out: ManifestInfo[] = [];
   if (!existsSync(tenantDir)) return out;
 
-  for (const entry of readdirSync(tenantDir).sort()) {
+  for (const entry of findCourseDirs(tenantDir)) {
     const courseDir = join(tenantDir, entry);
     const courseFile = join(courseDir, 'course.yml');
-    if (!existsSync(courseFile)) continue;
     const course = tryYaml(courseFile);
     if (!course) continue;
-    const courseSlug = String(course.slug ?? entry);
+    const courseSlug = String(course.slug ?? entry.split('/').at(-1));
 
     const modulesDir = join(courseDir, 'modules');
     if (!existsSync(modulesDir)) continue;

@@ -1,8 +1,8 @@
 # Home
 
 <!-- meno:derived:start -->
-Now learning: [[rust-for-backend/rust-for-backend-hub|Rust for backend]]
-- [[rust-for-backend/rust-for-backend-hub|Rust for backend]] - module 2 of 7, next review 2026-08-09
+Now learning: [[software-engineering/rust-for-backend/rust-for-backend-hub|Rust for backend]]
+- [[software-engineering/rust-for-backend/rust-for-backend-hub|Rust for backend]] - module 2 of 7, next review 2026-08-09
 - [[insights-hub|Study insights]] - latest report 2026-08-08
 <!-- meno:derived:end -->
 
