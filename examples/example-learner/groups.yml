@@ -1,0 +1,10 @@
+# Course groups for this tenant - how the study app lays out your course list.
+# Purely organizational: a course's group never changes its content, and a course
+# in no group shows up under Ungrouped. Format owner:
+# .agents/skills/second-brain/references/vault-conventions.md
+schema_version: 1
+groups:
+  - id: systems-programming
+    title: Systems Programming
+    courses:
+      - rust-for-backend

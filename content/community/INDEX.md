@@ -7,6 +7,8 @@
 
 Audience: developers who already use an agentic coding tool daily but drive it on defaults; want to shape its instructions, context, guardrails, and cost deliberately. Hours: 20-24.
 
+Contributors: @avishek2002.
+
 - Explain how an agent harness assembles base instructions, tool definitions, and conversation history into one context window, and trace one loop iteration from model tool call to returned result
 - Apply tiered instruction files and subagent delegation to keep a working session's context lean
 - Evaluate whether a recurring workflow deserves a reusable skill, an always-loaded instruction, or a one-off prompt, and structure a skill with progressive disclosure
@@ -16,6 +18,8 @@ Audience: developers who already use an agentic coding tool daily but drive it o
 ## ai-and-agents/intro-to-ai-and-agents - Intro to AI and agents
 
 Audience: developers fluent on the command line who are new to AI - comfortable with git, scripting, and APIs (application programming interfaces), no machine learning background assumed. Hours: 14-16.
+
+Contributors: @avishek2002.
 
 - Explain how a large language model works - tokenization, training vs inference, and why next-token prediction over vast text yields broad capability
 - Apply prompting, context-window management, sampling settings, and structured output to get reliable results from a model
@@ -27,6 +31,8 @@ Audience: developers fluent on the command line who are new to AI - comfortable 
 
 Audience: anyone who uses AI assistants to draft learning material or other deliverables; no machine-learning background needed. Hours: 14-16.
 
+Contributors: @avishek2002.
+
 - Explain why language models produce plausible but false content, classifying real examples with the survey taxonomies and naming a likely cause for each
 - Analyze model outputs for sycophancy, distinguishing agreement driven by the asker's stated view from agreement driven by evidence
 - Explain what cognitive offloading and automation bias cost the person doing the offloading, grounded in the memory and decision research
@@ -37,6 +43,8 @@ Audience: anyone who uses AI assistants to draft learning material or other deli
 
 Audience: developers who want to contribute to Meno itself - base changes or community packs; comfortable with git and a shell, new to this repository. Hours: 9-11.
 
+Contributors: @avishek2002.
+
 - Apply the repository's entry-point and one-owner rules to trace any convention to the file that owns it before proposing a change
 - Open a small documentation-fix pull request that clears the gate locally and in continuous integration
 - Draft a one-module topic-pack skeleton under content/community/ following the draft-a-pack recipe
@@ -45,6 +53,8 @@ Audience: developers who want to contribute to Meno itself - base changes or com
 ## software-engineering/git-fundamentals - Git fundamentals
 
 Audience: developers who use git daily but shallowly; comfortable in a shell. Hours: 20-24.
+
+Contributors: @avishek2002.
 
 - Apply the staging model to craft atomic, well-messaged commits that isolate one logical change each
 - Apply git log, diff, and blame to reconstruct why a specific line of code changed and who to ask about it

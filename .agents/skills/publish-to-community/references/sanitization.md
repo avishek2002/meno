@@ -36,6 +36,15 @@ against every file about to be transcribed - "I don't think this file has any" i
   names. These show up in the least expected places - a lesson's aside crediting a colleague, a
   code snippet's placeholder value, a `why` line on a source record.
 
+- **`CONTRIBUTORS.yml`'s `by` and `note` fields.** `by` is a personal identifier by
+  construction, and it is about to become a permanent public record, so the identifier rule above
+  binds it explicitly: never populate it from the tenant directory name, `git config
+  user.name`/`user.email`, an OS username, or anything else read off the machine. Ask the
+  publisher what to write and write exactly that - a GitHub handle, or `anonymous`. `note` is
+  free prose and leaks like any other free prose: run it through this whole catalog, not just
+  this bullet. "Ported from my acme-corp vault" names an employer as surely as a lesson aside
+  does.
+
 ## The one class no regex catches
 
 A **worked example drawn from the learner's real work** - "our checkout service", a real

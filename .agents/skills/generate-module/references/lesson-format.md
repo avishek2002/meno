@@ -74,10 +74,21 @@ Part 8 (spaced-review hook) lives in frontmatter (`review_offsets`, `review_afte
 
 ## Ledger seed event
 
-Appended per lesson to `content/tenants/<tenant>/progress/ledger.jsonl` at generation time:
+Appended per lesson to `content/tenants/<tenant>/progress/ledger.jsonl` at generation time.
+One event per lesson, so a three-lesson module appends three lines in one pass - and because
+`ts` is a join key it must be **strictly increasing**, which a whole-second clock read cannot
+give you when three lines are written in the same second. Bump one millisecond per line:
 
 ```json
-{"v": 1, "ts": "2026-08-05T10:00:00+10:00", "event": "generated", "source": "agent", "course": "rust-for-backend", "module": "01-ownership-basics", "lesson": "01-ownership", "concepts": ["ownership"], "review_after": "2026-08-07"}
+{"v": 1, "ts": "2026-08-05T10:00:00.000+10:00", "event": "generated", "source": "agent", "course": "rust-for-backend", "module": "01-ownership-basics", "lesson": "01-ownership", "concepts": ["ownership"], "review_after": "2026-08-07"}
+{"v": 1, "ts": "2026-08-05T10:00:00.001+10:00", "event": "generated", "source": "agent", "course": "rust-for-backend", "module": "01-ownership-basics", "lesson": "02-borrowing", "concepts": ["borrowing"], "review_after": "2026-08-07"}
+{"v": 1, "ts": "2026-08-05T10:00:00.002+10:00", "event": "generated", "source": "agent", "course": "rust-for-backend", "module": "01-ownership-basics", "lesson": "03-lifetimes", "concepts": ["lifetimes"], "review_after": "2026-08-07"}
 ```
 
+`npm run validate` rejects a ledger whose timestamps are not strictly increasing, so a
+whole-second batch fails the gate rather than corrupting quietly - but it fails *after* the
+lessons are written, so stamp them correctly on the way out.
+
 The full event vocabulary (eight types), field sets, and the mastery-derivation rules are owned by [docs/specs/progress.md](../../../../docs/specs/progress.md) and machine-checked by `schemas/ledger.schema.json` - this file defines only the seed event a generation appends. Standing rules: the ledger is append-only, one JSON object per line, in file order; `review_after` deliberately shares its name with the lesson frontmatter field. Gates key exclusively on `source: agent` plus `level: transfer` events (PLAN.md decision 14).
+
+After appending, rebuild the derived view: `node tools/rebuild-mastery.ts content/tenants/<tenant>`. A generation that appends events without rebuilding leaves `mastery.yml` stale, which validate reports as a separate error.

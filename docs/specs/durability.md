@@ -39,6 +39,19 @@ vault). Everything else in Meno is regenerable; the learner's history is not.
 5. Privacy guidance lives in the guide: clone-don't-fork (a public fork can never be
    made private), and what leaves the machine (the model provider processes what the
    agent reads and writes).
+6. Multi-device study is a **documented manual procedure, not tooling**
+   ([how-meno-works.md](../how-meno-works.md#studying-on-more-than-one-device)). The
+   mirror is an ordinary private git repository, so a second machine restores from it and
+   thereafter pulls by hand; `push` deliberately never pulls, so a diverged second machine
+   fails as a non-fast-forward rather than resolving anything silently. The one conflict a
+   learner actually hits is `progress/ledger.jsonl`, where both sides append at the end:
+   the documented resolution is a union merge (every event is self-timestamped, so order
+   does not matter) followed by `node tools/rebuild-mastery.ts <tenant-dir>` to regenerate
+   `mastery.yml` rather than hand-merging a derived file. File-sync services are named as
+   the alternative for Obsidian on mobile, with their three costs stated: unencrypted
+   consumer sync changes the privacy posture, consumer sync corrupts a nested `.git`, and
+   copying without consistent snapshots can truncate a mid-append ledger line (the parser
+   skips it with a warning; the event is lost).
 
 ## Architecture and design decisions
 
@@ -101,3 +114,8 @@ vault). Everything else in Meno is regenerable; the learner's history is not.
 1. Whether `meno-init` should also install a pre-push guard on the nested mirror repo
    itself (defense against pushing the mirror to a second, public remote added by hand) -
    revisit if real usage grows second remotes.
+2. Whether `meno-mirror` should gain a `sync` verb (pull-rebase, union-merge the ledger,
+   rebuild mastery, push) now that multi-device use is documented as a manual procedure.
+   Deliberately not built yet: the manual path is four git commands plus one rebuild, and
+   a sync verb that resolves ledger conflicts automatically is a writer of learner history
+   - it needs the same scrutiny as the write-authority seam before it exists, not less.

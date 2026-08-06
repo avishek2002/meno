@@ -47,3 +47,9 @@ export function patchJson<T>(url: string, body: unknown, extraHeaders?: Record<s
     body: JSON.stringify(body),
   });
 }
+
+// The only DELETE in the app: removing a group. It deletes the grouping and
+// nothing else - no content route accepts DELETE, and none should.
+export function deleteJson<T>(url: string, extraHeaders?: Record<string, string>): Promise<T> {
+  return request<T>(url, { method: 'DELETE', headers: { ...extraHeaders } });
+}

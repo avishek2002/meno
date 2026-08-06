@@ -7,8 +7,9 @@ Ordered steps per recipe. All paths relative to the repo root; `<t>` is the tena
 1. `content/tenants/<t>/<course-slug>/` with: `profile.md` (write it honestly - even a hand-made course deserves a contract; format: `.agents/skills/elicit-needs/references/profile-format.md`), `course.yml` and `modules/NN-slug/module.yml` per `.agents/skills/generate-curriculum/references/manifest-format.md`.
 2. Lessons can be any markdown you want, but the closer to the nine-part anatomy (`.agents/skills/generate-module/references/lesson-format.md`), the more the app and tutor can do with them; at minimum give each lesson the frontmatter block so scheduling and progress work.
 3. Hub note wikilinking every module; link it from the tenant home note (`.agents/skills/second-brain/references/vault-conventions.md`).
-4. Validate: `npm run validate` (`tools/validate.ts`).
-5. Seed `generated` ledger events if you want reviews scheduled (event format in the lesson format reference).
+4. File it in a group in `content/tenants/<t>/groups.yml`, reusing an existing group where one fits and stating the choice - a hand-made course needs a home on the shelf exactly as much as a generated one, and nothing else will file it. Rules: `.agents/skills/second-brain/references/vault-conventions.md`.
+5. Validate: `npm run validate` (`tools/validate.ts`).
+6. Seed `generated` ledger events if you want reviews scheduled (event format in the lesson format reference).
 
 ## Amend an existing course
 
@@ -34,7 +35,8 @@ Ordered steps per recipe. All paths relative to the repo root; `<t>` is the tena
 
 1. `content/community/<domain>/<pack-slug>/` (`<domain>` from the closed vocabulary in `content/community/DOMAINS.md`) mirroring a course tree (`course.yml`, `PACK.md`, hub, module manifests) but with no profile and no lesson bodies - packs are pre-contract; lessons stay `planned`.
 2. `course.yml` gets `status: draft` and no `profile` field; `PACK.md` per `schemas/pack.schema.json` (title, maintainers, audience, hours, created, one amendment-log line).
-3. Packs are tracked community content: standard markdown links, no tenant references, sources fetched and archived like any generated content. Full spec: `content/community/README.md`.
+3. `CONTRIBUTORS.yml` per `schemas/contributors.schema.json`, with at least a `unit: pack` record naming whoever wrote it (`@handle` or `anonymous`) - ask, never infer it from the machine. Attribution section: `content/community/README.md`.
+4. Packs are tracked community content: standard markdown links, no tenant references, sources fetched and archived like any generated content. Full spec: `content/community/README.md`.
 
 This recipe is for hand-authoring a pack from nothing. Turning an already-studied tenant course
 into a pack instead is a different job with real sanitization stakes -
@@ -55,7 +57,8 @@ this recipe only adds the extend-meno-side mechanics and links back rather than 
    states one; otherwise the git commit sha of the pack directory right now -
    `git log -1 --format=%H -- content/community/<domain>/<slug>`), `adopted_at` (today). This is what
    lets a later `publish-to-community` run find the right pack to amend instead of guessing.
-4. `generate-module` writes module 1 against the now-confirmed contract.
+4. File the adopted course in a group in `content/tenants/<t>/groups.yml` - adoption copies the pack's structure, never its place on your shelf; the pack's domain is a reasonable first guess at the group, not a decision.
+5. `generate-module` writes module 1 against the now-confirmed contract.
 
 ## After any recipe
 

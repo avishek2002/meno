@@ -15,16 +15,17 @@ is? The interview is the answer.
 ## Quickstart
 
 ```
-git clone https://github.com/avishek2002/meno   # clone, don't fork - forks can't go private
+git clone https://github.com/avishek2002/meno   # fork too if you'll contribute - content never lives here
 cd meno
 tools/meno-init                                 # leakage guard, tenant dir, CLI census
 npm install && npm run build && npm start       # the study app on http://127.0.0.1:7373
 ```
 
 Then open your agent in the repo and say what you want to learn. The interview takes it
-from there; module 1 is readable the same sitting. The full journey - reviews, mastery
-gates, the Obsidian graph, todos, private backups - is in
-[docs/how-meno-works.md](docs/how-meno-works.md).
+from there; module 1 is readable the same sitting. The full journey - setup in detail,
+reviews, mastery gates, the Obsidian graph, todos, private backups, and
+[studying across two machines](docs/how-meno-works.md#studying-on-more-than-one-device) -
+is in [docs/how-meno-works.md](docs/how-meno-works.md).
 
 ## What's inside
 

@@ -28,9 +28,10 @@ Full spec with naming, folders, tags, and hub templates: [references/vault-conve
 Shared rule for all of them: a proposal the user declines becomes an unchecked todo in `todos.md` (typed `#gen` or `#repo` as appropriate) - declined is not dropped.
 
 - **Weave in** (after any new note or content batch): link it from its hub, add its lateral links, then check its backlinks - if nothing points TO it beyond the hub, ask whether an existing note should.
-- **Hub refresh**: regenerate a hub's derived parts (Mermaid map, link lists) from the manifests; preserve every human-written line. Hubs are part machine-view, part journal - only the machine part regenerates.
+- **Hub refresh**: regenerate a hub's derived parts (Mermaid map, link lists) from the manifests; preserve every human-written line. Hubs are part machine-view, part journal - only the machine part regenerates. The home note's course list is grouped per `groups.yml`, recomputed at every refresh rather than stored twice.
 - **Connection query** ("how does X relate to Y"): answer by walking actual links, citing the path (`[[X]] -> [[Z]] -> [[Y]]`); when the honest answer is "they aren't linked", say so and propose the missing link with a one-line why.
 - **Orphan sweep**: list notes unreachable from the home note, propose a hub or lateral home for each; delete nothing without the user's say.
+- **Group operations**: create, rename, or delete a group in `groups.yml`, and file or move a course between groups (format and rules: [references/vault-conventions.md](references/vault-conventions.md)). Read the existing groups before minting a new one - reuse beats a near-duplicate - and say which group a course landed in rather than filing it silently. Deleting a group returns its courses to Ungrouped; it never touches a course file. Read the file immediately before writing it: the app guards its own writes with a content hash, and an agent writing directly is outside that guard.
 - **Todo processing** (session start, per AGENTS.md): read `content/tenants/<tenant>/todos.md` (format: [references/todo-format.md](references/todo-format.md)), surface actionable items, propose - "shall I generate that?", "want me to make that change?" - and act only on explicit confirmation. Completing an item: check it off, append the date; never delete lines.
 
 ## Done means

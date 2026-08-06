@@ -283,9 +283,106 @@ h3 {
   color: var(--text);
 }
 
-.course-card h2 {
+.course-card h3 {
   margin: 0 0 0.35rem;
   font-size: 1.1rem;
+}
+
+/* ---------- course groups ---------- */
+
+.group-section {
+  margin-bottom: 1.75rem;
+}
+
+.group-section h2 {
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.35rem;
+  margin: 0 0 0.75rem;
+}
+
+.group-count {
+  font-variant-numeric: tabular-nums;
+  font-weight: 400;
+  color: var(--text-muted);
+  text-transform: none;
+}
+
+.group-empty {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.group-manage {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-subtle);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.75rem;
+}
+
+.group-manage h2 {
+  margin-top: 0;
+  font-size: 1.05rem;
+}
+
+.group-hint {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  margin: 0 0 0.75rem;
+}
+
+.group-manage-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.group-manage-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.group-manage-name {
+  flex: 1 1 12rem;
+}
+
+.group-create {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.group-create input,
+.group-rename-input {
+  flex: 1 1 14rem;
+}
+
+.group-danger {
+  border-color: var(--incorrect-text);
+  color: var(--incorrect-text);
+}
+
+.course-move {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.group-actions {
+  margin-top: 1rem;
 }
 
 .course-card-meta {
@@ -942,4 +1039,163 @@ th {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
+}
+
+/* ---------- infotips ----------
+   A disclosure, not a hover-only tooltip: reachable by keyboard and touch.
+   The bubble is position: fixed because tables here are `display: block;
+   overflow-x: auto`, which would clip an absolutely positioned child. */
+
+.infotip {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-left: 0.25rem;
+}
+
+.infotip-trigger {
+  /* 24x24 hit area (WCAG 2.5.8) around a 16px glyph */
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 0;
+  cursor: help;
+  line-height: 1;
+}
+
+.infotip-trigger > span {
+  width: 1rem;
+  height: 1rem;
+  border: 1px solid var(--text-muted);
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.66rem;
+  font-weight: 700;
+  font-style: italic;
+  font-family: Georgia, 'Times New Roman', serif;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text-muted);
+  transition: color 0.12s ease, border-color 0.12s ease;
+}
+
+.infotip-trigger:hover > span,
+.infotip-trigger[aria-expanded='true'] > span {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.infotip-bubble {
+  position: fixed;
+  z-index: 60;
+  display: block;
+  padding: 0.6rem 0.7rem;
+  background: var(--bg-raised);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow:
+    0 1px 2px rgba(20, 20, 15, 0.14),
+    0 8px 24px rgba(20, 20, 15, 0.12);
+  font-size: 0.82rem;
+  font-weight: 400;
+  font-style: normal;
+  line-height: 1.45;
+  text-transform: none;
+  letter-spacing: normal;
+  white-space: normal;
+  text-align: left;
+}
+
+@media (prefers-color-scheme: dark) {
+  .infotip-bubble {
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.6),
+      0 8px 24px rgba(0, 0, 0, 0.45);
+  }
+}
+
+.infotip-term {
+  display: block;
+  margin-bottom: 0.2rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.header-refresh {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+}
+
+.main-nav a[aria-current='page'] {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.nav-guide {
+  border-left: 1px solid var(--border);
+  padding-left: 1rem;
+}
+
+/* ---------- guidebook ---------- */
+
+.guide-lede {
+  color: var(--text-muted);
+}
+
+.guide-toc {
+  margin: 1.25rem 0 2rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.guide-toc ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.25rem;
+  font-size: 0.9rem;
+}
+
+.guide-section {
+  margin-bottom: 2rem;
+  scroll-margin-top: 4.5rem; /* clears the sticky header */
+}
+
+.guide-list {
+  margin: 0.75rem 0 0;
+}
+
+.guide-list-row {
+  display: grid;
+  grid-template-columns: minmax(9rem, 14rem) 1fr;
+  gap: 0.35rem 1rem;
+  padding: 0.55rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.guide-list-row dt {
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.guide-list-row dd {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+@media (max-width: 34rem) {
+  .guide-list-row {
+    grid-template-columns: 1fr;
+  }
 }

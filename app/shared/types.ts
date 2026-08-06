@@ -50,6 +50,23 @@ export interface TreeResponse {
   warnings: string[];
 }
 
+// Course groups. `groups` is what the registry says, filtered to courses the
+// walk actually found; `ungrouped` is everything the walk found that no group
+// claimed, in walk order. Both come from one server-side join, so the client
+// never has to diff the two lists itself.
+export interface CourseGroup {
+  id: string;
+  title: string;
+  courses: string[]; // course slugs, resolvable against TreeResponse.courses
+}
+
+export interface GroupsResponse {
+  groups: CourseGroup[];
+  ungrouped: string[];
+  warnings: string[];
+  raw_sha256: string;
+}
+
 // answer and explain are deliberately absent: grading is server-side and the
 // answer returns only in the submit response.
 export interface PublicCheck {

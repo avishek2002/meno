@@ -46,3 +46,19 @@ closed vocabulary in `topic-packs/DOMAINS.md`. One pack existed (`git-fundamenta
 under `software-engineering/`); no schema fields changed. Packs also gained a required
 `PACK.md` (provenance and amendment log) and optional `notes/` reference notes - both new
 files, no breaking change to existing manifests.
+
+## 2026-08-06 - course groups and pack attribution
+
+Two new files, two new schemas, no change to any existing schema and therefore no
+`schema_version` bump anywhere:
+
+- `content/tenants/<tenant>/groups.yml` (`schemas/groups.schema.json`, version 1) - a tenant's
+  course groups. Absent means every course is Ungrouped, which is exactly what every existing
+  vault gets on upgrade: nothing to migrate, nothing breaks, and the app creates the file on the
+  first group a learner makes.
+- `content/community/<domain>/<slug>/CONTRIBUTORS.yml` (`schemas/contributors.schema.json`,
+  version 1) - per-pack attribution. Unlike the tenant file this one is **required**, and
+  `pack-attribution` errors without it, so the five packs that existed at the time were
+  backfilled in the same change (`@avishek2002`, `action: created`, dated from each pack's
+  `PACK.md` `created` field). Any pack authored before this change and merged after it needs the
+  same one-record backfill.

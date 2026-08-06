@@ -13,14 +13,94 @@ it with spaced reviews and mastery gates. A local web app renders the course on 
 an append-only progress ledger keeps the picture honest. There is no server, no account, no
 database - files are the only source of truth, and the files are yours.
 
-## What you need
+## Setting up
 
-- A git clone of this repository (clone, do not fork - a public fork can never be made
-  private, and your learning content deserves privacy; see
-  [Owning your content](#owning-your-content)).
-- An agent CLI. Claude Code is first-class; any agent that can read files and follow
-  instructions works, because every skill is plain markdown readable without special support.
-- Node.js 24 or newer, for the local study app.
+### What you need
+
+- **Node.js 24 or newer** (`node -v`). The server and every tool run TypeScript directly
+  through Node's type stripping, so only the React client has a build step.
+- **git.** Optionally the **GitHub CLI** (`gh`) - it is what lets `tools/meno-mirror`
+  create a private backup repository for you and prove a remote really is private before
+  pushing your vault to it. Without `gh` you can still mirror by hand.
+- **An agent CLI.** Claude Code is first-class; any agent that can read files and follow
+  instructions works, because every skill is plain markdown readable without native skill
+  support.
+- **Obsidian** (optional) if you want the graph view of your vault.
+
+### Get the code
+
+```
+git clone https://github.com/avishek2002/meno
+cd meno
+```
+
+Fork it as well if you plan to contribute changes back. Forking is safe and is the normal
+pull-request path - it is not in tension with keeping your learning private, because
+**your content never lives in a Meno clone's tracked files, forked or not.**
+
+That is the mental model worth having from the start. You end up with two repositories,
+nested but completely disjoint:
+
+```
+meno/                      the code. public, forkable, where pull requests come from.
+  content/tenants/<you>/   gitignored by the repo above - invisible to it
+    .git/                  YOUR private repository. content only. never contributed anywhere.
+```
+
+The inner one is created for you by `tools/meno-mirror` (step 9 below). It is what gives
+you free multi-device sync **and** an ordinary open-source contribution flow at the same
+time, with neither endangering the other - see
+[Studying on more than one device](#studying-on-more-than-one-device).
+
+The one move to avoid is un-ignoring `content/tenants/` because it looks like the easy way
+to sync two machines. A fork of a public repository can never be made private, so content
+committed there is published rather than stored; and any commit that reaches a pull request
+stays reachable from the upstream repository permanently, even after the pull request is
+closed or the branch deleted. The mirror gives you the same sync for free and cannot fail
+that way.
+
+### Run the setup
+
+```
+tools/meno-init [your-name]     # once; default tenant name is "main"
+npm install && npm run build
+npm start                       # http://127.0.0.1:7373
+```
+
+What each step actually does:
+
+- **`tools/meno-init`** installs the leakage-guard pre-commit hook (into both hook
+  locations, because git consults only one of them), creates your tenant directory at
+  `content/tenants/<your-name>/`, reports which agent CLIs it can find, and points at the
+  backup walkthrough. It is idempotent - rerun it any time.
+- **`npm run build`** builds the React client once. You can skip it: the server will
+  lazily mount Vite instead and tell you so. `npm run dev` gives you hot reload.
+- **`npm start`** binds `127.0.0.1` only, reads your markdown straight off disk, and
+  serves every tenant found under `content/tenants/` (`--root` and `--port` override
+  both). No account, no daemon, no database.
+
+### Check it worked
+
+- `npm run gate` runs typecheck, the test suite, and validate. Green means your clone is
+  sound before you have generated anything.
+- The app loads at `http://127.0.0.1:7373` and is empty until your first course exists.
+  That is correct, not a failure.
+- Your tenant directory is invisible to git by design: after the interview writes files
+  into `content/tenants/<you>/`, `git status` still reports a clean tree.
+
+### If meno-init warns about core.hooksPath
+
+Some setups point git's `core.hooksPath` at a personal global hooks directory, which
+makes git ignore `.git/hooks` entirely - so the leakage guard would never run. `meno-init`
+detects this and tells you. Fix it either by having your global hook chain to this
+repository's `.githooks/pre-commit`, or by running:
+
+```
+git config --local core.hooksPath .githooks
+```
+
+The trade-off is stated plainly because it is real: a local `hooksPath` disables your
+global hooks for this repository.
 
 ## The journey
 
@@ -50,11 +130,19 @@ written immediately so you can start studying in the same sitting. Later modules
 one step ahead of you, during review sessions, so the course can adapt to how you are
 actually doing.
 
+The agent also files the new course into one of your groups - your own labels for the course
+list, like "AI" or "Version Control" - reusing an existing group where one fits and telling you
+which it chose. Nothing is filed silently, and a group is only ever a label: moving a course
+between groups, or deleting a group entirely, never changes a single course file. You can
+rename, add, delete, and move from the app whenever the shelf stops matching how you think
+about your own learning.
+
 ### 4. Daily study on the local app
 
 One command in `app/` starts the study surface: a local web app that reads your content
-directly from disk. It shows the course map, the lessons with their references, your progress,
-and which reviews are due. Lessons carry interactive recognition checks (multiple choice,
+directly from disk. It shows your courses grouped as you have filed them (anything unfiled sits
+under Ungrouped), the course map, the lessons with their references, your progress, and which
+reviews are due. Lessons carry interactive recognition checks (multiple choice,
 cloze, flashcards) that the app grades on the spot and records to your ledger. Harder
 transfer-level prompts are shown but deliberately not graded by the app - those belong to
 your agent, in review sessions.
@@ -107,6 +195,153 @@ manual fallback is four commands: create a private repo by hand, then inside
 `content/tenants/<you>/` run `git init`, `git remote add origin <url>`, and
 `git add -A && git commit -m backup && git push -u origin main`.
 
+## The commands you will actually use
+
+| Command | When |
+|---|---|
+| `npm start` | every study session (the app) |
+| ask your agent for a review session | every few days |
+| `tools/meno-mirror push <you>` | after a session, so a lost laptop costs nothing |
+| `tools/meno-mirror status <you>` | "did my last backup actually happen?" |
+| `npm run insights` then ask your agent for an insights report | when you want to know how you are doing |
+| `npm run gate` | after you change the instance yourself |
+
+Everything else is your agent's job, driven by conversation rather than commands.
+
+## Studying on more than one device
+
+Meno has no sync service, no account, and no server - so syncing is something you set up,
+not something that happens. Two workable approaches, and one combination to avoid.
+
+### Option A: the private mirror as your sync (recommended)
+
+Your mirror is an ordinary private git repository, so a second machine is a clone away.
+
+Once, on the second machine:
+
+```
+git clone https://github.com/avishek2002/meno
+cd meno
+tools/meno-init <you>                            # creates an EMPTY tenant directory
+tools/meno-mirror restore <mirror-url> <you>     # refuses if that directory is non-empty
+npm install && npm run build
+```
+
+Then the daily discipline is: push before you leave a machine, pull when you arrive.
+
+```
+tools/meno-mirror push <you>                     # leaving
+git -C content/tenants/<you> pull --rebase       # arriving
+```
+
+**The honest limitation:** `meno-mirror push` is a *backup* command, not a sync command.
+It stages, commits, and pushes - it never pulls. If the other machine pushed since you
+last pulled, your push fails as a non-fast-forward. The fix is the `pull --rebase` above,
+then push again. Automating that pull is not in the tooling today.
+
+**Resolving the one conflict that matters.** `progress/ledger.jsonl` is append-only, so
+two machines studying independently both append at the end of the same file and git
+reports a conflict there. Keep **both** sides' lines - order does not matter, every event
+carries its own timestamp - then regenerate the derived file instead of merging it:
+
+```
+node tools/rebuild-mastery.ts content/tenants/<you>
+```
+
+Never hand-merge `mastery.yml`. It is derived from the ledger, and rebuilding it is
+byte-identical by design; a hand-merged copy is the one way to make your mastery picture
+disagree with your actual history.
+
+### Option B: file sync (Obsidian Sync, iCloud Drive, Dropbox, Syncthing)
+
+The thing Option A cannot give you is Obsidian on a phone or tablet. For that, sync
+`content/tenants/<you>/` as a vault with a file-sync service. Three caveats, in order of
+how much they should worry you:
+
+- **Privacy posture.** Obsidian Sync is end-to-end encrypted. iCloud Drive, Dropbox, and
+  Google Drive are not - your private vault sits on their servers in readable form. That
+  is your call to make, but it is a genuine change to the local-first stance the rest of
+  Meno holds.
+- **File sync and a nested `.git` are a bad pair.** If you also mirror this directory,
+  the mirror's `.git` lives inside it, and consumer sync services are well known for
+  corrupting git repositories they copy mid-operation. Exclude `.git` from the sync, or
+  do not run both in the same directory.
+- **No consistent snapshots.** File sync copies a file whenever it changes, with no
+  notion of a transaction. The app appends to `ledger.jsonl` while you study; a sync that
+  copies mid-append can leave a truncated last line. The ledger parser skips unparseable
+  lines with a warning rather than crashing, so nothing breaks - but that event is gone.
+
+### Do not stack both on the same directory
+
+Pick one. Two sync mechanisms writing the same files disagree eventually, and the
+disagreement surfaces as a corrupted mirror or a silently lost ledger event rather than
+as an error message.
+
+### The rule that makes either option safe
+
+Study on one device at a time, and finish the sync before you switch. Meno's state is
+plain files with an append-only ledger, which recovers from almost anything - but only if
+one writer is working on it at a time.
+
+### Contributing to Meno from a machine that holds your content
+
+These are separate repositories, so this needs no special care - which is the point. From
+the same working copy you study in:
+
+```
+gh repo fork avishek2002/meno --remote-name fork    # once; or fork in the web UI
+git switch -c feat/your-improvement
+git push -u fork feat/your-improvement
+gh pr create
+```
+
+Your vault cannot ride along on that pull request, and not because you were careful about
+it. Three mechanisms fail closed: `content/tenants/` is gitignored as one absolute prefix
+with no negation patterns, the leakage-guard hook is default-deny under `content/` so even
+`git add -f` on a tenant file is refused at commit time, and your mirror's `.git` lives
+inside the ignored path where the outer repository cannot see it at all.
+
+So the two roles compose without conflict. Fork for the code; mirror for the content; they
+never learn about each other. If you want to share a *course* rather than a code change,
+that is a different path with its own sanitization gate - see
+[Where your content lives](#where-your-content-lives-and-what-moves-between-machines).
+
+## Where your content lives, and what moves between machines
+
+Meno keeps learning material in three tiers, and knowing which is which explains
+everything about what is private, what is shared, and what travels.
+
+| Tier | Path | In git? | Who writes it |
+|---|---|---|---|
+| Base | skills, app, docs, schemas, tools | tracked, public | maintainers, via upstream pull requests |
+| Community | `content/community/` | tracked, public | contributors, via pull requests only |
+| Yours | `content/tenants/<you>/` | **gitignored** | your agent and the app, on your disk |
+
+**Downstream (the repository to you).** Cloning or pulling brings the base plus every
+community topic pack. A pack is a course *skeleton* - objectives, module decomposition,
+prerequisite order, and verified anchor sources - and deliberately ships **no lesson
+bodies**. When you adopt one, it is copied into your own tenant directory, you are
+interviewed for the missing learning contract, and the lessons are written against
+*your* profile. That is why adopting a pack does not hand you someone else's prose.
+
+**Upstream (you to the repository) happens only when you ask for it.** Generating a
+course writes to `content/tenants/<you>/` and nowhere else - a whole course leaves
+`git status` clean. Nothing you generate is uploaded, published, or shared by any
+automatic path. If you later decide a finished course is worth sharing, the
+`publish-to-community` skill transcribes its *structure* onto a fresh pack tree, strips
+everything tenant-only (your profile, your progress ledger, your todos, your own source
+material), runs a quality gate, and opens a pull request that a human reviews. You say
+yes twice - once to publish, once when it merges - and even then what leaves is the
+skeleton, never your prose or your history.
+
+Three mechanisms keep that boundary honest rather than merely intended: `content/tenants/`
+is gitignored as one absolute prefix with no negation patterns; the leakage-guard hook is
+default-deny under `content/`, so even `git add -f` on a tenant file is refused; and the
+committed example learner lives under `examples/`, outside `content/` entirely, so no
+ignore rule can ever hide it or leak a real tenant alongside it. The full picture is in
+[specs/repo-and-tenancy.md](specs/repo-and-tenancy.md) and
+[specs/community.md](specs/community.md).
+
 ## What leaves your machine
 
 Meno itself sends nothing anywhere. But your agent's model provider processes what the agent
@@ -119,7 +354,8 @@ policy before starting.
 The Meno base - skills, schemas, app, docs - is MIT licensed. Everything generated for you
 under `content/tenants/` belongs to you, full stop. It is gitignored so it cannot leak into the
 public repo, it is backed up only to a private mirror you own, and no part of the base system
-ever reads another tenant's content.
+ever reads another tenant's content. None of that changes if you fork: a fork is a copy of
+the code, and your content was never in the code.
 
 ## Using Meno in an organization
 

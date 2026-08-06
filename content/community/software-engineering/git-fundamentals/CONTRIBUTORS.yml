@@ -1,0 +1,23 @@
+# Who made what in this pack, at the smallest unit a change actually touches.
+# Attribution inherits from the nearest ancestor: this pack was written by one
+# person, so one record covers every module, lesson, source, and note in it.
+# Format owner: content/community/README.md. Append, never rewrite.
+schema_version: 1
+contributions:
+  - unit: pack
+    by: "@avishek2002"
+    date: 2026-08-05
+    action: created
+  - unit: modules/03-remotes-and-forks
+    by: "@avishek2002"
+    date: 2026-08-05
+    action: created
+    note: the GitHub collaboration layer, added after the pack first landed
+  - unit: modules/04-pull-request-flow
+    by: "@avishek2002"
+    date: 2026-08-05
+    action: created
+  - unit: modules/05-repo-hygiene
+    by: "@avishek2002"
+    date: 2026-08-05
+    action: created

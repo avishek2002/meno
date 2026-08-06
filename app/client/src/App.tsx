@@ -13,6 +13,7 @@ import { ProgressPage } from './pages/ProgressPage';
 import { InsightsPage } from './pages/InsightsPage';
 import { NotePage } from './pages/NotePage';
 import { NotFoundPage } from './pages/NotFoundPage';
+import { GuidePage } from './pages/GuidePage';
 
 export default function App() {
   const route = useRoute();
@@ -25,6 +26,9 @@ export default function App() {
   switch (route.name) {
     case 'home':
       page = <TenantsPage />;
+      break;
+    case 'guide':
+      page = <GuidePage section={route.params.section} />;
       break;
     case 'tenant':
       page = <TenantCoursesPage tenant={route.params.tenant} />;
@@ -60,7 +64,11 @@ export default function App() {
 
   return (
     <RevalidateContext.Provider value={setRevalidate}>
-      <Header tenant={route.params.tenant} onRefresh={() => revalidateRef.current?.()} />
+      <Header
+        tenant={route.params.tenant}
+        route={route.name}
+        onRefresh={() => revalidateRef.current?.()}
+      />
       <main className="content">{page}</main>
     </RevalidateContext.Provider>
   );

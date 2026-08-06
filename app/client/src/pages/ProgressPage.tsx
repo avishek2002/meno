@@ -4,6 +4,7 @@ import { useResource } from '../useResource';
 import { useRegisterRevalidate } from '../RevalidateContext';
 import { EmptyState } from '../components/EmptyState';
 import { Meter } from '../components/Meter';
+import { InfoTip } from '../components/InfoTip';
 import { asMastery } from '../clientTypes';
 import { humanizeEvent } from '../humanize';
 import type { ProgressResponse } from '../../../shared/types.ts';
@@ -30,7 +31,9 @@ export function ProgressPage({ tenant }: { tenant: string }) {
 
       {data.due.length > 0 && (
         <section className="due-list">
-          <h2>Due for review</h2>
+          <h2>
+            Due for review <InfoTip entry="dueForReview" />
+          </h2>
           <table>
             <thead>
               <tr>
@@ -61,10 +64,18 @@ export function ProgressPage({ tenant }: { tenant: string }) {
             <thead>
               <tr>
                 <th>Concept</th>
-                <th>Level</th>
-                <th>Transfer score</th>
-                <th>Recognition rate</th>
-                <th>Next review</th>
+                <th>
+                  Level <InfoTip entry="masteryLevel" />
+                </th>
+                <th>
+                  Transfer score <InfoTip entry="transferScore" />
+                </th>
+                <th>
+                  Recognition rate <InfoTip entry="recognitionRate" />
+                </th>
+                <th>
+                  Next review <InfoTip entry="nextReview" />
+                </th>
               </tr>
             </thead>
             <tbody>

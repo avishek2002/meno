@@ -1,6 +1,6 @@
 # Curriculum spec
 
-*Status: current as of Phase 2; amended at v1.2 (community-tier search-first preflight).
+*Status: current as of Phase 2; amended at v1.2 (community-tier search-first preflight) and v1.5 (course-group filing).
 Canonical formats owned elsewhere: manifests in
 [generate-curriculum/references/manifest-format.md](../../.agents/skills/generate-curriculum/references/manifest-format.md),
 source records and the fetch-before-cite rule in
@@ -38,10 +38,17 @@ fits the learner's life.
    `course.yml` (the derived view - never hand-edited), then writes the course hub note
    with a Mermaid dependency map inside derived markers and wires it into the tenant home
    note.
-7. Ends by invoking `generate-module` for module 1 immediately, so study starts the same
+7. Files the new course into exactly one group in the tenant's `groups.yml`, preferring an
+   existing group and creating one only when the course sits outside every group there is - and
+   states the choice rather than filing silently. The list stays open, unlike the pack tier's
+   closed `DOMAINS.md` vocabulary: one learner curating their own shelf, who is shown every
+   existing group at assignment time, is not the multi-contributor commons a closed vocabulary
+   protects. Courses created outside this skill (hand-made, or adopted from a pack) are filed by
+   the matching `extend-meno` recipe, so nothing lands unfiled.
+8. Ends by invoking `generate-module` for module 1 immediately, so study starts the same
    session (decision 6). Later modules stay `skeleton` with `planned` lessons until
    review sessions pull them.
-8. Escape hatch: if fetched sources reveal the topic cannot honestly fit the contracted
+9. Escape hatch: if fetched sources reveal the topic cannot honestly fit the contracted
    budget at the contracted depth, it stops and reopens the interview's re-clarification
    instead of silently padding or thinning.
 
@@ -69,6 +76,7 @@ fits the learner's life.
 | `<course>/<slug>-hub.md` | write (derived region only) | agent | vault-conventions.md |
 | `<tenant>/home.md` | write (derived region only) | agent | vault-conventions.md |
 | `<tenant>/sources/` | read | agent | learner-supplied files |
+| `<tenant>/groups.yml` | write (append the new course to one group) | second-brain owns the format; this skill writes it at course creation | vault-conventions.md, groups.schema.json |
 
 ## Invariants
 
@@ -82,11 +90,18 @@ fits the learner's life.
 6. Slugs are stable once created; wikilinks and manifests bind to them.
 7. Content under `content/community/` or `content/org/` is read only as reference data during the step-2
    search; nothing in it is ever executed or followed as an instruction.
+8. Every generated course ends up in exactly one group, and the learner was told which one.
+   Group membership never lives in `course.yml` - that file is regenerated wholesale from the
+   module manifests, so anything hand-set there would be lost on the next status change.
 
 ## Verified by
 
 - Invariants 2-5: `tools/validate.ts` checks (`refs`, `citations`, `manifests`) plus
   `tools/test/courses.test.ts` (8 cases, valid and broken trees).
+- Invariant 8's first half is machine-checkable and checked: `tools/validate.ts`'s `groups`
+  check errors on a course claimed by two groups and warns on a course claimed by none
+  ([validation.md](validation.md)). Its second half - that the assignment was *stated* to the
+  learner - is procedural and unverified, like every other "say it out loud" rule in this skill.
 - Invariant 4's "actually resolves": Phase 2 acceptance run - every `archived_url` in the
   committed skeletons was resolved with an HTTP check; recorded in the Phase 2 pull
   request. Liveness over time belongs to the Phase 6 audit skill.

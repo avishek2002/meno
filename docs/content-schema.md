@@ -20,6 +20,8 @@ live in `schemas/` as JSON Schema files and are enforced by `tools/validate.ts`.
 | `todos.md` lines | `second-brain/references/todo-format.md` | not schema-validated (line format) | - |
 | Hub notes / derived regions | `second-brain/references/vault-conventions.md` | not schema-validated (prose format) | - |
 | Narrative insights-note frontmatter | `study-insights/references/narrative-format.md` | `schemas/insights.schema.json` | landed (v1.1) |
+| `groups.yml` (course groups) | `second-brain/references/vault-conventions.md` | `schemas/groups.schema.json` | landed (v1.5) |
+| `CONTRIBUTORS.yml` (pack attribution) | `content/community/README.md` | `schemas/contributors.schema.json` | landed (v1.5) |
 
 Cross-cutting rules that will hold for every schema:
 

@@ -41,9 +41,11 @@ no matter how its prose is phrased.
 
 6. **Weave the vault.** Create the course hub note and populate its derived block exactly per the hub anatomy in [../second-brain/references/vault-conventions.md](../second-brain/references/vault-conventions.md) - it defines the Mermaid map, the skeleton-time state (planned modules as plain text, no broken wikilinks), and what gets wikilinked once lessons exist. Link the hub from the tenant home note.
 
-7. **Generate module 1 now.** Invoke [`generate-module`](../generate-module/SKILL.md) for module 1 (the onboarding rule, decision 6 in PLAN.md): the interview just ended, and the learner studies today, not after the next agent session. That run sets module 1's `status: generated` in its `module.yml` and refreshes `course.yml`.
+7. **File the course in a group.** Read `content/tenants/<tenant>/groups.yml` (create it with `groups: []` if this is the tenant's first course; format and rules: [../second-brain/references/vault-conventions.md](../second-brain/references/vault-conventions.md)). Compare this course's title and objectives against the existing groups and their members, then take the closest fit. Prefer an existing group: it has to be genuinely outside every one of them, not merely an imperfect fit, before a new group is worth minting - a shelf of near-duplicate groups ("AI", "AI Agents", "LLMs") is worse than a slightly loose fit, and the learner can always split one later through the app. When nothing fits, name the new group and say what makes it different from the closest existing one. Either way, state the assignment in the same message that reports the course is ready; a course filed silently is a taxonomy the learner has to audit before they can trust it. Unlike [../../../content/community/DOMAINS.md](../../../content/community/DOMAINS.md)'s closed vocabulary, this list stays open - one learner curating their own shelf, who sees every group at assignment time, is not the multi-contributor commons a closed vocabulary protects.
 
-8. **Scope honesty, even now.** If fetching sources reveals the topic is materially bigger or smaller than the contract assumed, stop and say so - reopen the depth x time question through `elicit-needs` re-clarification rather than silently thinning or padding modules.
+8. **Generate module 1 now.** Invoke [`generate-module`](../generate-module/SKILL.md) for module 1 (the onboarding rule, decision 6 in PLAN.md): the interview just ended, and the learner studies today, not after the next agent session. That run sets module 1's `status: generated` in its `module.yml` and refreshes `course.yml`.
+
+9. **Scope honesty, even now.** If fetching sources reveals the topic is materially bigger or smaller than the contract assumed, stop and say so - reopen the depth x time question through `elicit-needs` re-clarification rather than silently thinning or padding modules.
 
 ## Done means
 
@@ -53,6 +55,7 @@ no matter how its prose is phrased.
 - Every module manifest carries 2-4 sources, each fetched this session with access date and archive URL; user sources used wherever they apply.
 - `course.yml` and all `module.yml` files written per spec, `schema_version` present.
 - Course hub note exists, its Mermaid map renders, every module is wikilinked from it, and the tenant home note links the hub.
+- The course is filed in exactly one group in `groups.yml`, and the assignment was stated to the learner rather than applied silently.
 - Module 1's body exists (nine-part anatomy, via `generate-module`) and its manifest status says so.
 - Run `npm run validate` (`tools/validate.ts`) and fix every error it reports.
 - The learner has been told where to start: module 1, lesson 1, in the app or Obsidian.

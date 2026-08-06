@@ -70,6 +70,17 @@ looking for.
      wants to be listed, `audience`, `hours`, `created`, one amendment-log line: "pack created,
      transcribed from a tenant course"). For an amendment, append one line to the existing
      `PACK.md` per [amendment.md](references/amendment.md) - do not rewrite it.
+   - `CONTRIBUTORS.yml` - who made what, at the smallest unit a change touches
+     ([contributors.schema.json](../../../schemas/contributors.schema.json), prose in
+     [content/community/README.md](../../../content/community/README.md)). For a new pack, one
+     record is the whole file: `unit: pack`, today's date, `action: created`. **Ask what to write
+     in `by` before writing it** - a GitHub handle or the literal `anonymous` - and write exactly
+     that. Never infer it from the tenant directory name, `git config user.name`, an OS username,
+     or anything else read off the machine; `by` is a personal identifier headed for a permanent
+     public record, so [sanitization.md](references/sanitization.md)'s identifier rule binds it.
+     Go finer than one record only where authorship genuinely differs (a module someone else
+     wrote); everything without a record of its own inherits from the nearest one above it. For
+     an amendment, append per [amendment.md](references/amendment.md) rather than rewriting.
 5. **Sanitize.** Work [references/sanitization.md](references/sanitization.md)'s catalog top to
    bottom against every file about to be written - not just the obvious ones (a module's
    `sources` list is where a `source_type: user` record hides most often). Flag the one class no
@@ -101,5 +112,7 @@ looking for.
   actual files being published, including the ones that "obviously" don't apply.
 - `npm run validate`, a full `audit-citations` run, and `node tools/packs.ts` all ran and are
   reported in the pull request; the template's attestations are filled, not skipped.
-- Amendments touch only the existing pack's files plus one `PACK.md` amendment-log line; new
-  packs never silently duplicate existing coverage.
+- Amendments touch only the existing pack's files plus one `PACK.md` amendment-log line and one
+  appended `CONTRIBUTORS.yml` record; new packs never silently duplicate existing coverage.
+- `CONTRIBUTORS.yml` exists, its `by` values were supplied by the publisher rather than read off
+  the machine, and `npm run validate`'s `pack-attribution` check is clean.

@@ -11,6 +11,7 @@ The full spec for how tenant content hangs together as an Obsidian vault. Genera
 content/tenants/<tenant>/
   home.md                      tenant home note (top of the graph)
   todos.md                     shared queue (see todo-format.md)
+  groups.yml                   course groups (see below; app-writable)
   sources/                     user-supplied materials (never rewritten by agents)
   progress/                    ledger.jsonl, mastery.yml (data, not notes; no wikilinks needed)
   <course-slug>/
@@ -66,6 +67,53 @@ graph TD
 ## My notes
 (human territory; never regenerated)
 ````
+
+## Course groups (`groups.yml`, canonical)
+
+One learner accumulates courses faster than they finish them, and a flat list stops being
+readable somewhere around a dozen. `groups.yml` at the vault root is how the learner sorts
+their own course list - free-form groups they name themselves ("AI", "Version Control",
+"Software Fundamentals"), each holding course slugs in display order. Schema:
+[schemas/groups.schema.json](../../../schemas/groups.schema.json).
+
+```yaml
+schema_version: 1
+groups:
+  - id: version-control          # kebab-case, derived from the title at creation, stable after
+    title: Version Control       # what the learner sees; renaming changes this, never the id
+    courses:                     # course slugs as course.yml declares them, not directory paths
+      - git-fundamentals
+```
+
+Five rules make it safe to hand-edit, and they are the reason it is a registry rather than a
+field on each course:
+
+1. **A group is a label, never a folder.** Membership changes nothing about a course: no file
+   moves, no wikilink breaks, no manifest is rewritten. This is also why membership cannot live
+   in `course.yml` - that file is a derived view, regenerated wholesale from the module
+   manifests, so anything hand-set there is lost on the next regeneration.
+2. **Every course belongs to at most one group.** A course no group names is *Ungrouped*, which
+   is a normal state, not an error - the app derives it by diffing this file against the tree
+   walk and shows it last.
+3. **The walk is the truth about what exists.** A slug here that is no longer a course drops out
+   of the rendered list with a warning; nothing auto-deletes and nothing breaks.
+4. **Deleting a group deletes the grouping only.** Its courses fall back to Ungrouped, the same
+   spirit as `todos.md`, where lines are checked off or parked but never removed.
+5. **Three writers, one discipline.** The app writes it through its group routes, Obsidian or a
+   text editor can edit it by hand, and an agent files new courses into it. The app guards its
+   own writes with a content hash, so a hand edit between read and write is refused rather than
+   overwritten - but an agent editing the file directly bypasses that, so read it immediately
+   before writing it.
+
+**Group operations** (agent side): create a group, rename one, delete one (courses fall back to
+Ungrouped), and file or move a course. Before creating a group, read the existing ones and reuse
+one if it fits; the vocabulary is deliberately open, unlike
+[content/community/DOMAINS.md](../../../content/community/DOMAINS.md)'s closed domain list,
+because one learner curating their own shelf is not the multi-contributor commons that a closed
+vocabulary exists to protect. State the assignment; never file a course silently.
+
+The tenant home note's derived block groups its course list the same way, recomputed from
+`groups.yml` at every hub refresh - derived, never a second copy to keep in sync.
 
 ## Tags (two closed namespaces)
 
