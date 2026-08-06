@@ -94,9 +94,10 @@ Two new files, two new schemas, no change to any existing schema and therefore n
 `schema_version` bump anywhere:
 
 - `content/tenants/<tenant>/groups.yml` (`schemas/groups.schema.json`, version 1) - a tenant's
-  course groups. Absent means every course is Ungrouped, which is exactly what every existing
-  vault gets on upgrade: nothing to migrate, nothing breaks, and the app creates the file on the
-  first group a learner makes.
+  course groups. Absent means every course groups by its domain directory, which is exactly what
+  every existing vault gets on upgrade: nothing to migrate and nothing breaks. (Amended
+  2026-08-06: the app no longer writes this file - it is created and edited by an agent or by
+  hand. The format is unchanged, so there is still nothing to migrate.)
 - `content/community/<domain>/<slug>/CONTRIBUTORS.yml` (`schemas/contributors.schema.json`,
   version 1) - per-pack attribution. Unlike the tenant file this one is **required**, and
   `pack-attribution` errors without it, so the five packs that existed at the time were

@@ -136,14 +136,19 @@ about your own learning, make your own groups: "Version Control", "Software Fund
 whatever fits. Your group always wins over the domain, and anything you have not filed keeps
 falling back to it, so there is no setup to do and nothing to maintain. A group is only ever a
 label - moving a course between groups, or deleting a group entirely, never changes a single
-course file - and you can add, rename, delete, and move from the app whenever you like.
+course file. Groups live in one small file in your vault (`groups.yml`): ask your agent to make,
+rename or delete one, or edit the file yourself in Obsidian. The app reads it and never writes
+it, so nothing it does can ever surprise a hand edit.
 
 ### 4. Daily study on the local app
 
 One command in `app/` starts the study surface: a local web app that reads your content
 directly from disk. It shows your courses grouped - by your own groups where you have made
 them, by domain everywhere else - plus the course map, the lessons with their references, your
-progress, and which reviews are due. Lessons carry interactive recognition checks (multiple choice,
+progress, and which reviews are due. Sections fold away and a filter narrows the list to what you
+type, matching course titles and slugs, so a long shelf stays one screen. Which sections you left
+open is remembered by your browser and nowhere else - it is a view preference, not part of your
+record. Lessons carry interactive recognition checks (multiple choice,
 cloze, flashcards) that the app grades on the spot and records to your ledger. Harder
 transfer-level prompts are shown but deliberately not graded by the app - those belong to
 your agent, in review sessions.

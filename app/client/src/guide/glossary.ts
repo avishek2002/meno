@@ -21,7 +21,7 @@ export const GLOSSARY = {
   },
   courseGroups: {
     term: 'Groups',
-    body: 'Your courses are listed by the domain each one sits under, until you say otherwise. Make your own groups - Version Control, Software Fundamentals, whatever fits - and they win over the domain; anything you have not filed keeps falling back to it. A group is not a folder: filing a course, moving it, or deleting the group never changes a single course file.',
+    body: 'Your courses are listed by the domain each one sits under, until you say otherwise. Groups of your own - Version Control, Software Fundamentals, whatever fits - win over the domain, and anything unfiled keeps falling back to it. A group is not a folder: filing a course or deleting a group never changes a single course file. Groups live in groups.yml in your vault; this app reads them and never writes them, so ask your agent or edit the file yourself.',
   },
   recognitionCheck: {
     term: 'Recognition check',
