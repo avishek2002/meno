@@ -16,9 +16,17 @@ _Last updated: 2026-08-06_
 ## Done
 
 - 2026-08-06 - **Course groups (decision 20) and pack attribution (decision 21).** Two features,
-  one change. *Groups*: `content/tenants/<tenant>/groups.yml` is a registry of learner-named
-  groups over course slugs, with anything unclaimed rendering as Ungrouped; the course list is
-  laid out under it, and an inline manage mode does create / rename / delete / move. Deliberately
+  one change. *Groups*: two layers. A course's **domain directory** is the default grouping, so
+  the course list is grouped from the moment a vault exists with no setup at all; a
+  `content/tenants/<tenant>/groups.yml` registry holds the learner's own named groups for what a
+  domain cannot say ("Version Control", "Software Fundamentals"), and an explicit group always
+  wins over the domain a course falls back to. Only a course with no domain - one still at the
+  vault root, pre-migration - is Ungrouped. Both layers resolve server-side into one ordered
+  section list tagged `source: explicit | domain`. An inline manage mode does create / rename /
+  delete / move, and lists only the explicit groups, because a domain section is the tree
+  showing through and has nothing to rename. This shape was **reconciled with #24** (which
+  landed the domain directories mid-build) rather than competing with it: one is where a course
+  *sits*, the other is what the learner *calls* it. Deliberately
   a registry, not a field on `course.yml` (regenerated wholesale, so a hand-set field would be
   lost) and not a directory move (wikilinks bind to slugs). Five new write routes, guarded by the
   same atomic + `If-Match` discipline as todos and asserted not to touch the ledger or any course
@@ -31,10 +39,12 @@ _Last updated: 2026-08-06_
   since packs ship no bodies. All five existing packs backfilled; `INDEX.md` now rolls contributors
   up. New: `lib/groups.ts`, `lib/attribution.ts`, `app/server/groups.ts`,
   `schemas/groups.schema.json`, `schemas/contributors.schema.json`, validate's `groups` and
-  `pack-attribution` checks, 64 new tests (151 total). Specs amended: app, curriculum, community,
+  `pack-attribution` checks, 77 new tests (164 total). Specs amended: app, curriculum, community,
   validation, architecture's write-authority table, PLAN decisions 20-21, migrations.
-  **Verified live** - the grouped list driven in a browser against a five-course vault, and the
-  routes exercised over HTTP against a real vault. **Not verified**: the manage-mode panel's
+  **Verified live** - the two-layer grouping driven in a browser against a five-course,
+  four-domain vault (zero-setup domain sections with no groups.yml at all, then a "Version
+  Control" group overriding one of them), and the routes exercised over HTTP against a real
+  vault. **Not verified**: the manage-mode panel's
   rendering (browser automation could not reach a loopback page to click into it) - one manual
   pass wanted, noted in `docs/specs/app.md`.
 
@@ -110,6 +120,75 @@ _Last updated: 2026-08-06_
   gain a `sync` verb - deliberately unbuilt, because a verb that auto-resolves ledger conflicts is a
   writer of learner history and deserves write-authority-seam scrutiny. README quickstart points at
   the new section. `npm run validate` clean.
+- 2026-08-06 - **Community tier trimmed to eight packs.** The seven packs whose subjects did
+  not fit the maintainer's actual direction were removed from both the community tier and the
+  tenant vault: `data/sql-joins-and-grain`, `data/analytics-engineering-with-dbt`,
+  `data/semantic-layers-and-metric-governance`, `infrastructure/observability-foundations`,
+  `product-and-design/web-accessibility-audits`,
+  `software-engineering/browser-e2e-testing-with-playwright`, and
+  `working-skills/evidence-based-bug-reporting`. What remains is the six `ai-and-agents`
+  courses now under contract plus `software-engineering/git-fundamentals` and
+  `meta/contributing-to-meno`. `INDEX.md` regenerated; no ledger event referenced a removed
+  course, so no study history was orphaned. The wave-2 entry below is left as written - it
+  records what happened at the time, and the four now-unused domain slugs stay in
+  `DOMAINS.md`, which is a vocabulary for future packs rather than an index of current ones.
+
+- 2026-08-06 - **Tenant courses group by domain: one grouping across all three tiers.**
+  `content/tenants/<t>/<course-slug>/` became `content/tenants/<t>/<domain>/<course-slug>/`,
+  matching `content/community/<domain>/<slug>/` exactly. The tiers had drifted: packs were
+  domain-grouped, tenant courses were a flat list, and adopt-a-pack *discarded* the domain
+  on the way in; adoption is now a straight mirror copy. `content/community/DOMAINS.md` is
+  promoted from a pack file to the shared vocabulary governing community, org, and tenant
+  trees. New `course-layout` validate check enforces shape and vocabulary, finding vault
+  roots by their `home.md` so bare course fixtures stay exempt. Both committed vaults moved
+  (`examples/example-learner`, `examples/seeded-faults/publish-fixture`) under
+  `software-engineering/`. Spec owner: `vault-conventions.md` (per `repo-and-tenancy.md`'s
+  delegation); `docs/migrations.md` carries the Was/Now table and the per-instance `mv`.
+  `elicit-needs` now classifies a course into a domain during the interview - nothing
+  computed a domain before, it was derived at publish time long after the directory existed.
+- 2026-08-06 - **The silent regression this nearly shipped.** `wikilinks.tsx` matched lesson
+  links with exactly one path segment before `/modules/`. A domain level would have made
+  every lesson wikilink fall through to the plain note route: link still resolves, page
+  still renders, checks silently gone - a correctness bug wearing a styling bug's clothes,
+  and no test covered it. The regex now takes an optional domain segment (it backtracks
+  correctly on ungrouped paths, since "modules" cannot satisfy the literal `/modules/`
+  that follows). Two deliberate asymmetries came out of the same review: the app reads a
+  course at either depth so an unmigrated vault renders instead of showing an empty list,
+  and the walk never consults DOMAINS.md - validate owns "is this a legal place for a
+  course", the runtime only answers "where are the course.yml files". The walk itself moved
+  to `lib/course-dirs.ts` rather than being patched into `tree.ts` and `insights-io.ts`
+  separately, per the repo's no-parallel-walks rule.
+
+- 2026-08-06 - **Community pack wave 2 (decision 19, workstream 4): ten packs, and the archive-match
+  gate that wave 1 needed.** The tier goes from 5 packs to 15. New: `data/sql-joins-and-grain`,
+  `data/analytics-engineering-with-dbt`, `data/semantic-layers-and-metric-governance`,
+  `ai-and-agents/llm-cost-and-token-engineering`, `ai-and-agents/rag-grounding-and-faithfulness`,
+  `ai-and-agents/llm-evals-and-judges`, `software-engineering/browser-e2e-testing-with-playwright`,
+  `infrastructure/observability-foundations`, `product-and-design/web-accessibility-audits`,
+  `working-skills/evidence-based-bug-reporting`. The maintainer's private vault nominated the
+  *topics* only: each authoring agent worked from a self-contained public-source brief with no
+  access to the vault, so the inspiration-only boundary is structural here, not a review promise.
+  Scope fences held - `pack-overlap` reports zero findings across all 15.
+- 2026-08-06 - **`citations` gains an offline archive-match check, and it caught a merged defect.**
+  Validate now compares the URL embedded in `archived_url` against `url` (canonically: scheme and
+  trailing slash ignored). The failure it catches is systematic, not clerical - archiving follows
+  redirects and records where it landed while `url` keeps what was typed, so *any* source that has
+  moved silently yields a well-formed pair pointing at two different pages. It found six: three
+  Grafana docs paths and two anthropic.com paths in wave 2, plus one in already-merged
+  `limits-of-agent-generated-content` whose snapshot was a `?error=cookies_not_supported` variant.
+  That last one could not be fixed by re-archiving - nature.com is bot-protected, so every Wayback
+  capture of it is a Cloudflare "Client Challenge" page - so the citation moved to the open-access
+  PMC mirror of the same paper, whose snapshot contains all four cited figures verbatim. Spec:
+  `docs/specs/validation.md`; two new cases in `tools/test/courses.test.ts` (mismatch caught,
+  scheme/slash-only difference tolerated).
+- 2026-08-06 - **`audit-citations` told agents to do something their tools cannot do.** The skill
+  said "fetch `archived_url`"; Claude Code's WebFetch refuses `web.archive.org` outright, and the
+  refusal is indistinguishable from a dead snapshot. Two independent verifiers duly reported healthy
+  archives as unverifiable, and a third called a live snapshot DEAD after the availability API
+  returned empty under throttling - its proposed replacement timestamp did not exist. The skill now
+  mandates `curl -I`, makes the archive's own `link: rel="original"` header the match test (the
+  Wayback Machine stating what it captured beats eyeballing rendered content), and states that
+  concurrent failures mean rate limiting and never a dead archive.
 
 - 2026-08-05 - **Community pack slate (decision 19, workstream 3): five packs live.** The tier goes
   from one pack to a full intern-onboarding slate, every source fetched live and Wayback-archived

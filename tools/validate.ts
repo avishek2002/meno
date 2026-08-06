@@ -213,6 +213,11 @@ interface SourceRecord {
   why?: string;
 }
 
+/** Compare two URLs ignoring differences that never change which page is meant. */
+function canonicalUrl(u: string): string {
+  return u.trim().replace(/^https?:\/\//, '').replace(/\/+$/, '').toLowerCase();
+}
+
 function checkSourceRecords(sources: SourceRecord[], rel: string, findings: Finding[]): void {
   const today = new Date().toISOString().slice(0, 10);
   for (const [i, s] of sources.entries()) {
@@ -232,6 +237,27 @@ function checkSourceRecords(sources: SourceRecord[], rel: string, findings: Find
           path: rel,
           message: `${at}: archived_url must be a web.archive.org/web/ snapshot, got "${s.archived_url}"`,
         });
+      } else if (s.url) {
+        // The snapshot must be OF the cited url. Archiving follows redirects and records
+        // where it landed, while url keeps what was typed, so any source that moved
+        // silently produces a pair pointing at two different pages. Offline and exact:
+        // compare the original URL embedded after the wayback timestamp.
+        const captured = s.archived_url.match(/^https:\/\/web\.archive\.org\/web\/\d+(?:[a-z_]+)?\/(.+)$/);
+        if (!captured) {
+          findings.push({
+            level: 'error',
+            check: 'citations',
+            path: rel,
+            message: `${at}: archived_url has no original URL after the snapshot timestamp: "${s.archived_url}"`,
+          });
+        } else if (canonicalUrl(captured[1]) !== canonicalUrl(s.url)) {
+          findings.push({
+            level: 'error',
+            check: 'citations',
+            path: rel,
+            message: `${at}: archived_url is a snapshot of "${captured[1]}" but url is "${s.url}" - the snapshot must capture the cited page (a redirect usually means url needs updating to where it now resolves)`,
+          });
+        }
       }
       if (s.url && !/^https?:\/\//.test(s.url)) {
         findings.push({ level: 'error', check: 'citations', path: rel, message: `${at}: web source url must be http(s)` });
@@ -802,6 +828,52 @@ export function checkPackAttribution(packDir: string, rel: string): Finding[] {
   return findings;
 }
 
+// Tenant courses sit at <vault>/<domain>/<course-slug>/, the same shape and the same
+// closed vocabulary the community tier uses - one grouping, so a course keeps its place
+// in the tree whether it is being studied privately or published.
+//
+// Vault roots are discovered by their home.md rather than by path, because the default
+// targets are parents (examples/, content/community/) and a real tenant lives outside
+// the repo's tracked tree entirely. home.md is the right marker by definition:
+// vault-conventions.md calls it the tenant home note at the vault root, so anything with
+// one is a vault and anything without one (a bare course fixture, a golden persona) is not.
+export function checkCourseLayout(_target: string, files: string[]): Finding[] {
+  const findings: Finding[] = [];
+  const vaultRoots = files
+    .filter((f) => f.endsWith('/home.md'))
+    .map((f) => f.slice(0, -'/home.md'.length))
+    .sort((a, b) => b.length - a.length); // deepest first, so nested fixtures win
+  if (vaultRoots.length === 0) return findings;
+  const domains = loadDomains();
+
+  for (const file of files) {
+    if (!file.endsWith('/course.yml')) continue;
+    const dir = file.slice(0, -'/course.yml'.length);
+    const root = vaultRoots.find((r) => dir.startsWith(`${r}/`));
+    if (!root) continue;
+    const rel = relative(repoRoot, dir);
+    const parts = relative(root, dir).split('/');
+    if (parts.length !== 2) {
+      findings.push({
+        level: 'error',
+        check: 'course-layout',
+        path: rel,
+        message: `course directory must be <vault>/<domain>/<course-slug> (found ${parts.length} segment(s) below the vault root) - move it under a domain from content/community/DOMAINS.md`,
+      });
+      continue;
+    }
+    if (!domains.has(parts[0])) {
+      findings.push({
+        level: 'error',
+        check: 'course-layout',
+        path: rel,
+        message: `domain "${parts[0]}" is not in content/community/DOMAINS.md (closed vocabulary, shared with the community tier)`,
+      });
+    }
+  }
+  return findings;
+}
+
 export function checkPacks(_target: string, files: string[]): Finding[] {
   const findings: Finding[] = [];
   const packFiles = files.filter((f) => {
@@ -935,13 +1007,16 @@ export function checkGroups(_target: string, files: string[]): Finding[] {
     // reported, since a dropped group is silent data loss from the user's side.
     for (const w of warnings) findings.push({ level: 'error', check: 'groups', path: rel, message: w });
 
-    // courses are the tenant's immediate subdirectories carrying a course.yml -
-    // the same rule the app's walk uses, so validate and the app can never
-    // disagree about which courses exist
+    // courses sit at <vault>/<domain>/<slug>/, and a pre-migration vault still
+    // has them at <vault>/<slug>/ - the same two depths lib/course-dirs.ts
+    // accepts, so validate and the app can never disagree about what exists.
+    // course-layout is what insists on the move; this check only needs to know
+    // which slugs are real.
     const slugs: string[] = [];
     for (const courseFile of files) {
       if (!courseFile.startsWith(`${tenantDir}/`) || !courseFile.endsWith('/course.yml')) continue;
-      if (relative(tenantDir, courseFile).split('/').length !== 2) continue;
+      const depth = relative(tenantDir, courseFile).split('/').length;
+      if (depth !== 2 && depth !== 3) continue;
       const course = parseYamlFile(courseFile, findings, 'groups');
       if (course) slugs.push(String(course.slug ?? ''));
     }
@@ -967,7 +1042,7 @@ export function checkGroups(_target: string, files: string[]): Finding[] {
           level: 'warning',
           check: 'groups',
           path: rel,
-          message: `course "${slug}" is in no group - it renders under Ungrouped`,
+          message: `course "${slug}" is in no group - it renders under its domain`,
         });
       }
     }
@@ -985,6 +1060,7 @@ const CHECKS: Record<string, Check> = {
   insights: checkInsights,
   packs: checkPacks,
   groups: checkGroups,
+  'course-layout': checkCourseLayout,
   tenancy: checkTenancy,
 };
 

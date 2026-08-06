@@ -2,8 +2,18 @@
 // implementation of it - the app server writes through these functions,
 // tools/validate.ts checks with them, and an agent following second-brain reads
 // the same file. Groups are display metadata and nothing else: a course's
-// membership never changes a byte of course content, and a course named by no
-// group is Ungrouped rather than missing.
+// membership never changes a byte of course content.
+//
+// Two layers, and the second is why this file is not just a lookup. A course
+// already has a place in the tree - it sits at <vault>/<domain>/<slug>/, from
+// the closed vocabulary the community tier uses - so the domain is a perfectly
+// good grouping that costs the learner nothing to get. groups.yml exists for
+// what that cannot express: the learner's own words. "Version Control" and
+// "Software Fundamentals" are not domains and never will be. So an explicit
+// group always wins, and a course no group claims falls back to its domain
+// rather than to a pile called Ungrouped. Ungrouped is left for the one case
+// where there is genuinely nothing to fall back to: a course still sitting at
+// the vault root, from before the domain layout.
 //
 // Everything here is pure. The file is parsed permissively (a hand-edited or
 // half-written groups.yml renders inert with a warning, never throws - the same
@@ -23,10 +33,22 @@ export interface GroupsDoc {
   groups: Group[];
 }
 
+/** A rendered section: an explicit group, or one derived from a domain directory. */
+export interface ResolvedGroup extends Group {
+  source: 'explicit' | 'domain';
+}
+
 export interface ResolvedGroups {
-  groups: Group[];
+  groups: ResolvedGroup[];
   ungrouped: string[];
   warnings: string[];
+}
+
+/** What the walk knows about a course: its slug, and where it sits in the vault. */
+export interface WalkedCourse {
+  slug: string;
+  /** vault-relative course directory, "<domain>/<slug>" or bare "<slug>" */
+  dir: string;
 }
 
 export const SCHEMA_VERSION = 1;
@@ -143,8 +165,8 @@ export function parseGroups(raw: string): { doc: GroupsDoc; warnings: string[] }
 }
 
 const HEADER = `# Course groups for this tenant - how the study app lays out your course list.
-# Purely organizational: a course's group never changes its content, and a course
-# in no group shows up under Ungrouped. Format owner:
+# Purely organizational: a course's group never changes its content. A group here
+# overrides the default, which is the course's own domain directory. Format owner:
 # .agents/skills/second-brain/references/vault-conventions.md
 `;
 
@@ -194,27 +216,56 @@ export function setCourseGroup(doc: GroupsDoc, slug: string, groupId: string | n
   return next;
 }
 
+/** A domain slug rendered for a human: "ai-and-agents" -> "AI and agents". */
+export function domainTitle(domain: string): string {
+  const words = domain.split('-').map((w) => (w === 'ai' ? 'AI' : w));
+  const [first, ...rest] = words;
+  return [first.charAt(0).toUpperCase() + first.slice(1), ...rest].join(' ');
+}
+
+// derived sections are namespaced so they can never collide with a group id,
+// which is always plain kebab-case
+const domainSectionId = (domain: string): string => `domain:${domain}`;
+
 /**
  * Join the registry to what the tree walk actually found. A slug the walk no
  * longer knows drops out with a warning (a course deleted in Obsidian must not
- * break the page); everything the walk found and no group claimed comes back as
- * ungrouped, in walk order.
+ * break the page). Everything no group claimed falls back to a section derived
+ * from its domain directory, so a learner who has never opened the manage panel
+ * still gets a grouped list; only a course with no domain at all is Ungrouped.
  */
-export function resolveGroups(doc: GroupsDoc, courseSlugs: string[]): ResolvedGroups {
-  const known = new Set(courseSlugs);
+export function resolveGroups(doc: GroupsDoc, courses: WalkedCourse[]): ResolvedGroups {
+  const bySlug = new Map(courses.map((c) => [c.slug, c]));
   const warnings: string[] = [];
   const placed = new Set<string>();
-  const groups = doc.groups.map((g) => {
-    const courses: string[] = [];
+
+  const groups: ResolvedGroup[] = doc.groups.map((g) => {
+    const kept: string[] = [];
     for (const slug of g.courses) {
-      if (!known.has(slug)) {
+      if (!bySlug.has(slug)) {
         warnings.push(`groups.yml: group "${g.id}" lists "${slug}", which is not a course here any more`);
         continue;
       }
-      courses.push(slug);
+      kept.push(slug);
       placed.add(slug);
     }
-    return { id: g.id, title: g.title, courses };
+    return { id: g.id, title: g.title, courses: kept, source: 'explicit' };
   });
-  return { groups, ungrouped: courseSlugs.filter((s) => !placed.has(s)), warnings };
+
+  // the fallback layer, in walk order so domains appear as the tree does
+  const derived = new Map<string, ResolvedGroup>();
+  const ungrouped: string[] = [];
+  for (const course of courses) {
+    if (placed.has(course.slug)) continue;
+    const domain = course.dir.includes('/') ? course.dir.split('/')[0] : null;
+    if (!domain) {
+      ungrouped.push(course.slug);
+      continue;
+    }
+    const existing = derived.get(domain);
+    if (existing) existing.courses.push(course.slug);
+    else derived.set(domain, { id: domainSectionId(domain), title: domainTitle(domain), courses: [course.slug], source: 'domain' });
+  }
+
+  return { groups: [...groups, ...derived.values()], ungrouped, warnings };
 }

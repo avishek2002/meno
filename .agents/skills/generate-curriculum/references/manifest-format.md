@@ -4,7 +4,7 @@ Course and module manifests, formalized in `schemas/course.schema.json` and `sch
 
 ## module.yml (the mutable truth)
 
-At `content/tenants/<tenant>/<course-slug>/modules/NN-slug/module.yml`:
+At `content/tenants/<tenant>/<domain>/<course-slug>/modules/NN-slug/module.yml`:
 
 ```yaml
 schema_version: 1
@@ -44,7 +44,7 @@ lessons:                       # planned at skeleton time, default one per conce
 
 ## course.yml (the derived view)
 
-At `content/tenants/<tenant>/<course-slug>/course.yml`:
+At `content/tenants/<tenant>/<domain>/<course-slug>/course.yml`:
 
 ```yaml
 schema_version: 1

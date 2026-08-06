@@ -47,6 +47,47 @@ under `software-engineering/`); no schema fields changed. Packs also gained a re
 `PACK.md` (provenance and amendment log) and optional `notes/` reference notes - both new
 files, no breaking change to existing manifests.
 
+## 2026-08-06 - tenant courses gain domains (the grouping is now one grouping)
+
+`content/tenants/<tenant>/<course-slug>/` became
+`content/tenants/<tenant>/<domain>/<course-slug>/`, with `<domain>` from the same closed
+vocabulary the community tier already used. The two tiers had drifted apart: packs were
+grouped by domain, tenant courses were a flat list, and adopting a pack silently discarded
+the domain on the way in. Now the shape is identical on both sides, adoption is a straight
+mirror copy, and `content/community/DOMAINS.md` governs all three tiers rather than one.
+No schema field was added, removed, or changed meaning; every format keeps
+`schema_version` 1.
+
+| Was | Now |
+|---|---|
+| `content/tenants/<t>/<course-slug>/course.yml` | `content/tenants/<t>/<domain>/<course-slug>/course.yml` |
+| `content/tenants/<t>/<course-slug>/profile.md` | `content/tenants/<t>/<domain>/<course-slug>/profile.md` |
+| `content/tenants/<t>/<course-slug>/modules/NN-slug/` | `content/tenants/<t>/<domain>/<course-slug>/modules/NN-slug/` |
+| `[[<course-slug>/<course-slug>-hub]]` in `home.md` | `[[<domain>/<course-slug>/<course-slug>-hub]]` |
+
+**To migrate an instance.** Tenant content is untracked, so a plain `mv` per course is the
+whole operation - pick the domain from `content/community/DOMAINS.md`:
+
+```sh
+mkdir -p content/tenants/<t>/<domain>
+mv content/tenants/<t>/<course-slug> content/tenants/<t>/<domain>/<course-slug>
+```
+
+Then fix the path-style wikilinks in `home.md` (and any note that links a course hub by
+path) to carry the new `<domain>/` prefix; bare-basename wikilinks like
+`[[rust-for-backend-hub]]` keep resolving untouched. `npm run validate
+content/tenants/<t>` names every course still sitting at the old depth.
+
+**What holds while you migrate.** The app reads a course at either depth, so an unmigrated
+vault renders normally rather than showing an empty course list - validate is what insists
+on the move. Two things do *not* self-heal: path-style wikilinks written before the move
+resolve to nothing until reprefixed, and any course whose domain is outside the closed
+vocabulary is a `course-layout` error rather than a new domain (add domains by pull
+request against `DOMAINS.md`, per that file).
+
+**Why `elicit-needs` changed too.** Nothing computed a course's domain before - it was
+derived at publish time, long after the directory existed. A course now needs its domain
+at creation, so the interview classifies it against the closed vocabulary up front.
 ## 2026-08-06 - course groups and pack attribution
 
 Two new files, two new schemas, no change to any existing schema and therefore no

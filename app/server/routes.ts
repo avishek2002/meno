@@ -300,10 +300,12 @@ const postTodoPark: Handler = async (req, res, p, ctx) => {
 const getGroups: Handler = (_req, res, p, ctx) => {
   const tenantDir = safePath(ctx.root, p.tenant);
   const { raw, doc, warnings } = readGroups(tenantDir);
-  // the walk is the truth about which courses exist; the registry only says how
-  // to lay them out, so the join happens here rather than in the file
+  // the walk is the truth about which courses exist and where they sit; the
+  // registry only overrides how they are laid out, so the join happens here
+  // rather than in the file - and the course's domain directory is what an
+  // unclaimed course falls back to
   const tree = walkTenant(tenantDir, p.tenant);
-  const resolved = resolveGroups(doc, tree.courses.map((c) => c.slug));
+  const resolved = resolveGroups(doc, tree.courses.map((c) => ({ slug: c.slug, dir: c.dir })));
   const payload: GroupsResponse = {
     groups: resolved.groups,
     ungrouped: resolved.ungrouped,

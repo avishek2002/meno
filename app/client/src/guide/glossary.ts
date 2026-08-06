@@ -21,7 +21,7 @@ export const GLOSSARY = {
   },
   courseGroups: {
     term: 'Groups',
-    body: 'Your own labels for sorting the course list - AI, Version Control, whatever fits. A group is not a folder: filing a course, moving it, or deleting the group never changes a single course file. Courses nobody has filed sit under Ungrouped.',
+    body: 'Your courses are listed by the domain each one sits under, until you say otherwise. Make your own groups - Version Control, Software Fundamentals, whatever fits - and they win over the domain; anything you have not filed keeps falling back to it. A group is not a folder: filing a course, moving it, or deleting the group never changes a single course file.',
   },
   recognitionCheck: {
     term: 'Recognition check',

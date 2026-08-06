@@ -1,0 +1,47 @@
+schema_version: 1
+module: 04-measuring-faithfulness
+title: Measuring faithfulness
+status: skeleton
+serves: [O4]
+prerequisites: [03-grounded-generation]
+est_hours: 3
+concepts:                      # RAG-specific measurement only; general eval practice lives elsewhere
+  - faithfulness-metric
+  - answer-relevance
+  - labelled-eval-set
+objectives:
+  - id: M4-1
+    text: Evaluate generated answers for faithfulness - the share of claims supported by the retrieved context - and explain what a low score implicates
+    bloom: evaluate
+  - id: M4-2
+    text: Evaluate generated answers for relevance to the question, and show why faithfulness and relevance move independently
+    bloom: evaluate
+  - id: M4-3
+    text: Evaluate the whole system over a hand-labelled question set, separating retrieval scores from generation scores
+    bloom: evaluate
+sources:                       # 2, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "Ragas: Automated Evaluation of Retrieval Augmented Generation (Es et al.)"
+    url: https://arxiv.org/abs/2309.15217
+    archived_url: https://web.archive.org/web/20260721155118/https://arxiv.org/abs/2309.15217
+    accessed: 2026-08-05
+    source_type: web
+    why: the reference-free RAG evaluation framework separating retrieval effectiveness from the generator's fidelity to retrieved passages - the module's metric suite comes from here
+  - title: "Faithfulness (Ragas metric documentation)"
+    url: https://docs.ragas.io/en/stable/concepts/metrics/available_metrics/faithfulness/
+    archived_url: https://web.archive.org/web/20260706064336/https://docs.ragas.io/en/stable/concepts/metrics/available_metrics/faithfulness/
+    accessed: 2026-08-05
+    source_type: web
+    why: the operational definition the lessons use - claims extracted from the response, each verified against retrieved context, scored as supported claims over total claims on a 0-to-1 scale
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-faithfulness-metric.md
+    title: Faithfulness - claims against context
+    concept: faithfulness-metric
+    status: planned
+  - file: 02-answer-relevance.md
+    title: Answer relevance - and why it is a different axis
+    concept: answer-relevance
+    status: planned
+  - file: 03-labelled-eval-set.md
+    title: Building a labelled evaluation set of question-context-answer triples
+    concept: labelled-eval-set
+    status: planned

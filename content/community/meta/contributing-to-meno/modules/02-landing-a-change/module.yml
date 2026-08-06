@@ -19,7 +19,7 @@ objectives:
   - id: M2-3
     text: Diagnose a continuous-integration failure by reading the workflow's steps and reproducing the failing command locally
     bloom: apply
-sources:                       # 3, each fetched this session; see sourcing.md
+sources:                       # 3, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
   - title: "CONTRIBUTING.md (the whole contribution bar)"
     url: https://github.com/avishek2002/meno/blob/main/CONTRIBUTING.md
     archived_url: https://web.archive.org/web/20260805092530/https://github.com/avishek2002/meno/blob/main/CONTRIBUTING.md

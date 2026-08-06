@@ -19,7 +19,7 @@ objectives:
   - id: M3-3
     text: Judge whether a recurring workflow belongs in a skill, an always-loaded instruction file, or a one-off prompt
     bloom: evaluate
-sources:                       # 2, each fetched this session; see sourcing.md
+sources:                       # 2, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
   - title: "Extend Claude with skills (Claude Code docs)"
     url: https://code.claude.com/docs/en/skills
     archived_url: https://web.archive.org/web/20260805084519/https://code.claude.com/docs/en/skills

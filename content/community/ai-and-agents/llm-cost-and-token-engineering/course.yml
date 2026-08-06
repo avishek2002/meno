@@ -1,0 +1,58 @@
+schema_version: 1
+slug: llm-cost-and-token-engineering
+title: LLM cost and token engineering
+created: 2026-08-05
+status: draft                  # topic pack: pre-contract, not yet adopted by a tenant
+hub: ./llm-cost-and-token-engineering-hub.md
+objectives:
+  - id: O1
+    text: Explain how a large language model bill is computed - separate input and output token rates, context length, and tokenizer differences - and attribute a real bill to those drivers before optimizing anything
+    bloom: understand
+    assessed_by: a written breakdown of a sample month of usage that attributes spend to input, output, and repeated context, with the pricing arithmetic shown
+  - id: O2
+    text: Analyze a workload's task mix and design a routing plan that matches each task shape to the least expensive capability tier that clears its quality bar, with cascade and fallback paths for the uncertain cases
+    bloom: analyze
+    assessed_by: a routing table for a described workload mapping task shapes to tiers, with an escalation rule and a fallback path, each choice justified on price and difficulty
+  - id: O3
+    text: Apply context discipline as a spending lever - trim prompts to the smallest high-signal set, persist derived results instead of re-deriving them, and retrieve relevant chunks instead of stuffing whole documents
+    bloom: apply
+    assessed_by: a before-and-after revision of a wasteful prompt-and-pipeline scenario, with an estimated token saving stated for each change
+  - id: O4
+    text: Apply provider cost mechanisms - prompt caching, batch processing, and structured output - to cut a workload's bill without touching its quality
+    bloom: apply
+    assessed_by: a written cost plan applying caching, batching, and structured output to a described workload, with the discount arithmetic taken from published provider rates
+  - id: O5
+    text: Evaluate a proposed fine-tune against prompting plus retrieval on cost, iteration speed, and knowledge freshness, and recommend the cheaper path when the evidence says it wins
+    bloom: evaluate
+    assessed_by: a written recommendation on a described fine-tuning proposal, argued from the comparative evidence and the operational cost of maintaining a tuned model
+modules:                       # ordered; every field here mirrors module.yml at regen time
+  - n: 1
+    slug: 01-where-the-money-goes
+    title: Where the money goes
+    status: skeleton
+    est_hours: 3
+    serves: [O1]
+  - n: 2
+    slug: 02-routing-by-task-shape
+    title: Routing by task shape
+    status: skeleton
+    est_hours: 3
+    serves: [O2]
+  - n: 3
+    slug: 03-context-discipline
+    title: Context discipline as a cost lever
+    status: skeleton
+    est_hours: 3
+    serves: [O3]
+  - n: 4
+    slug: 04-provider-cost-mechanisms
+    title: Provider cost mechanisms
+    status: skeleton
+    est_hours: 3
+    serves: [O4]
+  - n: 5
+    slug: 05-when-not-to-fine-tune
+    title: When not to fine-tune
+    status: skeleton
+    est_hours: 4
+    serves: [O5]

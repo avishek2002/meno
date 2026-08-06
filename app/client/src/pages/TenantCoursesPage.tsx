@@ -1,9 +1,10 @@
 // #/t/:tenant - the course list, laid out under the tenant's own groups.
 //
 // Two resources, joined here: /tree says which courses exist (files are the
-// truth), /groups says how to lay them out. Anything the registry claims but
-// the walk cannot see has already been dropped server-side, so this page never
-// has to reason about a stale slug.
+// truth), /groups says how to lay them out. The server has already resolved
+// both layers - the learner's own groups, then a section per domain directory
+// for whatever they have not filed - so this page renders sections and never
+// reasons about a stale slug or a fallback rule.
 //
 // Group management is an inline mode on this page rather than a route of its
 // own: it edits exactly the list already on screen, and the router is a small
@@ -18,7 +19,7 @@ import { InfoTip } from '../components/InfoTip';
 import { postJson, patchJson, deleteJson, ApiError } from '../api';
 import type { CourseNode, GroupsResponse, TreeResponse } from '../../../shared/types.ts';
 
-const UNGROUPED = '__ungrouped__';
+const NO_GROUP = '__default__';
 
 function CourseCard({ tenant, course }: { tenant: string; course: CourseNode }) {
   return (
@@ -136,7 +137,7 @@ export function TenantCoursesPage({ tenant }: { tenant: string }) {
     await run(slug, () =>
       patchJson(
         `/api/v1/${t}/course/${encodeURIComponent(slug)}/group`,
-        { group: groupId === UNGROUPED ? null : groupId },
+        { group: groupId === NO_GROUP ? null : groupId },
         ifMatch,
       ),
     );
@@ -149,15 +150,16 @@ export function TenantCoursesPage({ tenant }: { tenant: string }) {
   if (courses.length === 0) return <EmptyState title={`No courses yet for ${tenant}`} />;
 
   const bySlug = new Map(courses.map((c) => [c.slug, c]));
-  const groupList = groups.data?.groups ?? [];
-  const ungrouped = groups.data?.ungrouped ?? courses.map((c) => c.slug);
-  // Ungrouped comes last, and only disappears once every course has a home - a
-  // course must never be invisible because nobody filed it
+  const sectionList = groups.data?.groups ?? [];
+  // only the learner's own groups are editable; the domain sections are the
+  // tree showing through, and there is nothing here to rename or delete
+  const groupList = sectionList.filter((g) => g.source === 'explicit');
+  const ungrouped = groups.data ? groups.data.ungrouped : courses.map((c) => c.slug);
+  // Ungrouped comes last and only appears when a course has no domain to fall
+  // back to - a course must never be invisible because nobody filed it
   const sections = [
-    ...groupList.map((g) => ({ id: g.id, title: g.title, courses: g.courses })),
-    ...(ungrouped.length > 0 || groupList.length === 0
-      ? [{ id: UNGROUPED, title: 'Ungrouped', courses: ungrouped }]
-      : []),
+    ...sectionList,
+    ...(ungrouped.length > 0 ? [{ id: NO_GROUP, title: 'Ungrouped', courses: ungrouped, source: 'domain' as const }] : []),
   ];
   const warnings = [...(tree.data?.warnings ?? []), ...(groups.data?.warnings ?? [])];
 
@@ -179,8 +181,9 @@ export function TenantCoursesPage({ tenant }: { tenant: string }) {
         <div className="group-manage">
           <h2>Manage groups</h2>
           <p className="group-hint">
-            Groups are labels, not folders: moving a course between them never changes the course itself, and
-            deleting a group returns its courses to Ungrouped.
+            Groups are labels, not folders: moving a course between them never changes the course itself.
+            A course you have not filed sits under its domain, and deleting a group returns its courses
+            there.
           </p>
           <ul className="group-manage-list">
             {groupList.map((g) => (
@@ -231,7 +234,11 @@ export function TenantCoursesPage({ tenant }: { tenant: string }) {
                 )}
               </li>
             ))}
-            {groupList.length === 0 && <li className="group-empty">No groups yet. Every course starts in Ungrouped.</li>}
+            {groupList.length === 0 && (
+              <li className="group-empty">
+                No groups of your own yet - courses are listed under their domain until you make some.
+              </li>
+            )}
           </ul>
           <form className="group-create" onSubmit={create}>
             <input
@@ -254,6 +261,7 @@ export function TenantCoursesPage({ tenant }: { tenant: string }) {
         <div key={s.id} className="group-section">
           <h2>
             {s.title} <span className="group-count">{s.courses.length}</span>
+            {s.source === 'domain' && s.id !== NO_GROUP && <span className="group-derived"> by domain</span>}
           </h2>
           {s.courses.length === 0 ? (
             <p className="group-empty">No courses yet.</p>
@@ -270,7 +278,7 @@ export function TenantCoursesPage({ tenant }: { tenant: string }) {
                         Group
                         <select
                           className="course-move-select"
-                          value={s.id}
+                          value={s.source === 'explicit' ? s.id : NO_GROUP}
                           disabled={busy !== null}
                           onChange={(e) => void move(slug, e.target.value)}
                         >
@@ -279,7 +287,7 @@ export function TenantCoursesPage({ tenant }: { tenant: string }) {
                               {g.title}
                             </option>
                           ))}
-                          <option value={UNGROUPED}>Ungrouped</option>
+                          <option value={NO_GROUP}>No group (use its domain)</option>
                         </select>
                       </label>
                     )}

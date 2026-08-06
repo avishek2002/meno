@@ -48,16 +48,24 @@ write-authority seam (decision 14) is enforced in code.
 7. Todos: create, edit, complete, and park over `todos.md`, line-precise. Every mutation
    carries an `If-Match` content hash; an Obsidian edit between read and write returns
    409 and the client re-reads. Lines are never deleted - only checked off or parked.
-8. Course groups: the course list renders under the tenant's own groups from `groups.yml`,
-   with an Ungrouped section last for anything no group claims. Create, rename, and delete a
-   group, and move a course between groups, from an inline manage mode on the same page - not a
-   route of its own, since it edits exactly the list already on screen. Deleting a group deletes
-   the grouping and nothing else: its courses reappear under Ungrouped, the same spirit as a
-   parked todo. Membership is joined to the tree walk server-side, so a slug the walk no longer
-   knows drops out with a warning rather than a dangling entry, and a malformed `groups.yml`
-   renders as no groups plus a warning rather than an error page. Every mutation carries the
-   same `If-Match` hash discipline as todos, including create - the whole file is rewritten each
-   time, so a create can clobber a hand edit exactly as a rename can.
+8. Course groups, in two layers. A course already sits under a domain directory, so the course
+   list groups by domain with no setup at all; `groups.yml` holds the learner's own named groups
+   for what a domain cannot say ("Version Control", "Software Fundamentals"), and an explicit
+   group always wins over the domain a course would otherwise fall back to. Only a course with
+   no domain - one still at the vault root, from before the domain layout - lands in Ungrouped.
+   Both layers are resolved server-side into one ordered list of sections, each tagged
+   `source: explicit | domain`, so the client renders sections and never re-derives the rule.
+   Create, rename, and delete a group, and move a course between groups, from an inline manage
+   mode on the same page - not a route of its own, since it edits exactly the list already on
+   screen, and the manage panel lists only the explicit groups because a domain section is the
+   tree showing through and has nothing to rename. Deleting a group deletes the grouping and
+   nothing else: its courses fall back to their domains, the same spirit as a parked todo.
+   Membership joins to the tree walk, so a slug the walk no longer knows drops out with a
+   warning rather than a dangling entry, and a malformed `groups.yml` degrades to the domain
+   layer plus a warning rather than an error page. Every mutation carries the same `If-Match`
+   hash discipline as todos, including create - the whole file is rewritten each time, so a
+   create can clobber a hand edit exactly as a rename can - and the client runs one mutation at
+   a time, since a second write started from the same read would 409 by construction.
 9. Degraded paths: malformed YAML or check payloads render inert with a warning attached
    to the response; a partial curriculum never breaks a page.
 10. Self-explanation, in two layers. **Tooltips**: an `InfoTip` disclosure sits beside the
@@ -144,6 +152,7 @@ both run before routing so they cover writes and unrouted paths equally.
 | `content/tenants/<tenant>/progress/ledger.jsonl` | append (ui events only) | server via `appendUiEvent` | ledger.ui.schema.json |
 | `content/tenants/<tenant>/todos.md` | replace (atomic, If-Match) | server | todo-format.md |
 | `content/tenants/<tenant>/groups.yml` | replace (atomic, If-Match) | server, and agents via second-brain | vault-conventions.md, groups.schema.json |
+| `content/tenants/<tenant>/<domain>/` (as the default grouping) | read | `lib/course-dirs.ts` walk | vault-conventions.md |
 | `content/tenants/<tenant>/progress/mastery.yml` | never (derives in memory) | tutor only | progress.md |
 | `app/client/dist` | read (static) | build | - |
 
@@ -210,8 +219,11 @@ both run before routing so they cover writes and unrouted paths equally.
   unit-tested - a deliberate v1 economy (the logic lives server-side).
 
 - The grouped course list was driven live in a browser against a five-course vault: three
-  groups plus Ungrouped, correct counts and ordering, dark mode, and the `Groups` tooltip. The
-  group routes were exercised live too (create, move, delete, over HTTP, against a real vault).
+  groups plus a fallback section, correct counts and ordering, dark mode, and the `Groups`
+  tooltip. The group routes were exercised live too (create, move, delete, over HTTP, against a
+  real vault). The two-layer resolution (explicit over domain, ordering, id collision, and the
+  Ungrouped remainder) is unit-tested in `tools/test/groups.test.ts` and asserted end to end
+  over HTTP in `app/test/groups.test.ts`.
   **The inline manage-mode panel was not visually verified** - the browser automation available
   in that session could not reach a loopback page to click the button, so its markup is asserted
   only by the bundle carrying its copy and by its reuse of the todo page's primitives. Worth one

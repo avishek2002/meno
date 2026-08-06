@@ -35,7 +35,7 @@ export interface ModuleNode {
 }
 
 export interface CourseNode {
-  dir: string; // on-disk directory name; may differ from slug in hand-made courses
+  dir: string; // vault-relative course dir, "<domain>/<slug>"; may differ from slug in hand-made courses
   slug: string;
   title: string;
   status: string;
@@ -50,14 +50,16 @@ export interface TreeResponse {
   warnings: string[];
 }
 
-// Course groups. `groups` is what the registry says, filtered to courses the
-// walk actually found; `ungrouped` is everything the walk found that no group
-// claimed, in walk order. Both come from one server-side join, so the client
-// never has to diff the two lists itself.
+// Course groups, already resolved server-side so the client never has to diff
+// the registry against the walk. `groups` holds the explicit groups from
+// groups.yml first, then one derived section per domain directory for the
+// courses no group claimed - `source` says which. `ungrouped` is only the
+// remainder that has neither: a course still sitting at the vault root.
 export interface CourseGroup {
-  id: string;
+  id: string; // a group id, or "domain:<slug>" for a derived section
   title: string;
   courses: string[]; // course slugs, resolvable against TreeResponse.courses
+  source: 'explicit' | 'domain';
 }
 
 export interface GroupsResponse {

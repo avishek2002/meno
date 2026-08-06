@@ -6,7 +6,7 @@ description: Turn a finished, already-studied tenant course into a community top
 # Publish to community
 
 This skill owns the tenant-to-pack path: it turns a finished course under
-`content/tenants/<tenant>/` into a pull request against `content/community/`. It is the write
+`content/tenants/<tenant>/<domain>/<course>/` into a pull request against `content/community/`. It is the write
 side of the community tier that `elicit-needs` and `generate-curriculum` read from before
 generating anything ([content/community/README.md](../../../content/community/README.md)) - a
 course published here becomes exactly the kind of coverage those preflight searches are
@@ -17,7 +17,7 @@ looking for.
 - **Step 1 is mandatory and blocking.** Never write a single pack file before the search in
   step 1 returns a verdict.
 - **Transcribe, never copy.** The pack tree is built from scratch on a feature branch, field by
-  field, from the tenant manifests. `cp -r content/tenants/<tenant>/<course> content/community/...`
+  field, from the tenant manifests. `cp -r content/tenants/<tenant>/<domain>/<course> content/community/...`
   (or any equivalent bulk copy) is forbidden, full stop - it is exactly how `progress/`, `sources/`, and
   every other tenant-only file would ride along into a public pull request.
 - **Sanitize against the catalog, not from memory.**
@@ -32,8 +32,11 @@ looking for.
 
 ## Procedure
 
-1. **Search first - mandatory.** Determine the course's domain against
-   [content/community/DOMAINS.md](../../../content/community/DOMAINS.md), then grep
+1. **Search first - mandatory.** Read the course's domain off its tenant path
+   (`content/tenants/<tenant>/<domain>/<course>/`) rather than re-deriving it - `<domain>` is
+   already one of the closed vocabulary in
+   [content/community/DOMAINS.md](../../../content/community/DOMAINS.md), so this is a check,
+   not a fresh classification. Then grep
    [content/community/INDEX.md](../../../content/community/INDEX.md) and the
    `content/community/<domain>/` tree for the same subject (title, objective keywords, and
    adjacent domains too - a course on SQL joins might already be covered under `data`). This is not a courtesy scan; it decides the
@@ -53,8 +56,8 @@ looking for.
    happens there, nothing lands on `main` directly (workspace-standard pull-request flow).
 4. **Transcribe the structure, field by field.** Read the tenant's `course.yml`, each
    `module.yml`, and the course hub, then write fresh files under
-   `content/community/<domain>/<slug>/` per
-   [manifest-format.md](../generate-curriculum/references/manifest-format.md):
+   `content/community/<domain>/<slug>/` (the same `<domain>` read off the tenant path in step 1)
+   per [manifest-format.md](../generate-curriculum/references/manifest-format.md):
    - `course.yml` - the same objectives and module list, `status: draft`, **no `profile`
      field** (packs are pre-contract).
    - `module.yml` per module - the same `serves`, `prerequisites`, `est_hours`, `concepts`,

@@ -1,0 +1,58 @@
+schema_version: 1
+module: 04-baselines-and-gates
+title: Baselines, guard bands, and gates
+status: skeleton
+serves: [O4]
+prerequisites: [02-scorer-taxonomy]
+est_hours: 4
+concepts:                      # gate mechanics, then the noise math, then the two disciplines that keep gates honest
+  - regression-gating
+  - guard-bands
+  - rebaselining
+  - run-history
+objectives:
+  - id: M4-1
+    text: Apply a regression gate that fails a change when suite scores fall below the stored baseline
+    bloom: apply
+  - id: M4-2
+    text: Analyze score movement against measurement noise - standard errors, clustering, paired comparisons - to size a guard band that neither flaps on noise nor sleeps through regressions
+    bloom: analyze
+  - id: M4-3
+    text: Evaluate when a baseline may move - deliberate, recorded rebaselining versus silent drift - and keep an append-only run history that makes every move auditable
+    bloom: evaluate
+sources:                       # fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "CI/CD integration (promptfoo documentation)"
+    url: https://www.promptfoo.dev/docs/integrations/ci-cd/
+    archived_url: https://web.archive.org/web/20260411010419/https://www.promptfoo.dev/docs/integrations/ci-cd/
+    accessed: 2026-08-05
+    source_type: web
+    why: the concrete gating mechanics lessons build on - running evals in a continuous-integration pipeline, halting the build on failures, and enforcing minimum pass-rate thresholds from parsed results
+  - title: "A statistical approach to model evaluations (Anthropic research)"
+    url: https://www.anthropic.com/research/statistical-approach-to-model-evals
+    archived_url: https://web.archive.org/web/20260724045342/https://www.anthropic.com/research/statistical-approach-to-model-evals
+    accessed: 2026-08-05
+    source_type: web
+    why: the noise math behind guard bands - standard error of the mean, clustered standard errors over three times naive ones, paired-difference comparisons, and power analysis for deciding whether a score difference is real
+  - title: "Demystifying evals for AI agents (Anthropic engineering)"
+    url: https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents
+    archived_url: https://web.archive.org/web/20260728233804/https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents
+    accessed: 2026-08-05
+    source_type: web
+    why: distinguishes regression evals (hold near 100 percent) from capability evals (start low and climb) and warns that without systematic evals teams cannot tell genuine regressions from noise - the framing the gating lessons inherit
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-regression-gating.md
+    title: Gating changes on eval results
+    concept: regression-gating
+    status: planned
+  - file: 02-guard-bands.md
+    title: Guard bands - sizing the gate to noise
+    concept: guard-bands
+    status: planned
+  - file: 03-rebaselining.md
+    title: Rebaselining deliberately
+    concept: rebaselining
+    status: planned
+  - file: 04-run-history.md
+    title: An append-only run history
+    concept: run-history
+    status: planned

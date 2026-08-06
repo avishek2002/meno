@@ -14,6 +14,7 @@ import {
   resolveGroups,
   EMPTY_GROUPS,
   MAX_GROUPS,
+  domainTitle,
 } from '../../lib/groups.ts';
 import { checkGroups } from '../validate.ts';
 
@@ -124,8 +125,13 @@ test('deleting a group drops the group and never the courses', () => {
   doc = setCourseGroup(doc, 'llm-agents', 'ai');
   doc = removeGroup(doc, 'ai');
   assert.deepEqual(doc.groups, []);
-  const resolved = resolveGroups(doc, ['llm-agents']);
-  assert.deepEqual(resolved.ungrouped, ['llm-agents'], 'the course falls back to Ungrouped');
+  const resolved = resolveGroups(doc, [{ slug: 'llm-agents', dir: 'ai-and-agents/llm-agents' }]);
+  assert.deepEqual(resolved.ungrouped, [], 'the course is not orphaned');
+  assert.deepEqual(
+    resolved.groups.map((g) => [g.id, g.courses]),
+    [['domain:ai-and-agents', ['llm-agents']]],
+    'it falls back to its domain, not to a pile',
+  );
 });
 
 test('moving a course puts it in exactly one group', () => {
@@ -153,15 +159,80 @@ test('moving a course to an unknown group is a 404', () => {
 
 test('a slug that no longer exists on disk drops out with a warning, never an error', () => {
   const doc = setCourseGroup(addGroup(EMPTY_GROUPS, 'AI'), 'deleted-course', 'ai');
-  const resolved = resolveGroups(doc, ['still-here']);
+  const resolved = resolveGroups(doc, [{ slug: 'still-here', dir: 'data/still-here' }]);
   assert.deepEqual(resolved.groups[0].courses, []);
-  assert.deepEqual(resolved.ungrouped, ['still-here']);
+  assert.deepEqual(resolved.ungrouped, []);
   assert.equal(resolved.warnings.length, 1);
 });
 
-test('ungrouped preserves the order the walk returned', () => {
-  const resolved = resolveGroups(EMPTY_GROUPS, ['a-course', 'b-course', 'c-course']);
-  assert.deepEqual(resolved.ungrouped, ['a-course', 'b-course', 'c-course']);
+// --- the domain fallback: a learner who never opens the manage panel still
+// --- gets a grouped list, because the tree already groups their courses
+
+test('with no groups at all, courses group by their domain directory in walk order', () => {
+  const resolved = resolveGroups(EMPTY_GROUPS, [
+    { slug: 'llm-agents', dir: 'ai-and-agents/llm-agents' },
+    { slug: 'evals', dir: 'ai-and-agents/evals' },
+    { slug: 'rust', dir: 'software-engineering/rust' },
+  ]);
+  assert.deepEqual(
+    resolved.groups.map((g) => [g.id, g.title, g.source, g.courses]),
+    [
+      ['domain:ai-and-agents', 'AI and agents', 'domain', ['llm-agents', 'evals']],
+      ['domain:software-engineering', 'Software engineering', 'domain', ['rust']],
+    ],
+  );
+  assert.deepEqual(resolved.ungrouped, []);
+});
+
+test('an explicit group always wins over the domain it came from', () => {
+  const doc = setCourseGroup(addGroup(EMPTY_GROUPS, 'Version Control'), 'git', 'version-control');
+  const resolved = resolveGroups(doc, [
+    { slug: 'git', dir: 'software-engineering/git' },
+    { slug: 'rust', dir: 'software-engineering/rust' },
+  ]);
+  assert.deepEqual(
+    resolved.groups.map((g) => [g.id, g.courses]),
+    [
+      ['version-control', ['git']],
+      ['domain:software-engineering', ['rust']],
+    ],
+    'the learner name comes first, the leftover domain section after it',
+  );
+});
+
+test('explicit groups always sort ahead of derived ones', () => {
+  const doc = setCourseGroup(addGroup(EMPTY_GROUPS, 'Zebra'), 'rust', 'zebra');
+  const resolved = resolveGroups(doc, [
+    { slug: 'llm-agents', dir: 'ai-and-agents/llm-agents' },
+    { slug: 'rust', dir: 'software-engineering/rust' },
+  ]);
+  assert.deepEqual(resolved.groups.map((g) => g.source), ['explicit', 'domain']);
+});
+
+test('a derived section id can never collide with a group id', () => {
+  const doc = setCourseGroup(addGroup(EMPTY_GROUPS, 'Software engineering'), 'git', 'software-engineering');
+  const resolved = resolveGroups(doc, [
+    { slug: 'git', dir: 'software-engineering/git' },
+    { slug: 'rust', dir: 'software-engineering/rust' },
+  ]);
+  const ids = resolved.groups.map((g) => g.id);
+  assert.deepEqual(ids, ['software-engineering', 'domain:software-engineering']);
+  assert.equal(new Set(ids).size, ids.length, 'ids stay unique even when the names match exactly');
+});
+
+test('only a course with no domain to fall back to is Ungrouped', () => {
+  const resolved = resolveGroups(EMPTY_GROUPS, [
+    { slug: 'pre-migration', dir: 'pre-migration' },
+    { slug: 'rust', dir: 'software-engineering/rust' },
+  ]);
+  assert.deepEqual(resolved.ungrouped, ['pre-migration']);
+  assert.deepEqual(resolved.groups.map((g) => g.id), ['domain:software-engineering']);
+});
+
+test('domain titles read as words, with the one acronym that matters', () => {
+  assert.equal(domainTitle('ai-and-agents'), 'AI and agents');
+  assert.equal(domainTitle('software-engineering'), 'Software engineering');
+  assert.equal(domainTitle('data'), 'Data');
 });
 
 // --- the validate check ---
@@ -169,9 +240,10 @@ test('ungrouped preserves the order the walk returned', () => {
 function tenantWithCourses(groupsYml: string | null, slugs: string[]): string {
   const dir = mkdtempSync(join(tmpdir(), 'meno-groups-'));
   for (const slug of slugs) {
-    mkdirSync(join(dir, slug), { recursive: true });
+    // the real layout: <vault>/<domain>/<course-slug>/
+    mkdirSync(join(dir, 'software-engineering', slug), { recursive: true });
     writeFileSync(
-      join(dir, slug, 'course.yml'),
+      join(dir, 'software-engineering', slug, 'course.yml'),
       `schema_version: 1\nslug: ${slug}\ntitle: ${slug}\ncreated: 2026-08-05\nstatus: active\nhub: ./${slug}-hub.md\n`,
     );
   }
@@ -214,7 +286,7 @@ test('a group listing a course that does not exist is an error', () => {
   assert.match(findings[0].message, /ghost-course/);
 });
 
-test('a course in no group is a warning, not an error', () => {
+test('a course in no group is a warning, not an error - it renders under its domain', () => {
   const dir = tenantWithCourses('schema_version: 1\ngroups: []\n', ['a-course']);
   const findings = findingsFor(dir);
   assert.equal(findings.filter((f) => f.level === 'error').length, 0);

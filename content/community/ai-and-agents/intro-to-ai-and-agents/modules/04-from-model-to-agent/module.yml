@@ -19,7 +19,7 @@ objectives:
   - id: M4-3
     text: Analyze a multi-step task into an agent plan of tool calls, observations, checks, and a stopping condition, and identify where it can fail
     bloom: analyze
-sources:                       # 3, each fetched this session; see sourcing.md
+sources:                       # 3, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
   - title: "Anthropic docs: Tool use overview"
     url: https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview
     archived_url: https://web.archive.org/web/20260805092615/https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview

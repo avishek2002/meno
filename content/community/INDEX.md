@@ -39,6 +39,42 @@ Contributors: @avishek2002.
 - Evaluate their own calibration in a domain they are learning, using the Dunning-Kruger and overconfidence research to interpret the gap
 - Evaluate defenses against the compounding loop in which sycophancy confirms a wrong model, offloading removes the check, and miscalibration hides the damage
 
+## ai-and-agents/llm-cost-and-token-engineering - LLM cost and token engineering
+
+Audience: developers already shipping large language model (LLM) calls who watch the bill climb without a clear picture of why; comfortable calling an API (application programming interface), no machine-learning background needed. Hours: 15-17.
+
+Contributors: @avishek2002.
+
+- Explain how a large language model bill is computed - separate input and output token rates, context length, and tokenizer differences - and attribute a real bill to those drivers before optimizing anything
+- Analyze a workload's task mix and design a routing plan that matches each task shape to the least expensive capability tier that clears its quality bar, with cascade and fallback paths for the uncertain cases
+- Apply context discipline as a spending lever - trim prompts to the smallest high-signal set, persist derived results instead of re-deriving them, and retrieve relevant chunks instead of stuffing whole documents
+- Apply provider cost mechanisms - prompt caching, batch processing, and structured output - to cut a workload's bill without touching its quality
+- Evaluate a proposed fine-tune against prompting plus retrieval on cost, iteration speed, and knowledge freshness, and recommend the cheaper path when the evidence says it wins
+
+## ai-and-agents/llm-evals-and-judges - LLM evals and judges
+
+Audience: developers who ship features backed by a large language model (LLM) and currently judge quality by eyeballing outputs; comfortable with code and tests, no evaluation background needed. Hours: 14-16.
+
+Contributors: @avishek2002.
+
+- Explain why informal spot-checking cannot regression-test a model-backed feature, and what a labelled eval set of golden examples provides that reading outputs cannot
+- Analyze an evaluation task to choose among exact match, programmatic checks, rubric scoring, and a model judge, justifying where each scorer's verdict can be trusted
+- Analyze model-judged comparisons for the documented judge biases - position, verbosity, self-enhancement - and contain them with fixed rubrics and pinned judge configurations
+- Apply regression gating to an eval suite - a stored baseline, a guard band sized to measurement noise, deliberate rebaselining, and an append-only run history
+- Evaluate prompt changes and model upgrades with the eval suite as the deciding instrument, reading score movement against noise instead of anecdotes
+
+## ai-and-agents/rag-grounding-and-faithfulness - RAG grounding and faithfulness
+
+Audience: developers who can call a model API (application programming interface) and want to build a retrieval-augmented generation system whose answers they can prove are grounded; no information-retrieval background assumed. Hours: 15-17.
+
+Contributors: @avishek2002.
+
+- Explain why retrieval augmentation is the engineering response to parametric knowledge limits, covering long-tail gaps, stale training data, and missing attribution
+- Apply chunking, embedding, hybrid lexical-plus-semantic retrieval, and reranking choices to build a pipeline that surfaces the passages a question needs
+- Apply grounding instructions, inline citation formats, and forced abstention on empty retrieval so generated answers point at their sources or decline
+- Evaluate a retrieval-augmented system with faithfulness and answer-relevance metrics over a labelled evaluation set, separating retrieval quality from generation quality
+- Analyze grounded-system failures, from retrieval misses through context-ignoring generation to deference to wrong premises in the query, and match each to the diagnostic that catches it
+
 ## meta/contributing-to-meno - Contributing to Meno
 
 Audience: developers who want to contribute to Meno itself - base changes or community packs; comfortable with git and a shell, new to this repository. Hours: 9-11.

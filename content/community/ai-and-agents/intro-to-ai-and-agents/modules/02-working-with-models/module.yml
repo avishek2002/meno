@@ -23,7 +23,7 @@ objectives:
   - id: M2-4
     text: Produce machine-parseable model output, valid JSON (JavaScript Object Notation) against a schema, fit for scripts and pipelines
     bloom: apply
-sources:                       # 4, each fetched this session; see sourcing.md
+sources:                       # 4, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
   - title: "Anthropic docs: Prompt engineering overview"
     url: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/overview
     archived_url: https://web.archive.org/web/20260805093625/https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/overview

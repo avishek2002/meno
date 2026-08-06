@@ -92,7 +92,7 @@ moving between them is a directory move, not a rewrite:
 |---|---|---|
 | Upstream community | `content/community/<domain>/<slug>/` | every Meno clone, public |
 | Org-private | `content/org/<domain>/<slug>/` | your org's private clone only |
-| Tenant-local | `content/tenants/<tenant>/<slug>/` (adopted) | one learner, after `extend-meno`'s adopt-a-pack recipe |
+| Tenant-local | `content/tenants/<tenant>/<domain>/<slug>/` (adopted) | one learner, after `extend-meno`'s adopt-a-pack recipe |
 
 An org can contribute a pack upstream by literally moving `content/org/<domain>/<slug>/` to
 `content/community/<domain>/<slug>/` on a branch against the public repo (checking the domain

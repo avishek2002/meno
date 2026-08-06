@@ -34,20 +34,24 @@ test('the committed example tenant ships a group, and it is read as written', as
   const app = await withTenant();
   try {
     const got = await read(app);
-    assert.deepEqual(got.groups, [{ id: 'systems-programming', title: 'Systems Programming', courses: ['rust-for-backend'] }]);
-    assert.deepEqual(got.ungrouped, []);
+    assert.deepEqual(got.groups, [
+      { id: 'systems-programming', title: 'Systems Programming', courses: ['rust-for-backend'], source: 'explicit' },
+    ]);
+    assert.deepEqual(got.ungrouped, [], 'the explicit group wins over the software-engineering domain');
     assert.deepEqual(got.warnings, []);
   } finally {
     await app.close();
   }
 });
 
-test('a tenant with no groups.yml reports every course as ungrouped', async () => {
+test('a tenant with no groups.yml still gets a grouped list, from the domain directories', async () => {
   const app = await bareTenant();
   try {
     const got = await read(app);
-    assert.deepEqual(got.groups, []);
-    assert.deepEqual(got.ungrouped, ['rust-for-backend']);
+    assert.deepEqual(got.groups, [
+      { id: 'domain:software-engineering', title: 'Software engineering', courses: ['rust-for-backend'], source: 'domain' },
+    ]);
+    assert.deepEqual(got.ungrouped, [], 'a course with a domain is never Ungrouped');
     assert.deepEqual(got.warnings, []);
     assert.equal(typeof got.raw_sha256, 'string');
   } finally {
@@ -60,8 +64,11 @@ test('create, move, rename: a course ends up in exactly one named group', async 
   try {
     assert.equal((await api(app, 'POST', groupsUrl, { title: 'Systems Programming' }, await ifMatch(app))).status, 200);
     let got = await read(app);
-    assert.equal(got.groups.length, 1);
-    assert.equal(got.groups[0].id, 'systems-programming');
+    assert.deepEqual(
+      got.groups.map((g) => [g.id, g.courses]),
+      [['systems-programming', []], ['domain:software-engineering', ['rust-for-backend']]],
+      'the new group starts empty beside the domain section the course still falls back to',
+    );
 
     assert.equal(
       (await api(app, 'PATCH', `/api/v1/${T}/course/rust-for-backend/group`, { group: 'systems-programming' }, await ifMatch(app))).status,
@@ -69,7 +76,7 @@ test('create, move, rename: a course ends up in exactly one named group', async 
     );
     got = await read(app);
     assert.deepEqual(got.groups[0].courses, ['rust-for-backend']);
-    assert.deepEqual(got.ungrouped, []);
+    assert.deepEqual(got.groups.length, 1, 'the domain section empties out once the course is filed');
 
     assert.equal((await api(app, 'PATCH', `${groupsUrl}/systems-programming`, { title: 'Systems' }, await ifMatch(app))).status, 200);
     got = await read(app);
@@ -83,7 +90,7 @@ test('create, move, rename: a course ends up in exactly one named group', async 
 test('deleting a group returns its courses to ungrouped and leaves the course files alone', async () => {
   const app = await bareTenant();
   try {
-    const courseYml = join(app.tenantDir, 'rust-for-backend', 'course.yml');
+    const courseYml = join(app.tenantDir, 'software-engineering', 'rust-for-backend', 'course.yml');
     const before = readFileSync(courseYml, 'utf8');
 
     await api(app, 'POST', groupsUrl, { title: 'AI' }, await ifMatch(app));
@@ -91,8 +98,8 @@ test('deleting a group returns its courses to ungrouped and leaves the course fi
     assert.equal((await api(app, 'DELETE', `${groupsUrl}/ai`, undefined, await ifMatch(app))).status, 200);
 
     const got = await read(app);
-    assert.deepEqual(got.groups, []);
-    assert.deepEqual(got.ungrouped, ['rust-for-backend'], 'the course survives its group');
+    assert.deepEqual(got.groups.map((g) => [g.id, g.source]), [['domain:software-engineering', 'domain']]);
+    assert.deepEqual(got.groups[0].courses, ['rust-for-backend'], 'the course survives its group');
     assert.equal(readFileSync(courseYml, 'utf8'), before, 'no course file is touched by any group operation');
   } finally {
     await app.close();
@@ -110,7 +117,7 @@ test('moving a course out of every group is allowed and leaves it ungrouped', as
     );
     const got = await read(app);
     assert.deepEqual(got.groups[0].courses, []);
-    assert.deepEqual(got.ungrouped, ['rust-for-backend']);
+    assert.deepEqual(got.groups[1].id, 'domain:software-engineering', 'it falls back to its domain');
   } finally {
     await app.close();
   }
@@ -125,6 +132,7 @@ test('a course cannot be listed by two groups', async () => {
     await api(app, 'PATCH', `/api/v1/${T}/course/rust-for-backend/group`, { group: 'systems' }, await ifMatch(app));
     const got = await read(app);
     assert.deepEqual(got.groups.map((g) => g.courses), [[], ['rust-for-backend']]);
+    assert.deepEqual(got.groups.map((g) => g.source), ['explicit', 'explicit']);
   } finally {
     await app.close();
   }
@@ -136,7 +144,7 @@ test('moving a course the walk does not know is refused with 404, never written'
     await api(app, 'POST', groupsUrl, { title: 'AI' }, await ifMatch(app));
     const res = await api(app, 'PATCH', `/api/v1/${T}/course/no-such-course/group`, { group: 'ai' }, await ifMatch(app));
     assert.equal(res.status, 404);
-    assert.deepEqual((await read(app)).groups[0].courses, []);
+    assert.deepEqual((await read(app)).groups[0].courses, [], 'nothing was written');
   } finally {
     await app.close();
   }
@@ -171,7 +179,11 @@ test('a stale If-Match returns 409 instead of clobbering an edit made in Obsidia
     writeFileSync(join(app.tenantDir, 'groups.yml'), 'schema_version: 1\ngroups:\n  - id: hand-made\n    title: Hand made\n    courses: []\n');
     const res = await api(app, 'POST', groupsUrl, { title: 'AI' }, stale);
     assert.equal(res.status, 409);
-    assert.deepEqual((await read(app)).groups.map((g) => g.id), ['hand-made'], 'the hand edit survives');
+    assert.deepEqual(
+      (await read(app)).groups.filter((g) => g.source === 'explicit').map((g) => g.id),
+      ['hand-made'],
+      'the hand edit survives',
+    );
   } finally {
     await app.close();
   }
@@ -184,8 +196,8 @@ test('malformed groups.yml reports a warning and still lists every course', asyn
   try {
     writeFileSync(join(app.tenantDir, 'groups.yml'), 'groups: [broken\n  : :\n');
     const got = await read(app);
-    assert.deepEqual(got.groups, []);
-    assert.deepEqual(got.ungrouped, ['rust-for-backend']);
+    assert.deepEqual(got.groups.map((g) => g.source), ['domain'], 'the domain fallback still renders every course');
+    assert.deepEqual(got.groups[0].courses, ['rust-for-backend']);
     assert.equal(got.warnings.length, 1);
   } finally {
     await app.close();
@@ -197,10 +209,11 @@ test('a course deleted on disk drops out of its group with a warning, never a 50
   try {
     await api(app, 'POST', groupsUrl, { title: 'AI' }, await ifMatch(app));
     await api(app, 'PATCH', `/api/v1/${T}/course/rust-for-backend/group`, { group: 'ai' }, await ifMatch(app));
-    rmSync(join(app.tenantDir, 'rust-for-backend'), { recursive: true, force: true });
+    rmSync(join(app.tenantDir, 'software-engineering', 'rust-for-backend'), { recursive: true, force: true });
     const got = await read(app);
     assert.deepEqual(got.groups[0].courses, []);
     assert.deepEqual(got.ungrouped, []);
+    assert.equal(got.groups.length, 1, 'nothing is left to fall back to either');
     assert.equal(got.warnings.length, 1);
   } finally {
     await app.close();
@@ -215,10 +228,10 @@ test('a group title cannot inject structure into groups.yml', async () => {
     const nasty = 'AI: yes\nid: injected\ncourses: [rust-for-backend]';
     assert.equal((await api(app, 'POST', groupsUrl, { title: nasty }, await ifMatch(app))).status, 200);
     const got = await read(app);
-    assert.equal(got.groups.length, 1, 'one title in, one group out');
+    assert.equal(got.groups.filter((g) => g.source === 'explicit').length, 1, 'one title in, one group out');
     assert.deepEqual(got.groups[0].courses, [], 'the title could not smuggle a course into the group');
     assert.match(got.groups[0].title, /^AI: yes id: injected/);
-    assert.deepEqual(got.ungrouped, ['rust-for-backend']);
+    assert.deepEqual(got.groups[1].courses, ['rust-for-backend'], 'the course stays where the tree put it');
   } finally {
     await app.close();
   }
@@ -250,7 +263,7 @@ test('an empty, oversized, or non-string group title is refused with 400', async
       const res = await api(app, 'POST', groupsUrl, { title }, await ifMatch(app));
       assert.equal(res.status, 400, `title ${JSON.stringify(title)} must be refused`);
     }
-    assert.deepEqual((await read(app)).groups, []);
+    assert.deepEqual((await read(app)).groups.filter((g) => g.source === 'explicit'), []);
   } finally {
     await app.close();
   }

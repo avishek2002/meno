@@ -19,7 +19,7 @@ objectives:
   - id: M3-3
     text: Write one reference note that cites fetched, archived sources and links to owning files instead of restating them
     bloom: create
-sources:                       # 3, each fetched this session; see sourcing.md
+sources:                       # 3, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
   - title: "content/community/README.md (the topic-pack spec)"
     url: https://github.com/avishek2002/meno/blob/main/content/community/README.md
     archived_url: https://web.archive.org/web/20260805102347/https://github.com/avishek2002/meno/blob/main/content/community/README.md

@@ -19,7 +19,7 @@ objectives:
   - id: M2-3
     text: Analyze paired model responses to detect answer changes driven by the asker's stated position rather than new evidence
     bloom: analyze
-sources:                       # 3, each fetched this session; see sourcing.md
+sources:                       # 3, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
   - title: "Towards Understanding Sycophancy in Language Models (Sharma et al.)"
     url: https://arxiv.org/abs/2310.13548
     archived_url: https://web.archive.org/web/20260805092914/https://arxiv.org/abs/2310.13548

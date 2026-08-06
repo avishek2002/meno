@@ -1,0 +1,53 @@
+schema_version: 1
+module: 05-failure-modes
+title: Failure modes of grounded systems
+status: skeleton
+serves: [O5]
+prerequisites: [02-the-retrieval-side, 03-grounded-generation, 04-measuring-faithfulness]
+est_hours: 3
+concepts:                      # one failure per pipeline stage: nothing found, found but ignored, query itself wrong
+  - retrieval-misses
+  - context-ignoring-generation
+  - wrong-premise-deference
+objectives:
+  - id: M5-1
+    text: Analyze failing answers caused by retrieval - missing content, low-ranked hits, consolidation losses - and distinguish them from generation failures
+    bloom: analyze
+  - id: M5-2
+    text: Analyze cases where the right passage was retrieved but the answer ignored it, including position effects in long contexts
+    bloom: analyze
+  - id: M5-3
+    text: Analyze how wrong premises - in the retrieved context or in the query itself - pull answers away from what the evidence supports
+    bloom: analyze
+sources:                       # 3, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "Seven Failure Points When Engineering a Retrieval Augmented Generation System (Barnett et al.)"
+    url: https://arxiv.org/abs/2401.05856
+    archived_url: https://web.archive.org/web/20260723013153/https://arxiv.org/abs/2401.05856
+    accessed: 2026-08-05
+    source_type: web
+    why: the experience report cataloguing failure points from missing content through missed ranking to extraction and formatting failures, across three case-study domains
+  - title: "Lost in the Middle: How Language Models Use Long Contexts (Liu et al.)"
+    url: https://arxiv.org/abs/2307.03172
+    archived_url: https://web.archive.org/web/20260804204928/https://arxiv.org/abs/2307.03172
+    accessed: 2026-08-05
+    source_type: web
+    why: shows accuracy degrades sharply when the relevant passage sits in the middle of the context - the position effect behind retrieved-but-ignored failures
+  - title: "ClashEval: Quantifying the tug-of-war between an LLM's internal prior and external evidence (Wu et al.)"
+    url: https://arxiv.org/abs/2404.10198
+    archived_url: https://web.archive.org/web/20260719194031/https://arxiv.org/abs/2404.10198
+    accessed: 2026-08-05
+    source_type: web
+    why: measures when models defer to retrieved content against their own knowledge - including overriding correct priors with wrong context over 60 percent of the time
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-retrieval-misses.md
+    title: When retrieval misses
+    concept: retrieval-misses
+    status: planned
+  - file: 02-context-ignoring-generation.md
+    title: Retrieved but ignored
+    concept: context-ignoring-generation
+    status: planned
+  - file: 03-wrong-premise-deference.md
+    title: Wrong premises, in the context and in the query
+    concept: wrong-premise-deference
+    status: planned

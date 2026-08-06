@@ -117,7 +117,7 @@ never asks you open questions. It asks 5 to 7 closed questions with anchored opt
 prior knowledge, depth, weekly time), runs one small live probe to check your actual starting
 level rather than trusting self-report, and pushes back if your ambitions and your calendar
 disagree. It ends with a confirmation brief you approve explicitly. The result is a learning
-contract: `content/tenants/<you>/<course>/profile.md`.
+contract: `content/tenants/<you>/<domain>/<course>/profile.md`.
 
 ### 3. The curriculum skeleton
 
@@ -130,19 +130,20 @@ written immediately so you can start studying in the same sitting. Later modules
 one step ahead of you, during review sessions, so the course can adapt to how you are
 actually doing.
 
-The agent also files the new course into one of your groups - your own labels for the course
-list, like "AI" or "Version Control" - reusing an existing group where one fits and telling you
-which it chose. Nothing is filed silently, and a group is only ever a label: moving a course
-between groups, or deleting a group entirely, never changes a single course file. You can
-rename, add, delete, and move from the app whenever the shelf stops matching how you think
-about your own learning.
+Your courses are grouped in the app from the moment they exist, by the domain each one sits
+under - the same domains the shared topic packs use. When that stops matching how you think
+about your own learning, make your own groups: "Version Control", "Software Fundamentals",
+whatever fits. Your group always wins over the domain, and anything you have not filed keeps
+falling back to it, so there is no setup to do and nothing to maintain. A group is only ever a
+label - moving a course between groups, or deleting a group entirely, never changes a single
+course file - and you can add, rename, delete, and move from the app whenever you like.
 
 ### 4. Daily study on the local app
 
 One command in `app/` starts the study surface: a local web app that reads your content
-directly from disk. It shows your courses grouped as you have filed them (anything unfiled sits
-under Ungrouped), the course map, the lessons with their references, your progress, and which
-reviews are due. Lessons carry interactive recognition checks (multiple choice,
+directly from disk. It shows your courses grouped - by your own groups where you have made
+them, by domain everywhere else - plus the course map, the lessons with their references, your
+progress, and which reviews are due. Lessons carry interactive recognition checks (multiple choice,
 cloze, flashcards) that the app grades on the spot and records to your ledger. Harder
 transfer-level prompts are shown but deliberately not graded by the app - those belong to
 your agent, in review sessions.

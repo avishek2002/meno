@@ -1,0 +1,59 @@
+schema_version: 1
+module: 01-where-the-money-goes
+title: Where the money goes
+status: skeleton
+serves: [O1]
+prerequisites: []
+est_hours: 3
+concepts:                      # siblings: the meter, what drives it, reading it
+  - token-pricing-mechanics
+  - context-length-cost
+  - spend-attribution
+objectives:
+  - id: M1-1
+    text: Explain how separate input and output token rates, and the gap between them, turn a request's shape into a dollar amount
+    bloom: understand
+  - id: M1-2
+    text: Explain why context length and per-turn history re-sends dominate agentic bills even when each answer is short
+    bloom: understand
+  - id: M1-3
+    text: Measure a workload's token consumption with counting endpoints and usage reports before changing anything about it
+    bloom: apply
+sources:                       # 4, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "Pricing (Claude API docs)"
+    url: https://platform.claude.com/docs/en/about-claude/pricing
+    archived_url: https://web.archive.org/web/20260805104506/https://platform.claude.com/docs/en/about-claude/pricing
+    accessed: 2026-08-05
+    source_type: web
+    why: the per-model input and output token rates (output roughly five times input), long-context and tokenizer notes, and worked billing examples the pricing lessons read
+  - title: "Pricing (OpenAI API docs)"
+    url: https://developers.openai.com/api/docs/pricing
+    archived_url: https://web.archive.org/web/20260805103143/https://developers.openai.com/api/docs/pricing
+    accessed: 2026-08-05
+    source_type: web
+    why: shows the same input-output rate asymmetry at a second provider (output about six times input on the flagship), grounding the pattern as industry structure rather than one vendor's quirk
+  - title: "Token counting (Claude API docs)"
+    url: https://platform.claude.com/docs/en/build-with-claude/token-counting
+    archived_url: https://web.archive.org/web/20260805104805/https://platform.claude.com/docs/en/build-with-claude/token-counting
+    accessed: 2026-08-05
+    source_type: web
+    why: the free count_tokens endpoint the instrumentation lesson uses, plus the warning that newer tokenizers produce about 30 percent more tokens for the same text, so counts must be re-measured per model
+  - title: "How we built our multi-agent research system (Anthropic engineering)"
+    url: https://www.anthropic.com/engineering/multi-agent-research-system
+    archived_url: https://web.archive.org/web/20260805105311/https://www.anthropic.com/engineering/multi-agent-research-system
+    accessed: 2026-08-05
+    source_type: web
+    why: reports agents use about 4x the tokens of chat and multi-agent systems about 15x, the evidence that context volume, not answer length, is what agentic bills are made of
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-the-two-meters.md
+    title: The two meters - input and output pricing
+    concept: token-pricing-mechanics
+    status: planned
+  - file: 02-why-context-length-is-the-bill.md
+    title: Why context length is the bill
+    concept: context-length-cost
+    status: planned
+  - file: 03-instrument-spend-first.md
+    title: Instrument spend first
+    concept: spend-attribution
+    status: planned

@@ -317,6 +317,14 @@ h3 {
   margin: 0;
 }
 
+.group-derived {
+  font-weight: 400;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
 .group-manage {
   border: 1px solid var(--border);
   border-radius: var(--radius);

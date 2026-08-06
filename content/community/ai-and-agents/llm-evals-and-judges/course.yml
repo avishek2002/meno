@@ -1,0 +1,58 @@
+schema_version: 1
+slug: llm-evals-and-judges
+title: LLM evals and judges
+created: 2026-08-05
+status: draft                  # topic pack: pre-contract, not yet adopted by a tenant
+hub: ./llm-evals-and-judges-hub.md
+objectives:
+  - id: O1
+    text: Explain why informal spot-checking cannot regression-test a model-backed feature, and what a labelled eval set of golden examples provides that reading outputs cannot
+    bloom: understand
+    assessed_by: a written case for systematic evals on one concrete task, plus a small labelled set of golden examples the learner assembles for it
+  - id: O2
+    text: Analyze an evaluation task to choose among exact match, programmatic checks, rubric scoring, and a model judge, justifying where each scorer's verdict can be trusted
+    bloom: analyze
+    assessed_by: a scorer-selection exercise mapping varied sample tasks to scorer types, each choice defended by the answer structure and the scorer's known failure modes
+  - id: O3
+    text: Analyze model-judged comparisons for the documented judge biases - position, verbosity, self-enhancement - and contain them with fixed rubrics and pinned judge configurations
+    bloom: analyze
+    assessed_by: a bias audit that reruns a judged comparison with swapped answer order and altered lengths, plus a judge configuration with a fixed rubric and a pinned judge model separate from the graded model
+  - id: O4
+    text: Apply regression gating to an eval suite - a stored baseline, a guard band sized to measurement noise, deliberate rebaselining, and an append-only run history
+    bloom: apply
+    assessed_by: a working gate demonstrated on a toy suite - a recorded baseline, a documented guard band with its noise rationale, one caught regression, and one logged deliberate rebaseline
+  - id: O5
+    text: Evaluate prompt changes and model upgrades with the eval suite as the deciding instrument, reading score movement against noise instead of anecdotes
+    bloom: evaluate
+    assessed_by: a written accept-or-reject decision on a prompt change or model swap, argued from suite scores, their noise, and the run history rather than single examples
+modules:                       # ordered; every field here mirrors module.yml at regen time
+  - n: 1
+    slug: 01-why-evals
+    title: Why evals - vibes do not regression-test
+    status: skeleton
+    est_hours: 3
+    serves: [O1]
+  - n: 2
+    slug: 02-scorer-taxonomy
+    title: The scorer taxonomy
+    status: skeleton
+    est_hours: 3
+    serves: [O2]
+  - n: 3
+    slug: 03-judge-biases
+    title: Judge biases and how to contain them
+    status: skeleton
+    est_hours: 3
+    serves: [O3]
+  - n: 4
+    slug: 04-baselines-and-gates
+    title: Baselines, guard bands, and gates
+    status: skeleton
+    est_hours: 4
+    serves: [O4]
+  - n: 5
+    slug: 05-evals-in-the-loop
+    title: Evals in the loop
+    status: skeleton
+    est_hours: 3
+    serves: [O5]

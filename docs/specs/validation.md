@@ -44,7 +44,8 @@ validate and the renderer can never disagree about what a file says.
 | `profile-body` | four required sections, dated adjustment-log entries | 1 |
 | `manifests` | course.yml and module.yml against their schemas | 2 |
 | `refs` | derived-view drift (course.yml mirrors module.yml), prerequisites and serves resolve, lesson files exist for non-planned statuses, lesson concepts in module concepts, Bloom ceiling, budget sum, module sizing | 2 |
-| `citations` | source-record integrity: wayback-shaped archived_url for web sources, vault-relative paths for user sources, sane accessed dates | 2 |
+| `citations` | source-record integrity: wayback-shaped archived_url for web sources, the snapshot captures the cited `url`, vault-relative paths for user sources, sane accessed dates | 2 |
+| `course-layout` | a tenant vault's courses sit at `<domain>/<course-slug>/`, `<domain>` from DOMAINS.md's closed vocabulary (the same grouping the community tier uses); vault roots are found by their `home.md`, so bare course fixtures are exempt | 4 |
 | `hub` | hub note exists, carries the mermaid dependency map, derived markers balanced | 2 |
 | `tenancy` | CLAUDE.md stays the one-line shim, content/tenants/ is covered by a gitignore rule, and the only top-level entries under content/ are community/, org/, and tenants/ (anything else is an error) | 1 |
 | `lessons` | 9-part anatomy, frontmatter schema, id/path agreement, status drift | 3 |
@@ -56,7 +57,7 @@ validate and the renderer can never disagree about what a file says.
 | `pack-notes` | `notes/*.md` frontmatter against `reference-note.schema.json`, source records, and the no-pedagogy rule (no check blocks, no transfer callouts, no lesson-anatomy headings) | v1.2 |
 | `pack-overlap` | no two packs in a domain share a slug; objective-text token overlap above 60 percent between packs in a domain is flagged | v1.2 |
 | `pack-attribution` | every pack has a `CONTRIBUTORS.yml` with at least one `unit: pack` record; every record's unit resolves against what the pack contains (objective ids in `course.yml`, module directories, `lessons[].file` and `sources[].url` in `module.yml`, files under `notes/`) unless marked `action: removed`; records are oldest-first; `by` is a handle or `anonymous`. A source url the module no longer cites is a warning, not an error - citation upkeep makes attribution stale, not wrong | v1.5 |
-| `groups` | wherever a `groups.yml` is found: schema-valid entries, unique group ids, no course in two groups, every listed slug is a course in that tenant. A course in no group is a warning (Ungrouped is a normal state) | v1.5 |
+| `groups` | wherever a `groups.yml` is found: schema-valid entries, unique group ids, no course in two groups, every listed slug is a course in that tenant (at either accepted depth, matching `lib/course-dirs.ts`). A course in no group is a warning, not an error - it renders under its domain, which is the normal case | v1.5 |
 | `pack-safety` | community content is markdown/YAML only; error-level patterns (scripts, inline handlers, credential-shaped strings, private-key blocks, curl-pipe-to-shell, mermaid click/href) and warning-level patterns (instruction-shaped phrases, plain-http URLs) | v1.2 |
 
 Planned: `vault` (wikilink resolution, orphan detection - needs the app's resolver).
@@ -80,7 +81,7 @@ Planned: `vault` (wikilink resolution, orphan detection - needs the app's resolv
 
 ## Verified by
 
-- `tools/test/validate.test.ts` and `tools/test/courses.test.ts` (15 cases: valid trees
+- `tools/test/validate.test.ts` and `tools/test/courses.test.ts` (23 cases: valid trees
   clean, each broken variant caught, malformed YAML reported not thrown).
 - `npm run gate` runs typecheck, tests, and validate together; green gate is the
   per-phase acceptance floor.

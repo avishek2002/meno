@@ -5,6 +5,7 @@ The full spec for how tenant content hangs together as an Obsidian vault. Genera
 ## Naming and layout
 
 - Note filenames are kebab-case and stable once created (wikilinks bind to them). Lessons keep their `NN-` ordering prefix; hubs are `<slug>-hub.md`; the tenant home note is `home.md` at the vault root.
+- Courses are grouped by domain, and the grouping is **identical to the community tier's**: a course sits at `<domain>/<course-slug>/` here exactly as a pack sits at `content/community/<domain>/<slug>/`. `<domain>` comes from the same closed vocabulary in [DOMAINS.md](../../../../content/community/DOMAINS.md) - one list, both tiers, so a course keeps its place in the tree whether it is being studied privately or published, and adoption is a straight mirror copy rather than a reshuffle.
 - The vault tree mirrors the course structure - no separate "notes folder"; lessons ARE the notes:
 
 ```
@@ -14,14 +15,17 @@ content/tenants/<tenant>/
   groups.yml                   course groups (see below; app-writable)
   sources/                     user-supplied materials (never rewritten by agents)
   progress/                    ledger.jsonl, mastery.yml (data, not notes; no wikilinks needed)
-  <course-slug>/
-    profile.md                 the contract (wikilinks allowed in prose)
-    course.yml                 manifest (regenerable, never hand-edited)
-    <course-slug>-hub.md       course hub / map of content
-    modules/NN-slug/
-      module.yml
-      NN-lesson-name.md        lessons = notes
+  <domain>/                    one of DOMAINS.md's slugs; same vocabulary as content/community/
+    <course-slug>/
+      profile.md               the contract (wikilinks allowed in prose)
+      course.yml               manifest (regenerable, never hand-edited)
+      <course-slug>-hub.md     course hub / map of content
+      modules/NN-slug/
+        module.yml
+        NN-lesson-name.md      lessons = notes
 ```
+
+`progress/`, `sources/`, and `insights/` sit beside the domain directories, never inside one - none of their names is a domain slug, so the two never collide. `tools/validate.ts`'s `course-layout` check enforces the shape and the vocabulary; the app reads a course sitting directly at the vault root as a pre-grouping vault rather than hiding it, so an unmigrated vault still renders while validate names what to move.
 
 ## Link rules
 
@@ -41,8 +45,8 @@ The `meno:derived` markers are the contract for refreshes: regenerate only betwe
 # Home
 
 <!-- meno:derived:start -->
-Now learning: [[rust-for-backend/rust-for-backend-hub|Rust for backend]]
-- [[rust-for-backend/rust-for-backend-hub|Rust for backend]] - module 1 of 5, next review 2026-08-07
+Now learning: [[software-engineering/rust-for-backend/rust-for-backend-hub|Rust for backend]]
+- [[software-engineering/rust-for-backend/rust-for-backend-hub|Rust for backend]] - module 1 of 5, next review 2026-08-07
 <!-- meno:derived:end -->
 
 ## Notes to self
@@ -70,11 +74,16 @@ graph TD
 
 ## Course groups (`groups.yml`, canonical)
 
-One learner accumulates courses faster than they finish them, and a flat list stops being
-readable somewhere around a dozen. `groups.yml` at the vault root is how the learner sorts
-their own course list - free-form groups they name themselves ("AI", "Version Control",
-"Software Fundamentals"), each holding course slugs in display order. Schema:
-[schemas/groups.schema.json](../../../schemas/groups.schema.json).
+A course already has a place in the tree - it sits under a domain from the closed vocabulary
+above - and the app groups the course list by that domain for free, with no setup at all.
+`groups.yml` exists for what a domain cannot say: the learner's own words. "Version Control"
+and "Software Fundamentals" are not domains and never will be, and a learner reorganizing their
+own shelf should not have to file a pull request against a shared vocabulary to do it.
+
+So there are two layers, and the rule between them is one line: **an explicit group always
+wins, and a course no group claims falls back to its domain.** `groups.yml` at the vault root
+holds the explicit layer - free-form groups the learner names, each holding course slugs in
+display order. Schema: [schemas/groups.schema.json](../../../schemas/groups.schema.json).
 
 ```yaml
 schema_version: 1
@@ -92,13 +101,14 @@ field on each course:
    moves, no wikilink breaks, no manifest is rewritten. This is also why membership cannot live
    in `course.yml` - that file is a derived view, regenerated wholesale from the module
    manifests, so anything hand-set there is lost on the next regeneration.
-2. **Every course belongs to at most one group.** A course no group names is *Ungrouped*, which
-   is a normal state, not an error - the app derives it by diffing this file against the tree
-   walk and shows it last.
+2. **Every course belongs to at most one group, and needs none.** A course no group names is
+   listed under its domain directory - the common case, and not an error. *Ungrouped* is left
+   for the one case with nothing to fall back to: a course still sitting at the vault root from
+   before the domain layout.
 3. **The walk is the truth about what exists.** A slug here that is no longer a course drops out
    of the rendered list with a warning; nothing auto-deletes and nothing breaks.
-4. **Deleting a group deletes the grouping only.** Its courses fall back to Ungrouped, the same
-   spirit as `todos.md`, where lines are checked off or parked but never removed.
+4. **Deleting a group deletes the grouping only.** Its courses fall back to their domains, the
+   same spirit as `todos.md`, where lines are checked off or parked but never removed.
 5. **Three writers, one discipline.** The app writes it through its group routes, Obsidian or a
    text editor can edit it by hand, and an agent files new courses into it. The app guards its
    own writes with a content hash, so a hand edit between read and write is refused rather than
@@ -106,8 +116,10 @@ field on each course:
    before writing it.
 
 **Group operations** (agent side): create a group, rename one, delete one (courses fall back to
-Ungrouped), and file or move a course. Before creating a group, read the existing ones and reuse
-one if it fits; the vocabulary is deliberately open, unlike
+their domains), and file or move a course. Filing is for when the domain is genuinely the wrong
+answer - a course whose domain already reads well needs no group at all, and an explicit group
+that merely restates its domain is noise. Before creating a group, read the existing ones and
+reuse one if it fits; the vocabulary is deliberately open, unlike
 [content/community/DOMAINS.md](../../../content/community/DOMAINS.md)'s closed domain list,
 because one learner curating their own shelf is not the multi-contributor commons that a closed
 vocabulary exists to protect. State the assignment; never file a course silently.

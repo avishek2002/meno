@@ -4,10 +4,10 @@ Ordered steps per recipe. All paths relative to the repo root; `<t>` is the tena
 
 ## Add a hand-made course
 
-1. `content/tenants/<t>/<course-slug>/` with: `profile.md` (write it honestly - even a hand-made course deserves a contract; format: `.agents/skills/elicit-needs/references/profile-format.md`), `course.yml` and `modules/NN-slug/module.yml` per `.agents/skills/generate-curriculum/references/manifest-format.md`.
+1. `content/tenants/<t>/<domain>/<course-slug>/` (`<domain>` from the closed vocabulary in `content/community/DOMAINS.md`) with: `profile.md` (write it honestly - even a hand-made course deserves a contract; format: `.agents/skills/elicit-needs/references/profile-format.md`), `course.yml` and `modules/NN-slug/module.yml` per `.agents/skills/generate-curriculum/references/manifest-format.md`.
 2. Lessons can be any markdown you want, but the closer to the nine-part anatomy (`.agents/skills/generate-module/references/lesson-format.md`), the more the app and tutor can do with them; at minimum give each lesson the frontmatter block so scheduling and progress work.
 3. Hub note wikilinking every module; link it from the tenant home note (`.agents/skills/second-brain/references/vault-conventions.md`).
-4. File it in a group in `content/tenants/<t>/groups.yml`, reusing an existing group where one fits and stating the choice - a hand-made course needs a home on the shelf exactly as much as a generated one, and nothing else will file it. Rules: `.agents/skills/second-brain/references/vault-conventions.md`.
+4. Its domain directory already groups it in the app, so `groups.yml` is only needed when one of the learner's own groups fits it better - reuse an existing group where one does, and state the choice either way. Rules: `.agents/skills/second-brain/references/vault-conventions.md`.
 5. Validate: `npm run validate` (`tools/validate.ts`).
 6. Seed `generated` ledger events if you want reviews scheduled (event format in the lesson format reference).
 
@@ -47,7 +47,8 @@ into a pack instead is a different job with real sanitization stakes -
 Full flow and the "why" of each step: `content/community/README.md`'s adoption section (canonical -
 this recipe only adds the extend-meno-side mechanics and links back rather than restating it).
 
-1. Copy the pack's tree from `content/community/<domain>/<slug>/` into `content/tenants/<t>/<slug>/`
+1. Mirror the pack's tree straight across, `content/community/<domain>/<slug>/` to
+   `content/tenants/<t>/<domain>/<slug>/`, preserving the domain instead of discarding it
    (this direction is a normal copy - `content/community/README.md`'s adoption flow, not the
    transcribe-never-copy rule that binds the opposite, publish direction).
 2. Run `elicit-needs` to produce the missing `profile.md` - the pack's scope gives the
@@ -57,7 +58,7 @@ this recipe only adds the extend-meno-side mechanics and links back rather than 
    states one; otherwise the git commit sha of the pack directory right now -
    `git log -1 --format=%H -- content/community/<domain>/<slug>`), `adopted_at` (today). This is what
    lets a later `publish-to-community` run find the right pack to amend instead of guessing.
-4. File the adopted course in a group in `content/tenants/<t>/groups.yml` - adoption copies the pack's structure, never its place on your shelf; the pack's domain is a reasonable first guess at the group, not a decision.
+4. Adoption is a mirror copy, so the course lands under the pack's own domain and is grouped by it immediately - file it into a `groups.yml` group only if one of yours fits it better than that domain does.
 5. `generate-module` writes module 1 against the now-confirmed contract.
 
 ## After any recipe

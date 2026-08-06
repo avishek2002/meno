@@ -19,7 +19,7 @@ objectives:
   - id: M1-3
     text: Trace the origin and rationale of a specific line of code using git log, git diff, and git blame together
     bloom: apply
-sources:                       # 3, each fetched this session; see sourcing.md
+sources:                       # 3, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
   - title: "Pro Git, ch. 2.2: Recording Changes to the Repository"
     url: https://git-scm.com/book/en/v2/Git-Basics-Recording-Changes-to-the-Repository
     archived_url: https://web.archive.org/web/20260805054650/https://git-scm.com/book/en/v2/Git-Basics-Recording-Changes-to-the-Repository

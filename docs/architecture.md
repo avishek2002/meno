@@ -150,7 +150,8 @@ content/community/           community tier, tracked: pre-vetted pack skeletons 
 content/org/                 org-private tier, org deployments only (org-deployment.md);
                              reserved, downstream-owned; <domain>/<slug>/ in the same pack
                              format, never created by this repository
-content/tenants/<tenant>/    gitignored; a real learner's Obsidian vault
+content/tenants/<tenant>/    gitignored; a real learner's Obsidian vault, courses under
+                             <domain>/<slug>/ mirroring the community tier's grouping
 ```
 
 ## Phase-to-spec table
