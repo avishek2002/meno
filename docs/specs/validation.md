@@ -42,6 +42,7 @@ validate and the renderer can never disagree about what a file says.
 | `manifests` | course.yml and module.yml against their schemas | 2 |
 | `refs` | derived-view drift (course.yml mirrors module.yml), prerequisites and serves resolve, lesson files exist for non-planned statuses, lesson concepts in module concepts, Bloom ceiling, budget sum, module sizing | 2 |
 | `citations` | source-record integrity: wayback-shaped archived_url for web sources, the snapshot captures the cited `url`, vault-relative paths for user sources, sane accessed dates | 2 |
+| `course-layout` | a tenant vault's courses sit at `<domain>/<course-slug>/`, `<domain>` from DOMAINS.md's closed vocabulary (the same grouping the community tier uses); vault roots are found by their `home.md`, so bare course fixtures are exempt | 4 |
 | `hub` | hub note exists, carries the mermaid dependency map, derived markers balanced | 2 |
 | `tenancy` | CLAUDE.md stays the one-line shim, content/tenants/ is covered by a gitignore rule, and the only top-level entries under content/ are community/, org/, and tenants/ (anything else is an error) | 1 |
 | `lessons` | 9-part anatomy, frontmatter schema, id/path agreement, status drift | 3 |
@@ -75,7 +76,7 @@ Planned: `vault` (wikilink resolution, orphan detection - needs the app's resolv
 
 ## Verified by
 
-- `tools/test/validate.test.ts` and `tools/test/courses.test.ts` (19 cases: valid trees
+- `tools/test/validate.test.ts` and `tools/test/courses.test.ts` (23 cases: valid trees
   clean, each broken variant caught, malformed YAML reported not thrown).
 - `npm run gate` runs typecheck, tests, and validate together; green gate is the
   per-phase acceptance floor.

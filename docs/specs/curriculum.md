@@ -53,7 +53,7 @@ fits the learner's life.
 - `tools/validate.ts` - `manifests`, `refs`, `citations`, and `hub` checks
   ([validation.md](validation.md)): schema conformance, derived-view drift, Bloom
   ceiling, budget arithmetic, source-record integrity, dependency-map presence.
-- `examples/example-learner/rust-for-backend/` and
+- `examples/example-learner/software-engineering/rust-for-backend/` and
   `examples/golden-personas/priya-nair/understanding-llm-agents/` - two contrasting
   committed skeletons (build/24h and orient/8h) serving as fixtures.
 - `content/community/INDEX.md` - the search surface for the step-2 preflight; owned by
@@ -63,10 +63,10 @@ fits the learner's life.
 
 | Path | Access | Owner | Format |
 |---|---|---|---|
-| `<course>/profile.md` | read | agent | profile-format.md |
-| `<course>/modules/NN-slug/module.yml` | write | agent | manifest-format.md |
-| `<course>/course.yml` | write (regenerate wholesale) | agent | manifest-format.md |
-| `<course>/<slug>-hub.md` | write (derived region only) | agent | vault-conventions.md |
+| `<domain>/<course>/profile.md` | read | agent | profile-format.md |
+| `<domain>/<course>/modules/NN-slug/module.yml` | write | agent | manifest-format.md |
+| `<domain>/<course>/course.yml` | write (regenerate wholesale) | agent | manifest-format.md |
+| `<domain>/<course>/<slug>-hub.md` | write (derived region only) | agent | vault-conventions.md |
 | `<tenant>/home.md` | write (derived region only) | agent | vault-conventions.md |
 | `<tenant>/sources/` | read | agent | learner-supplied files |
 

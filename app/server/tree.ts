@@ -5,6 +5,7 @@
 import { readdirSync, readFileSync, existsSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { parse as parseYaml } from 'yaml';
+import { findCourseDirs } from '../../lib/course-dirs.ts';
 import type { CourseNode, ModuleNode, TreeResponse } from '../shared/types.ts';
 
 function tryYaml(file: string, warnings: string[]): Record<string, unknown> | null {
@@ -23,10 +24,9 @@ export function walkTenant(tenantDir: string, tenant: string): TreeResponse {
   const courses: CourseNode[] = [];
   if (!existsSync(tenantDir)) return { tenant, courses, warnings };
 
-  for (const entry of readdirSync(tenantDir).sort()) {
+  for (const entry of findCourseDirs(tenantDir)) {
     const courseDir = join(tenantDir, entry);
     const courseFile = join(courseDir, 'course.yml');
-    if (!existsSync(courseFile)) continue;
     const course = tryYaml(courseFile, warnings);
     if (!course) continue;
 
@@ -56,10 +56,11 @@ export function walkTenant(tenantDir: string, tenant: string): TreeResponse {
       }
     }
 
+    const leaf = entry.split('/').at(-1) as string;
     courses.push({
       dir: entry,
-      slug: String(course.slug ?? entry),
-      title: String(course.title ?? entry),
+      slug: String(course.slug ?? leaf),
+      title: String(course.title ?? leaf),
       status: String(course.status ?? 'active'),
       hub: String(course.hub ?? ''),
       objectives: (course.objectives as CourseNode['objectives']) ?? [],

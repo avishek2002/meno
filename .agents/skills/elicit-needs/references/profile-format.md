@@ -1,6 +1,6 @@
 # profile.md format (canonical)
 
-The learning contract. One per course, at `content/tenants/<tenant>/<course-slug>/profile.md`. Every generation and tutoring skill reads it first; nothing downstream may contradict it. This file is the single source of truth for the format - other skills link here. The frontmatter is formalized in `schemas/profile.schema.json` and machine-checked by `tools/validate.ts` (schema, cross-field arithmetic, the depth-to-Bloom mapping, required body sections); this document remains the canonical prose definition.
+The learning contract. One per course, at `content/tenants/<tenant>/<domain>/<course-slug>/profile.md`. Every generation and tutoring skill reads it first; nothing downstream may contradict it. This file is the single source of truth for the format - other skills link here. The frontmatter is formalized in `schemas/profile.schema.json` and machine-checked by `tools/validate.ts` (schema, cross-field arithmetic, the depth-to-Bloom mapping, required body sections); this document remains the canonical prose definition.
 
 ## Frontmatter
 

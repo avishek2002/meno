@@ -61,8 +61,9 @@ test('wikilinks resolve like the vault index; broken ones are marked', async () 
 test('adding files mid-process makes them appear with no config change', async () => {
   const before = (await api(app, 'GET', '/api/v1/example-learner/tree')).json as never as { courses: unknown[] };
   assert.equal(before.courses.length, 1);
-  const src = join(app.tenantDir, 'rust-for-backend');
-  const dst = join(app.root, 'example-learner', 'second-course');
+  const src = join(app.tenantDir, 'software-engineering', 'rust-for-backend');
+  // under a second domain, so this also covers discovery of a newly created domain dir
+  const dst = join(app.root, 'example-learner', 'data', 'second-course');
   mkdirSync(dst, { recursive: true });
   cpSync(join(src, 'course.yml'), join(dst, 'course.yml'));
   writeFileSync(join(dst, 'course.yml'), readFileSync(join(dst, 'course.yml'), 'utf8').replace('slug: rust-for-backend', 'slug: second-course'));

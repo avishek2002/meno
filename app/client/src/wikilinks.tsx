@@ -6,7 +6,13 @@
 import { useEffect, type RefObject } from 'react';
 import { navigate } from './router';
 
-const LESSON_PATH = /^([^/]+)\/modules\/([^/]+)\/([^/]+)\.md$/;
+// <domain>/<course>/modules/<module>/<lesson>.md, with the domain optional so a vault
+// that predates the grouping still routes. Matching the course segment matters: a miss
+// here is silent - the link still works, but falls through to the plain note route and
+// the lesson loses its checks, so the regression would look like a styling quirk.
+// The optional group backtracks correctly on an ungrouped path, since "modules" cannot
+// then satisfy the literal /modules/ that follows.
+const LESSON_PATH = /^(?:[^/]+\/)?([^/]+)\/modules\/([^/]+)\/([^/]+)\.md$/;
 
 export function useWikilinkNav(ref: RefObject<HTMLElement | null>, tenant: string): void {
   useEffect(() => {

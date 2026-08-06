@@ -1,10 +1,20 @@
-# Pack domains (closed vocabulary)
+# Course domains (closed vocabulary)
 
-Every pack lives at `content/community/<domain>/<slug>/`, and `<domain>` must be one of the
-slugs below - `tools/validate.ts` errors on anything else. Adding a domain is a pull
-request against this file that justifies why no existing domain fits; keeping the list
-closed is what stops the tier from degrading into a folksonomy where the same subject
-scatters across five spellings.
+One grouping for every tier. A pack lives at `content/community/<domain>/<slug>/`, an
+org pack at `content/org/<domain>/<slug>/`, and a learner's own course at
+`content/tenants/<tenant>/<domain>/<course-slug>/` - the same `<domain>` list in all
+three, so a course keeps its place in the tree whether it is being studied privately or
+published, and adopting a pack is a straight mirror copy rather than a reshuffle.
+
+`<domain>` must be one of the slugs below - `tools/validate.ts` errors on anything else
+(`pack-layout` for the two published tiers, `course-layout` for a tenant vault). Adding a
+domain is a pull request against this file that justifies why no existing domain fits;
+keeping the list closed is what stops the tree from degrading into a folksonomy where the
+same subject scatters across five spellings.
+
+The tenant-side layout is specified in
+[vault-conventions.md](../../.agents/skills/second-brain/references/vault-conventions.md),
+which owns vault structure; this file owns only the vocabulary.
 
 | Domain | Covers |
 |---|---|

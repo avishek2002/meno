@@ -1,8 +1,8 @@
 # Home
 
 <!-- meno:derived:start -->
-Now learning: [[error-handling-patterns/error-handling-patterns-hub|Error handling patterns]]
-- [[error-handling-patterns/error-handling-patterns-hub|Error handling patterns]] - module 1 of 1, next review 2026-08-09
+Now learning: [[software-engineering/error-handling-patterns/error-handling-patterns-hub|Error handling patterns]]
+- [[software-engineering/error-handling-patterns/error-handling-patterns-hub|Error handling patterns]] - module 1 of 1, next review 2026-08-09
 <!-- meno:derived:end -->
 
 ## Notes to self

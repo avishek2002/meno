@@ -4,7 +4,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readdirSync, statSync } from 'no
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { checkCourses } from '../validate.ts';
+import { checkCourses, checkCourseLayout } from '../validate.ts';
 
 const PROFILE = `---
 schema_version: 1
@@ -228,4 +228,46 @@ test('pack checks: layout, safety, notes, and overlap enforcement', async () => 
   const real = `${repoRoot}content/community/software-engineering/git-fundamentals/course.yml`;
   const findings = checkPacks('', [real, real.replace('course.yml', 'PACK.md'), real.replace('course.yml', 'git-fundamentals-hub.md')]);
   assert.deepEqual(findings.filter((f) => f.level === 'error'), []);
+});
+
+// --- course-layout: tenant courses group by domain exactly like community packs ---
+
+function vault(courseDirs: string[]): string[] {
+  // returns a walked file list for a vault root containing the given course dirs
+  const root = mkdtempSync(join(tmpdir(), 'meno-vault-'));
+  writeFileSync(join(root, 'home.md'), '# Home\n');
+  const files = [join(root, 'home.md')];
+  for (const d of courseDirs) {
+    mkdirSync(join(root, d), { recursive: true });
+    const f = join(root, d, 'course.yml');
+    writeFileSync(f, 'schema_version: 1\nslug: x\n');
+    files.push(f);
+  }
+  return files;
+}
+
+test('a course grouped under a real domain passes course-layout', () => {
+  const findings = checkCourseLayout('', vault(['software-engineering/rust-for-backend']));
+  assert.deepEqual(findings, []);
+});
+
+test('an ungrouped course directly under the vault root is an error', () => {
+  const findings = checkCourseLayout('', vault(['rust-for-backend']));
+  assert.equal(findings.length, 1);
+  assert.equal(findings[0].check, 'course-layout');
+  assert.match(findings[0].message, /<vault>\/<domain>\/<course-slug>/);
+});
+
+test('a course under a domain outside the closed vocabulary is an error', () => {
+  const findings = checkCourseLayout('', vault(['programming/rust-for-backend']));
+  assert.equal(findings.length, 1);
+  assert.match(findings[0].message, /closed vocabulary/);
+});
+
+test('course.yml outside any vault root is not judged on layout', () => {
+  // bare course fixtures (examples/seeded-faults/accuracy-fixture) have no home.md
+  const root = mkdtempSync(join(tmpdir(), 'meno-bare-'));
+  const f = join(root, 'course.yml');
+  writeFileSync(f, 'schema_version: 1\nslug: x\n');
+  assert.deepEqual(checkCourseLayout('', [f]), []);
 });

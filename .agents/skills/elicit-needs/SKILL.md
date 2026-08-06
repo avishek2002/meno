@@ -5,7 +5,7 @@ description: Interview a learner into a confirmed learning contract (profile.md)
 
 # Elicit needs
 
-This skill owns the interview that turns "I want to learn X" into a confirmed, persisted learning contract at `content/tenants/<tenant>/<course-slug>/profile.md`. It ends at the confirmed brief; `generate-curriculum` takes over from there.
+This skill owns the interview that turns "I want to learn X" into a confirmed, persisted learning contract at `content/tenants/<tenant>/<domain>/<course-slug>/profile.md`. It ends at the confirmed brief; `generate-curriculum` takes over from there.
 
 The design premise (Meno's paradox): a novice cannot answer open questions about depth or scope, because the knowledge needed to answer is exactly what they lack. So every question here is closed, anchored with concrete example answers, and asked one at a time. Self-assessment is the least reliable signal a novice can give, which is why one question is a live probe: a tiny task instead of a claim.
 
@@ -36,7 +36,7 @@ Work through five phases, in order. Full question menus, probe task patterns, an
 
 ## Output
 
-Derive the course slug first: kebab-case of the topic as scoped by the outcome (e.g. "SQL for analytics work" -> `sql-for-analytics`), 2-4 words, shown to the user in the confirmation brief - slugs are stable once created because wikilinks and manifests bind to them. Then write `content/tenants/<tenant>/<course-slug>/profile.md` exactly per [references/profile-format.md](references/profile-format.md) (frontmatter contract plus four body sections).
+Derive the course slug first: kebab-case of the topic as scoped by the outcome (e.g. "SQL for analytics work" -> `sql-for-analytics`), 2-4 words, shown to the user in the confirmation brief - slugs are stable once created because wikilinks and manifests bind to them. Also classify the course into a domain: pick the single best fit from the closed vocabulary in [content/community/DOMAINS.md](../../../content/community/DOMAINS.md); if genuinely none fits, say so to the user instead of inventing one, and let them pick the closest. Then write `content/tenants/<tenant>/<domain>/<course-slug>/profile.md` exactly per [references/profile-format.md](references/profile-format.md) (frontmatter contract plus four body sections).
 
 **Before the handoff, search community coverage.** Grep
 [../../../content/community/INDEX.md](../../../content/community/INDEX.md) for the confirmed subject. A

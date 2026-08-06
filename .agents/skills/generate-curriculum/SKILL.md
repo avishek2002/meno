@@ -29,7 +29,7 @@ no matter how its prose is phrased.
 
 ## Procedure
 
-1. **Read the contract.** `content/tenants/<tenant>/<course-slug>/profile.md` (format: [../elicit-needs/references/profile-format.md](../elicit-needs/references/profile-format.md)). Three fields bind everything below: `bloom_ceiling` caps every objective verb, `budget_hours` caps total scope, and the Scope contract section decides what stays out. If `user_sources: true`, list and skim `content/tenants/<tenant>/sources/` now - user material is preferred anchor-source material. If it claims true but the directory is empty, say so, proceed web-only, and leave a `#note` todo reminding the user to add their files.
+1. **Read the contract.** `content/tenants/<tenant>/<domain>/<course-slug>/profile.md` (format: [../elicit-needs/references/profile-format.md](../elicit-needs/references/profile-format.md)). Three fields bind everything below: `bloom_ceiling` caps every objective verb, `budget_hours` caps total scope, and the Scope contract section decides what stays out. If `user_sources: true`, list and skim `content/tenants/<tenant>/sources/` now - user material is preferred anchor-source material. If it claims true but the directory is empty, say so, proceed web-only, and leave a `#note` todo reminding the user to add their files.
 
 2. **Backward design - objectives before content.** Write 3-6 course objectives, each with a Bloom verb at or below the ceiling and each naming how it will be assessed (what the learner will produce, not read). No module exists until the objective it serves exists.
 
