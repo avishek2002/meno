@@ -1,0 +1,53 @@
+schema_version: 1
+module: 04-network-and-environment
+title: Controlling the network and the clock
+status: skeleton
+serves: [O4]
+prerequisites: [02-locators-and-assertions]
+est_hours: 4
+concepts:                      # siblings: watching traffic, replacing it, controlling time
+  - request-interception
+  - api-mocking
+  - clock-control
+objectives:
+  - id: M4-1
+    text: Observe, modify, and abort a page's network traffic with route handlers and network events
+    bloom: apply
+  - id: M4-2
+    text: Mock a backend - fulfilled routes, modified real responses, and recorded HAR files - so the frontend is tested without live services
+    bloom: apply
+  - id: M4-3
+    text: Drive time-dependent behavior with an installed clock, fast-forwarding and pausing instead of really waiting
+    bloom: apply
+sources:                       # 3, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "Playwright docs: Network"
+    url: https://playwright.dev/docs/network
+    archived_url: https://web.archive.org/web/20260721081935/https://playwright.dev/docs/network
+    accessed: 2026-08-05
+    source_type: web
+    why: the monitoring and interception surface - request and response events, waitForResponse, page.route and context.route, aborting and modifying requests, glob URL patterns
+  - title: "Playwright docs: Mock APIs"
+    url: https://playwright.dev/docs/mock
+    archived_url: https://web.archive.org/web/20260801152432/https://playwright.dev/docs/mock
+    accessed: 2026-08-05
+    source_type: web
+    why: the three mocking strategies the mocking lesson teaches - fulfill routes with custom data, fetch then modify real responses, and record-replay HAR files
+  - title: "Playwright docs: Clock"
+    url: https://playwright.dev/docs/clock
+    archived_url: https://web.archive.org/web/20260725061858/https://playwright.dev/docs/clock
+    accessed: 2026-08-05
+    source_type: web
+    why: the clock API that overrides Date and timers - setFixedTime, install, pauseAt, fastForward, runFor - and its use cases like testing inactivity timeouts
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-request-interception.md
+    title: Watching and rerouting network traffic
+    concept: request-interception
+    status: planned
+  - file: 02-api-mocking.md
+    title: Mocking the backend three ways
+    concept: api-mocking
+    status: planned
+  - file: 03-clock-control.md
+    title: Testing time without waiting
+    concept: clock-control
+    status: planned

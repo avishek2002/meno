@@ -4,7 +4,7 @@ Living status file - the done / backlog tracker for this project. **Update it wh
 finish a thing -> move it to Done; pick up or think of a new thing -> add it to the agenda; make a call
 that isn't captured in the code -> log it. Keep entries dated, newest near the top of each section.
 
-_Last updated: 2026-08-05_
+_Last updated: 2026-08-06_
 
 > Maintenance: keep this file current whenever work changes. Tooling can't see conversation-only
 > decisions, so logging those is on whoever made them.
@@ -14,6 +14,37 @@ _Last updated: 2026-08-05_
 - None currently open.
 
 ## Done
+
+- 2026-08-06 - **Community pack wave 2 (decision 19, workstream 4): ten packs, and the archive-match
+  gate that wave 1 needed.** The tier goes from 5 packs to 15. New: `data/sql-joins-and-grain`,
+  `data/analytics-engineering-with-dbt`, `data/semantic-layers-and-metric-governance`,
+  `ai-and-agents/llm-cost-and-token-engineering`, `ai-and-agents/rag-grounding-and-faithfulness`,
+  `ai-and-agents/llm-evals-and-judges`, `software-engineering/browser-e2e-testing-with-playwright`,
+  `infrastructure/observability-foundations`, `product-and-design/web-accessibility-audits`,
+  `working-skills/evidence-based-bug-reporting`. The maintainer's private vault nominated the
+  *topics* only: each authoring agent worked from a self-contained public-source brief with no
+  access to the vault, so the inspiration-only boundary is structural here, not a review promise.
+  Scope fences held - `pack-overlap` reports zero findings across all 15.
+- 2026-08-06 - **`citations` gains an offline archive-match check, and it caught a merged defect.**
+  Validate now compares the URL embedded in `archived_url` against `url` (canonically: scheme and
+  trailing slash ignored). The failure it catches is systematic, not clerical - archiving follows
+  redirects and records where it landed while `url` keeps what was typed, so *any* source that has
+  moved silently yields a well-formed pair pointing at two different pages. It found six: three
+  Grafana docs paths and two anthropic.com paths in wave 2, plus one in already-merged
+  `limits-of-agent-generated-content` whose snapshot was a `?error=cookies_not_supported` variant.
+  That last one could not be fixed by re-archiving - nature.com is bot-protected, so every Wayback
+  capture of it is a Cloudflare "Client Challenge" page - so the citation moved to the open-access
+  PMC mirror of the same paper, whose snapshot contains all four cited figures verbatim. Spec:
+  `docs/specs/validation.md`; two new cases in `tools/test/courses.test.ts` (mismatch caught,
+  scheme/slash-only difference tolerated).
+- 2026-08-06 - **`audit-citations` told agents to do something their tools cannot do.** The skill
+  said "fetch `archived_url`"; Claude Code's WebFetch refuses `web.archive.org` outright, and the
+  refusal is indistinguishable from a dead snapshot. Two independent verifiers duly reported healthy
+  archives as unverifiable, and a third called a live snapshot DEAD after the availability API
+  returned empty under throttling - its proposed replacement timestamp did not exist. The skill now
+  mandates `curl -I`, makes the archive's own `link: rel="original"` header the match test (the
+  Wayback Machine stating what it captured beats eyeballing rendered content), and states that
+  concurrent failures mean rate limiting and never a dead archive.
 
 - 2026-08-05 - **Community pack slate (decision 19, workstream 3): five packs live.** The tier goes
   from one pack to a full intern-onboarding slate, every source fetched live and Wayback-archived

@@ -1,0 +1,58 @@
+schema_version: 1
+slug: sql-joins-and-grain
+title: SQL joins and grain
+created: 2026-08-05
+status: draft                  # topic pack: pre-contract, not yet adopted by a tenant
+hub: ./sql-joins-and-grain-hub.md
+objectives:
+  - id: O1
+    text: Explain the logical clause evaluation order of a query - FROM and JOIN, then WHERE, then GROUP BY and HAVING, then the select list, then ORDER BY and LIMIT - and use it to predict where a column alias is visible
+    bloom: understand
+    assessed_by: a written trace of a multi-clause query stating the order its clauses run and which alias references are legal, checked against a live database engine
+  - id: O2
+    text: Apply inner, left, right, full, and cross joins to combine tables on join keys, predicting the row count and NULL pattern each join type produces
+    bloom: apply
+    assessed_by: join exercises on a small two-table schema where the learner predicts row counts and null-extended rows before running each query
+  - id: O3
+    text: Analyze a table by declaring its grain - exactly what one row represents - and verifying the declaration with primary-key and duplicate checks
+    bloom: analyze
+    assessed_by: written grain declarations for the tables of a sample schema, each backed by a query proving the declared key is unique
+  - id: O4
+    text: Analyze a one-to-many join for fan-out that duplicates measures, detecting it with row counts and distinct checks and repairing it by pre-aggregating or rewriting with EXISTS
+    bloom: analyze
+    assessed_by: a diagnosis of a provided query whose SUM is inflated by fan-out, with a written explanation of the duplication and a corrected query producing the true total
+  - id: O5
+    text: Evaluate whether a reporting question calls for GROUP BY, a window function, or both, honoring the contract that grouped columns define the output grain
+    bloom: evaluate
+    assessed_by: a set of reporting questions each answered with a choice of GROUP BY or window function, a justification in terms of output grain, and a working query
+modules:                       # ordered; every field here mirrors module.yml at regen time
+  - n: 1
+    slug: 01-query-execution
+    title: How a query actually runs
+    status: skeleton
+    est_hours: 2
+    serves: [O1]
+  - n: 2
+    slug: 02-joins-as-row-matching
+    title: Joins as row matching
+    status: skeleton
+    est_hours: 3
+    serves: [O2]
+  - n: 3
+    slug: 03-grain
+    title: Grain - what one row means
+    status: skeleton
+    est_hours: 2
+    serves: [O3]
+  - n: 4
+    slug: 04-fan-out-trap
+    title: The fan-out trap
+    status: skeleton
+    est_hours: 3
+    serves: [O4]
+  - n: 5
+    slug: 05-aggregation-discipline
+    title: Aggregation discipline
+    status: skeleton
+    est_hours: 3
+    serves: [O5]

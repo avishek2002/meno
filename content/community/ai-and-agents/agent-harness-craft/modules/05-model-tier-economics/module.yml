@@ -19,7 +19,7 @@ objectives:
   - id: M5-3
     text: Track where a session's tokens go and attribute spend to long context, cache misses, and model choice
     bloom: apply
-sources:                       # 3, each fetched this session; see sourcing.md
+sources:                       # 3, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
   - title: "Choosing the right model (Claude API docs)"
     url: https://platform.claude.com/docs/en/about-claude/models/choosing-a-model
     archived_url: https://web.archive.org/web/20260805093823/https://platform.claude.com/docs/en/about-claude/models/choosing-a-model

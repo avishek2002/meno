@@ -1,0 +1,53 @@
+schema_version: 1
+module: 01-why-retrieval
+title: Why retrieval - the limits of parametric knowledge
+status: skeleton
+serves: [O1]
+prerequisites: []
+est_hours: 3
+concepts:                      # the problem, the architecture, what it buys you
+  - parametric-knowledge-limits
+  - retrieval-augmentation
+  - freshness-and-attribution
+objectives:
+  - id: M1-1
+    text: Explain why knowledge stored in model weights fails on long-tail facts, using the pretraining-frequency evidence
+    bloom: understand
+  - id: M1-2
+    text: Explain the retrieval-augmented architecture - a generator conditioned on passages fetched from an external index at query time
+    bloom: understand
+  - id: M1-3
+    text: Explain what retrieval buys beyond accuracy - updatable knowledge and answers that can point at their sources
+    bloom: understand
+sources:                       # 3, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks (Lewis et al., NeurIPS 2020)"
+    url: https://arxiv.org/abs/2005.11401
+    archived_url: https://web.archive.org/web/20260731185721/https://arxiv.org/abs/2005.11401
+    accessed: 2026-08-05
+    source_type: web
+    why: the original RAG paper - combines parametric memory (a seq2seq model) with non-parametric memory (a dense index) and names provenance and knowledge updating as what retrieval addresses
+  - title: "Large Language Models Struggle to Learn Long-Tail Knowledge (Kandpal et al.)"
+    url: https://arxiv.org/abs/2211.08411
+    archived_url: https://web.archive.org/web/20260801011133/https://arxiv.org/abs/2211.08411
+    accessed: 2026-08-05
+    source_type: web
+    why: shows accuracy on factual questions tracks how often relevant documents appeared in pretraining, and names retrieval augmentation as the promising fix for the long tail
+  - title: "FreshLLMs: Refreshing Large Language Models with Search Engine Augmentation (Vu et al.)"
+    url: https://arxiv.org/abs/2310.03214
+    archived_url: https://web.archive.org/web/20260721034426/https://arxiv.org/abs/2310.03214
+    accessed: 2026-08-05
+    source_type: web
+    why: shows models of every size fail on fast-changing knowledge and false premises, and that feeding retrieved, current evidence into the prompt substantially recovers accuracy
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-parametric-knowledge-limits.md
+    title: What model weights cannot be trusted to know
+    concept: parametric-knowledge-limits
+    status: planned
+  - file: 02-retrieval-augmentation.md
+    title: The retrieval-augmented architecture
+    concept: retrieval-augmentation
+    status: planned
+  - file: 03-freshness-and-attribution.md
+    title: Freshness and attribution - what retrieval buys
+    concept: freshness-and-attribution
+    status: planned

@@ -1,0 +1,53 @@
+schema_version: 1
+module: 03-severity-vs-priority
+title: Severity versus priority
+status: skeleton
+serves: [O3]
+prerequisites: [01-report-anatomy]
+est_hours: 3
+concepts:                      # siblings: the impact axis, the scheduling axis, and their divergence
+  - severity-as-impact
+  - priority-as-scheduling
+  - severity-priority-divergence
+objectives:
+  - id: M3-1
+    text: Explain severity as the degree of impact a defect has on users and operations, using impact-defined scales from real trackers and support policies
+    bloom: understand
+  - id: M3-2
+    text: Explain priority as a scheduling decision made by whoever directs the work, not a property of the defect itself
+    bloom: understand
+  - id: M3-3
+    text: Evaluate cases where severity and priority diverge, naming the constraint - deadline, exposure, cost of fix - that drives the scheduling call
+    bloom: evaluate
+sources:                       # 3, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "Understanding a Bug (Bugzilla documentation)"
+    url: https://bugzilla.readthedocs.io/en/latest/using/understanding.html
+    archived_url: https://web.archive.org/web/20260707234818/https://bugzilla.readthedocs.io/en/latest/using/understanding.html
+    accessed: 2026-08-05
+    source_type: web
+    why: documents Severity and Priority as two distinct fields - Severity indicating how severe the problem is, from blocker (application unusable) to trivial (minor cosmetic issue), and Priority used by the assignee or someone with authority to direct their time, such as a project manager - the module's central two-axes claim in a real tracker's own documentation
+  - title: "Severity level definitions (Red Hat Customer Portal, production support terms)"
+    url: https://access.redhat.com/support/policy/severity
+    archived_url: https://web.archive.org/web/20260510104234/https://access.redhat.com/support/policy/severity
+    accessed: 2026-08-05
+    source_type: web
+    why: a vendor severity scale defined purely by operational impact - urgent for serious interruption to business-critical operations down to low for non-urgent queries - anchoring the lesson that severity classifies impact, before any scheduling decision exists
+  - title: "Defect Management - Foundation Level syllabus section 5.5 (ASTQB)"
+    url: https://astqb.org/5-5-defect-management/
+    archived_url: https://web.archive.org/web/20260805111455/https://astqb.org/5-5-defect-management/
+    accessed: 2026-08-05
+    source_type: web
+    why: the testing-certification syllabus's requirement that defect management include rules for classification of reported anomalies, and that a decision on a suitable response - fix, or keep it as it is - is a separate step from logging and analysis
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-severity-as-impact.md
+    title: Severity - the impact axis
+    concept: severity-as-impact
+    status: planned
+  - file: 02-priority-as-scheduling.md
+    title: Priority - the scheduling axis
+    concept: priority-as-scheduling
+    status: planned
+  - file: 03-when-they-diverge.md
+    title: When severity and priority diverge
+    concept: severity-priority-divergence
+    status: planned

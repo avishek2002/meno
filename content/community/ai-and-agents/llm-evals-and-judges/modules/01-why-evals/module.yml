@@ -1,0 +1,47 @@
+schema_version: 1
+module: 01-why-evals
+title: Why evals - vibes do not regression-test
+status: skeleton
+serves: [O1]
+prerequisites: []
+est_hours: 3
+concepts:                      # the motivation, the artifact, the unit of the artifact
+  - evals-vs-vibes
+  - labelled-eval-sets
+  - golden-examples
+objectives:
+  - id: M1-1
+    text: Explain why manual spot-checking of model outputs stops catching regressions as a system grows, and what systematic evals make visible
+    bloom: understand
+  - id: M1-2
+    text: Explain what a labelled eval set is and why starting with 20-50 tasks drawn from real failures beats waiting for a comprehensive suite
+    bloom: understand
+  - id: M1-3
+    text: Apply the golden-example pattern - input, reference answer, pass criteria - to draft a labelled set for one concrete task
+    bloom: apply
+sources:                       # fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "Demystifying evals for AI agents (Anthropic engineering)"
+    url: https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents
+    archived_url: https://web.archive.org/web/20260728233804/https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents
+    accessed: 2026-08-05
+    source_type: web
+    why: argues manual testing and intuition break down as agents scale, leaving teams unable to distinguish regressions from noise, and recommends starting with 20-50 tasks drawn from real failures - the module's core motivation and sizing guidance
+  - title: "Define success criteria and build evaluations (Anthropic documentation)"
+    url: https://platform.claude.com/docs/en/test-and-evaluate/develop-tests
+    archived_url: https://web.archive.org/web/20260805034126/https://platform.claude.com/docs/en/test-and-evaluate/develop-tests
+    accessed: 2026-08-05
+    source_type: web
+    why: the official eval-design guidance the labelled-set lessons follow - measurable success criteria, task-specific test cases with edge cases, and prioritizing question volume with automated grading over few hand-graded cases
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-vibes-do-not-regression-test.md
+    title: Why reading outputs is not a test suite
+    concept: evals-vs-vibes
+    status: planned
+  - file: 02-labelled-eval-sets.md
+    title: Labelled eval sets - start small, start from failures
+    concept: labelled-eval-sets
+    status: planned
+  - file: 03-golden-examples.md
+    title: Golden examples and pass criteria
+    concept: golden-examples
+    status: planned

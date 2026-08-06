@@ -1,0 +1,53 @@
+schema_version: 1
+module: 01-query-execution
+title: How a query actually runs
+status: skeleton
+serves: [O1]
+prerequisites: []
+est_hours: 2
+concepts:
+  - logical-clause-order
+  - alias-visibility
+  - where-vs-having
+objectives:
+  - id: M1-1
+    text: Explain the order in which a SELECT statement's clauses are logically evaluated, from FROM through WHERE and grouping to ORDER BY and LIMIT
+    bloom: understand
+  - id: M1-2
+    text: Explain why a select-list alias can be referenced in ORDER BY and GROUP BY but not in WHERE or HAVING
+    bloom: understand
+  - id: M1-3
+    text: Apply the WHERE vs HAVING distinction to filter input rows before aggregation and group rows after it
+    bloom: apply
+sources:                       # fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "SELECT - PostgreSQL documentation"
+    url: https://www.postgresql.org/docs/current/sql-select.html
+    archived_url: https://web.archive.org/web/20260803135249/https://www.postgresql.org/docs/current/sql-select.html
+    accessed: 2026-08-05
+    source_type: web
+    why: the SELECT reference's numbered processing steps - FROM through WHERE, grouping, select list, ORDER BY, LIMIT - and its rule that output-column aliases work in ORDER BY and GROUP BY but not in WHERE or HAVING anchor the whole module
+  - title: "SELECT - SQLite documentation"
+    url: https://www.sqlite.org/lang_select.html
+    archived_url: https://web.archive.org/web/20260728194803/https://www.sqlite.org/lang_select.html
+    accessed: 2026-08-05
+    source_type: web
+    why: a second engine documenting the same conceptual pipeline for a simple SELECT - input data from FROM including cross-join expansion, then WHERE filtering, result-row generation, DISTINCT, ORDER BY, LIMIT - evidence the order is SQL semantics, not one engine's quirk
+  - title: "Aggregate Functions - PostgreSQL tutorial"
+    url: https://www.postgresql.org/docs/current/tutorial-agg.html
+    archived_url: https://web.archive.org/web/20260720235713/https://www.postgresql.org/docs/current/tutorial-agg.html
+    accessed: 2026-08-05
+    source_type: web
+    why: states the rule the third lesson teaches - WHERE selects input rows before groups and aggregates are computed, HAVING selects group rows after, so WHERE must not contain aggregate functions
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-logical-clause-order.md
+    title: The logical order of clause evaluation
+    concept: logical-clause-order
+    status: planned
+  - file: 02-alias-visibility.md
+    title: Where aliases are visible, and why
+    concept: alias-visibility
+    status: planned
+  - file: 03-where-vs-having.md
+    title: Filtering rows vs filtering groups
+    concept: where-vs-having
+    status: planned

@@ -19,7 +19,7 @@ objectives:
   - id: M2-3
     text: Choose and apply the matching undo tool, reset, revert, or reflog recovery, for a given mistake without losing work
     bloom: apply
-sources:                       # 4, each fetched this session; see sourcing.md
+sources:                       # 4, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
   - title: "Pro Git, ch. 3.1: Branches in a Nutshell"
     url: https://git-scm.com/book/en/v2/Git-Branching-Branches-in-a-Nutshell
     archived_url: https://web.archive.org/web/20260805054854/https://git-scm.com/book/en/v2/Git-Branching-Branches-in-a-Nutshell

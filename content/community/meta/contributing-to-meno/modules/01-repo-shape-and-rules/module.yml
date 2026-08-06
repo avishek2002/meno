@@ -19,7 +19,7 @@ objectives:
   - id: M1-3
     text: Map a proposed behavior change to the spec under docs/specs/ that must be amended in the same change
     bloom: apply
-sources:                       # 3, each fetched this session; see sourcing.md
+sources:                       # 3, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
   - title: "AGENTS.md (canonical agent entry point)"
     url: https://github.com/avishek2002/meno/blob/main/AGENTS.md
     archived_url: https://web.archive.org/web/20260805092506/https://github.com/avishek2002/meno/blob/main/AGENTS.md

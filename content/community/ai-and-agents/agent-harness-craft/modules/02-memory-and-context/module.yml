@@ -19,7 +19,7 @@ objectives:
   - id: M2-3
     text: Delegate context-heavy side work to a subagent so only its conclusion enters the main conversation
     bloom: apply
-sources:                       # 4, each fetched this session; see sourcing.md
+sources:                       # 4, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
   - title: "How Claude remembers your project (Claude Code docs)"
     url: https://code.claude.com/docs/en/memory
     archived_url: https://web.archive.org/web/20260803184145/https://code.claude.com/docs/en/memory

@@ -1,0 +1,53 @@
+schema_version: 1
+module: 03-context-discipline
+title: Context discipline as a cost lever
+status: skeleton
+serves: [O3]
+prerequisites: [01-where-the-money-goes]
+est_hours: 3
+concepts:                      # siblings: send less, keep what you derived, fetch only what fits
+  - lean-prompting
+  - result-persistence
+  - retrieval-over-stuffing
+objectives:
+  - id: M3-1
+    text: Trim a prompt to the smallest set of high-signal tokens that still gets the outcome, and justify each surviving section
+    bloom: apply
+  - id: M3-2
+    text: Persist derived results - summaries, notes, extracted facts - outside the context window so later calls reuse them instead of re-deriving them
+    bloom: apply
+  - id: M3-3
+    text: Explain when retrieving relevant chunks beats loading a whole knowledge base into context, and where the crossover point sits
+    bloom: understand
+sources:                       # 3, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "Effective context engineering for AI agents (Anthropic engineering)"
+    url: https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents
+    archived_url: https://web.archive.org/web/20260805093205/https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents
+    accessed: 2026-08-05
+    source_type: web
+    why: the smallest-set-of-high-signal-tokens principle, context rot as the quality cost of bloat, and the compaction and structured note-taking techniques the persistence lesson builds on
+  - title: "Introducing Contextual Retrieval (Anthropic)"
+    url: https://www.anthropic.com/engineering/contextual-retrieval
+    archived_url: https://web.archive.org/web/20260805105542/https://www.anthropic.com/engineering/contextual-retrieval
+    accessed: 2026-08-05
+    source_type: web
+    why: states the crossover - knowledge bases under roughly 200,000 tokens can just ride along in the prompt with caching, larger ones need retrieval - and how contextualized chunks keep retrieval accurate
+  - title: "How we built our multi-agent research system (Anthropic engineering)"
+    url: https://www.anthropic.com/engineering/multi-agent-research-system
+    archived_url: https://web.archive.org/web/20260805105311/https://www.anthropic.com/engineering/multi-agent-research-system
+    accessed: 2026-08-05
+    source_type: web
+    why: token usage explained about 80 percent of performance variance in their evaluation - the evidence that context volume is a spend-versus-capability trade-off, not pure waste
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-lean-prompts.md
+    title: Lean prompts - every token argues for its seat
+    concept: lean-prompting
+    status: planned
+  - file: 02-persist-dont-re-derive.md
+    title: Persist, don't re-derive
+    concept: result-persistence
+    status: planned
+  - file: 03-retrieve-dont-stuff.md
+    title: Retrieve, don't stuff
+    concept: retrieval-over-stuffing
+    status: planned

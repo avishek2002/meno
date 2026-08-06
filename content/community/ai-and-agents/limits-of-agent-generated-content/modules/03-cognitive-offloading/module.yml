@@ -19,7 +19,7 @@ objectives:
   - id: M3-3
     text: Identify commission and omission errors from automation bias in a workflow that leans on automated advice
     bloom: apply
-sources:                       # 3, each fetched this session; see sourcing.md
+sources:                       # 3, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
   - title: "Cognitive Offloading (Risko and Gilbert, Trends in Cognitive Sciences) - PubMed record"
     url: https://pubmed.ncbi.nlm.nih.gov/27542527/
     archived_url: https://web.archive.org/web/20260805095710/https://pubmed.ncbi.nlm.nih.gov/27542527/

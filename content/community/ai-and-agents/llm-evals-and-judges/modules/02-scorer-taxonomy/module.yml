@@ -1,0 +1,53 @@
+schema_version: 1
+module: 02-scorer-taxonomy
+title: The scorer taxonomy
+status: skeleton
+serves: [O2]
+prerequisites: [01-why-evals]
+est_hours: 3
+concepts:                      # the two scorer families, then the judgment call between them
+  - deterministic-scorers
+  - rubric-scoring
+  - scorer-trust
+objectives:
+  - id: M2-1
+    text: Explain the scorer spectrum - exact match, programmatic checks, similarity metrics, rubric scoring, model-graded checks - and what each one actually measures
+    bloom: understand
+  - id: M2-2
+    text: Analyze a task's answer structure to determine which scorer types can grade it reliably and which will misscore valid answers
+    bloom: analyze
+  - id: M2-3
+    text: Evaluate the trust trade-off between deterministic scorers (reliable but brittle) and model-graded scorers (flexible but non-deterministic) for a given task
+    bloom: evaluate
+sources:                       # fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "Define success criteria and build evaluations (Anthropic documentation)"
+    url: https://platform.claude.com/docs/en/test-and-evaluate/develop-tests
+    archived_url: https://web.archive.org/web/20260805034126/https://platform.claude.com/docs/en/test-and-evaluate/develop-tests
+    accessed: 2026-08-05
+    source_type: web
+    why: walks the grading ladder the module teaches - exact match, cosine similarity, ROUGE-L, then model-graded Likert, binary, and ordinal scales - with worked code for each and the different-model-as-grader practice
+  - title: "Assertions and metrics (promptfoo documentation)"
+    url: https://www.promptfoo.dev/docs/configuration/expected-outputs/
+    archived_url: https://web.archive.org/web/20260622160312/https://www.promptfoo.dev/docs/configuration/expected-outputs/
+    accessed: 2026-08-05
+    source_type: web
+    why: a shipping eval framework's own split of assertion types into deterministic programmatic tests (equals, contains, regex, is-json, code hooks) and model-assisted metrics (llm-rubric, factuality, similarity), plus weights and thresholds for composing them
+  - title: "Demystifying evals for AI agents (Anthropic engineering)"
+    url: https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents
+    archived_url: https://web.archive.org/web/20260728233804/https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents
+    accessed: 2026-08-05
+    source_type: web
+    why: names the trade-off the trust lesson turns on - code-based graders fast and objective but brittle to valid variations, model-based flexible but non-deterministic and needing human calibration, human grading the expensive gold standard
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-deterministic-scorers.md
+    title: Exact match and programmatic checks
+    concept: deterministic-scorers
+    status: planned
+  - file: 02-rubric-and-model-graded-scoring.md
+    title: Rubric scoring and model-graded checks
+    concept: rubric-scoring
+    status: planned
+  - file: 03-choosing-a-trustworthy-scorer.md
+    title: When each scorer can be trusted
+    concept: scorer-trust
+    status: planned

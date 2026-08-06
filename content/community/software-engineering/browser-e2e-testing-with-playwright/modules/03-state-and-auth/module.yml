@@ -1,0 +1,53 @@
+schema_version: 1
+module: 03-state-and-auth
+title: State, authentication, and isolation
+status: skeleton
+serves: [O3]
+prerequisites: [02-locators-and-assertions]
+est_hours: 4
+concepts:                      # siblings: the isolation primitive, reusing auth, per-test setup
+  - context-isolation
+  - storage-state-auth
+  - test-fixtures
+objectives:
+  - id: M3-1
+    text: Explain how a fresh browser context per test delivers isolation without paying for a fresh browser launch
+    bloom: understand
+  - id: M3-2
+    text: Sign in once in a setup project and reuse the saved storage state across tests, choosing shared or per-worker accounts to match what tests mutate
+    bloom: apply
+  - id: M3-3
+    text: Give each test exactly the environment it needs through built-in and custom fixtures instead of before and after hooks
+    bloom: apply
+sources:                       # 3, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "Playwright docs: Isolation"
+    url: https://playwright.dev/docs/browser-contexts
+    archived_url: https://web.archive.org/web/20260724150753/https://playwright.dev/docs/browser-contexts
+    accessed: 2026-08-05
+    source_type: web
+    why: defines the browser context as an incognito-like profile that is fast and cheap to create, one per test - the isolation model the whole module rests on
+  - title: "Playwright docs: Authentication"
+    url: https://playwright.dev/docs/auth
+    archived_url: https://web.archive.org/web/20260805110539/https://playwright.dev/docs/auth
+    accessed: 2026-08-05
+    source_type: web
+    why: the storageState pattern - sign in once in a setup project, save state to disk, reuse it - plus worker-scoped accounts and the session-storage caveat
+  - title: "Playwright docs: Fixtures"
+    url: https://playwright.dev/docs/test-fixtures
+    archived_url: https://web.archive.org/web/20260709014240/https://playwright.dev/docs/test-fixtures
+    accessed: 2026-08-05
+    source_type: web
+    why: fixtures as the environment mechanism - built-ins like page and context, test.extend for custom ones, test versus worker scope, and why they beat setup hooks
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-context-isolation.md
+    title: One fresh context per test
+    concept: context-isolation
+    status: planned
+  - file: 02-storage-state-auth.md
+    title: Sign in once, reuse the state
+    concept: storage-state-auth
+    status: planned
+  - file: 03-test-fixtures.md
+    title: Fixtures over hooks
+    concept: test-fixtures
+    status: planned

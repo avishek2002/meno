@@ -66,10 +66,51 @@ private-source review question).
 
 ## Workstream 4 - vault-candidate scan (approval-gated)
 
-- [x] Scan done (2026-08-05); 10-candidate list delivered to the maintainer privately, approval pending. Scan the maintainer's private knowledge base for further *generic, employer-free,
-  teachable* topics; produce a candidate list with a one-line scope each. **Nothing is
-  authored until the maintainer approves candidates** - the scan output itself stays
-  out of the repo (it references the private source).
+- [x] Scan done (2026-08-05): the maintainer's private knowledge base nominated 10 generic,
+  employer-free topics. The candidate list stayed out of the repo (it references the private
+  source); the maintainer approved all 10 on 2026-08-06.
+- [x] **Wave 2 authored (2026-08-06)** - all 10 packs below. Authored strictly from public
+  sources: the vault nominated the *topics*, and each authoring agent worked from a
+  self-contained brief with no access to the private source at all, so the inspiration-only
+  boundary is structural here rather than a review promise.
+
+| # | Pack | Domain |
+|---|------|--------|
+| 6 | `sql-joins-and-grain` | `data` |
+| 7 | `analytics-engineering-with-dbt` | `data` |
+| 8 | `semantic-layers-and-metric-governance` | `data` |
+| 9 | `llm-cost-and-token-engineering` | `ai-and-agents` |
+| 10 | `rag-grounding-and-faithfulness` | `ai-and-agents` |
+| 11 | `llm-evals-and-judges` | `ai-and-agents` |
+| 12 | `browser-e2e-testing-with-playwright` | `software-engineering` |
+| 13 | `observability-foundations` | `infrastructure` |
+| 14 | `web-accessibility-audits` | `product-and-design` |
+| 15 | `evidence-based-bug-reporting` | `working-skills` |
+
+Scope fences were set per pack against their nearest neighbors (cost vs harness-craft on
+model tiers; RAG vs limits on hallucination; evals vs RAG on metrics; dbt vs SQL on grain;
+semantic layers vs dbt on modeling) and held: `pack-overlap` reports zero findings across
+all 15 packs.
+
+- [x] **Every pack independently citation-audited** by an agent that was not its author,
+  with the pack path named explicitly. Findings applied: an unsourced practice claim
+  removed, two truncated quotes repaired, a `NOT EXISTS` claim grounded in already-cited
+  semantics, a paraphrase upgraded to the verified verbatim quote, and a "canonical shape"
+  universality overclaim dropped (Mozilla documents Mozilla's lifecycle, not an industry
+  standard).
+- [x] **Archive liveness swept mechanically** over every `(url, archived_url)` pair in the
+  tier: HTTP 200 plus an exact `link: rel="original"` match, serial with backoff.
+
+What that pairing taught, and it is the durable lesson of this workstream: **the model
+audits and the mechanical sweep each caught what the other missed.** Agents caught every
+prose defect - the sweep cannot read a truncated quote or an unsourced claim. The sweep
+caught two URL mismatches in `llm-cost-and-token-engineering`, a pack *two* separate agents
+had audited and passed, and a third in already-merged wave-1 content. It also overturned
+two agent findings that were wrong: a "dead" archive that returns HTTP 200, and a
+"dangling" `sourcing.md` that exists one directory outside where the agent looked. Neither
+method is the check; the disagreement between them is. The mechanical half is now a gate
+check (`citations` archive-match) so it runs on every pull request instead of when someone
+thinks to look.
 
 ## Sourcing boundary (binding for every pack)
 

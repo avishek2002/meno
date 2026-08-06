@@ -1,0 +1,67 @@
+schema_version: 1
+module: 02-inside-a-semantic-layer
+title: Inside a semantic layer - measures, dimensions, entities
+status: skeleton
+serves: [O2]
+prerequisites: [01-the-metric-drift-problem]
+est_hours: 4
+concepts:                      # siblings: the parts, the glue, the interface, the vocabulary of definitions
+  - measures-and-dimensions
+  - entities-and-join-paths
+  - cubes-and-views
+  - metric-types
+objectives:
+  - id: M2-1
+    text: Explain measures and dimensions as the quantitative and categorical halves of a metric definition
+    bloom: understand
+  - id: M2-2
+    text: Explain how entities declare join keys so the layer can assemble cross-table metrics without hand-written join SQL
+    bloom: understand
+  - id: M2-3
+    text: Explain how cubes and views (or semantic models and metrics) form the facade downstream consumers query, and what that facade hides
+    bloom: understand
+  - id: M2-4
+    text: Classify metric definitions by type - simple, ratio, derived, cumulative, and conversion - and match each to the business question it answers
+    bloom: understand
+sources:                       # fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "Getting started with data modeling (Cube documentation)"
+    url: https://docs.cube.dev/docs/data-modeling/overview
+    archived_url: https://web.archive.org/web/20260803074640/https://docs.cube.dev/docs/data-modeling/overview
+    accessed: 2026-08-05
+    source_type: web
+    why: defines measures as quantitative and dimensions as categorical data, and views as a facade of the data model that data consumers interact with - the anatomy this module's first and third lessons follow
+  - title: "Semantic models (dbt Developer Hub)"
+    url: https://docs.getdbt.com/docs/build/semantic-models
+    archived_url: https://web.archive.org/web/20260715154743/https://docs.getdbt.com/docs/build/semantic-models
+    accessed: 2026-08-05
+    source_type: web
+    why: defines entities as the join keys of a semantic model with four types (primary, unique, foreign, natural) that MetricFlow uses for joins - the entities lesson's ground truth
+  - title: "About MetricFlow (dbt Developer Hub)"
+    url: https://docs.getdbt.com/docs/build/about-metricflow
+    archived_url: https://web.archive.org/web/20260703044844/https://docs.getdbt.com/docs/build/about-metricflow
+    accessed: 2026-08-05
+    source_type: web
+    why: describes the semantic graph - entities as edges between semantic models - and how the framework generates SQL by finding the best path between tables, replacing hand-written aggregation queries
+  - title: "Creating metrics (dbt Developer Hub)"
+    url: https://docs.getdbt.com/docs/build/metrics-overview
+    archived_url: https://web.archive.org/web/20260604152310/https://docs.getdbt.com/docs/build/metrics-overview
+    accessed: 2026-08-05
+    source_type: web
+    why: enumerates the metric types the vocabulary lesson classifies - simple, cumulative, derived, ratio, and conversion - with the required parameters of each
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-measures-and-dimensions.md
+    title: Measures and dimensions
+    concept: measures-and-dimensions
+    status: planned
+  - file: 02-entities-and-join-paths.md
+    title: Entities and join paths
+    concept: entities-and-join-paths
+    status: planned
+  - file: 03-cubes-and-views-the-facade.md
+    title: Cubes and views - the facade consumers query
+    concept: cubes-and-views
+    status: planned
+  - file: 04-metric-types.md
+    title: A vocabulary of metric types
+    concept: metric-types
+    status: planned

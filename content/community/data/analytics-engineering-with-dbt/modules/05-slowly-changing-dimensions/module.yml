@@ -1,0 +1,53 @@
+schema_version: 1
+module: 05-slowly-changing-dimensions
+title: Slowly changing dimensions and snapshots
+status: skeleton
+serves: [O5]
+prerequisites: [04-dimensional-modeling]
+est_hours: 3
+concepts:                      # siblings: the taxonomy, the tool, the query pattern
+  - scd-types
+  - dbt-snapshots
+  - as-of-queries
+objectives:
+  - id: M5-1
+    text: Explain the classic responses to a changed dimension attribute - overwrite (type 1), add a new row (type 2), alternate reality (type 3) - and what each preserves or destroys
+    bloom: understand
+  - id: M5-2
+    text: Apply dbt snapshots with the timestamp or check strategy to record type 2 history in dbt_valid_from and dbt_valid_to columns
+    bloom: apply
+  - id: M5-3
+    text: Apply as-of join logic that picks the dimension row whose validity range contained the fact's event time
+    bloom: apply
+sources:                       # fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "Slowly Changing Dimensions (Ralph Kimball, Kimball Group)"
+    url: https://www.kimballgroup.com/2008/08/slowly-changing-dimensions/
+    archived_url: https://web.archive.org/web/20260306032058/https://www.kimballgroup.com/2008/08/slowly-changing-dimensions/
+    accessed: 2026-08-05
+    source_type: web
+    why: the type 1 / 2 / 3 taxonomy and why overwriting destroys the history of a field
+  - title: "Slowly Changing Dimensions, Part 2 (Ralph Kimball, Kimball Group)"
+    url: https://www.kimballgroup.com/2008/09/slowly-changing-dimensions-part-2/
+    archived_url: https://web.archive.org/web/20260730161931/https://www.kimballgroup.com/2008/09/slowly-changing-dimensions-part-2/
+    accessed: 2026-08-05
+    source_type: web
+    why: type 2 mechanics - surrogate keys, begin and end effective dates, current-row indicator - that dbt snapshots automate
+  - title: "Add snapshots to your DAG (dbt Developer Hub)"
+    url: https://docs.getdbt.com/docs/build/snapshots
+    archived_url: https://web.archive.org/web/20260624214534/https://docs.getdbt.com/docs/build/snapshots
+    accessed: 2026-08-05
+    source_type: web
+    why: dbt's built-in type 2 capture - timestamp and check strategies, dbt_valid_from and dbt_valid_to columns, snapshots referenced downstream with ref()
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-three-ways-to-handle-change.md
+    title: Three ways to handle attribute change
+    concept: scd-types
+    status: planned
+  - file: 02-dbt-snapshots.md
+    title: Snapshots - type 2 rows in dbt
+    concept: dbt-snapshots
+    status: planned
+  - file: 03-querying-history.md
+    title: Querying history as of a date
+    concept: as-of-queries
+    status: planned

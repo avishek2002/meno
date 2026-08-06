@@ -1,0 +1,59 @@
+schema_version: 1
+module: 04-the-visual-layer
+title: The visual layer
+status: skeleton
+serves: [O4]
+prerequisites: [01-how-accessibility-fails]
+est_hours: 3
+concepts:
+  - contrast-minimums
+  - target-size
+  - reduced-motion
+objectives:
+  - id: M4-1
+    text: Apply the contrast minimums - 4.5 to 1 for normal text, 3 to 1 for large text - measuring ratios and recognizing the incidental-text and logotype exceptions
+    bloom: apply
+  - id: M4-2
+    text: Apply the 24 by 24 CSS pixel target-size minimum and its five exceptions - spacing, equivalent, inline, user agent control, essential - to dense interfaces
+    bloom: apply
+  - id: M4-3
+    text: Apply the prefers-reduced-motion media query so animation respects the user's motion setting
+    bloom: apply
+sources:                       # fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "Understanding Success Criterion 1.4.3: Contrast (Minimum) (WCAG 2.2, W3C)"
+    url: https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html
+    archived_url: https://web.archive.org/web/20260801002749/https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html
+    accessed: 2026-08-05
+    source_type: web
+    why: the contrast lesson's normative anchor - 4.5 to 1 for normal text and 3 to 1 for large text at AA, the 18 point or 14 point bold threshold for large text, and the incidental and logotype exceptions
+  - title: "Understanding Success Criterion 2.5.8: Target Size (Minimum) (WCAG 2.2, W3C)"
+    url: https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html
+    archived_url: https://web.archive.org/web/20260731183510/https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html
+    accessed: 2026-08-05
+    source_type: web
+    why: the target-size lesson's normative anchor - 24 by 24 CSS pixels for pointer targets, new at AA in WCAG 2.2, with the five exceptions the lesson teaches to apply precisely
+  - title: "prefers-reduced-motion - CSS media query (MDN Web Docs)"
+    url: https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-motion
+    archived_url: https://web.archive.org/web/20251102043347/https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-motion
+    accessed: 2026-08-05
+    source_type: web
+    why: the reduced-motion lesson's implementation reference - the no-preference and reduce values, why vestibular motion sensitivity motivates the setting, and how to swap animations under it
+  - title: "Contrast and Color Accessibility (WebAIM)"
+    url: https://webaim.org/articles/contrast/
+    archived_url: https://web.archive.org/web/20260705190057/https://webaim.org/articles/contrast/
+    accessed: 2026-08-05
+    source_type: web
+    why: the practitioner explainer for the contrast lesson - how the 1 to 1 through 21 to 1 ratio scale works, the AAA and non-text contrast thresholds beyond 1.4.3, and never conveying information by color alone
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-contrast-minimums.md
+    title: Measuring and meeting contrast minimums
+    concept: contrast-minimums
+    status: planned
+  - file: 02-target-size.md
+    title: The 24 pixel target size and its exceptions
+    concept: target-size
+    status: planned
+  - file: 03-reduced-motion.md
+    title: Respecting reduced-motion preferences
+    concept: reduced-motion
+    status: planned
