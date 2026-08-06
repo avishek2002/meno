@@ -69,6 +69,13 @@ private-source review question).
 - [x] Scan done (2026-08-05): the maintainer's private knowledge base nominated 10 generic,
   employer-free topics. The candidate list stayed out of the repo (it references the private
   source); the maintainer approved all 10 on 2026-08-06.
+- **Retired 2026-08-06 (same day):** seven of the ten below were removed from the tier as a
+  poor fit for the maintainer's direction - the three `data` packs, `observability-foundations`,
+  `web-accessibility-audits`, `browser-e2e-testing-with-playwright`, and
+  `evidence-based-bug-reporting`. The table is kept as authored: it records what this
+  workstream produced, and the citation and audit lessons below were earned on all ten.
+  Surviving from wave 2: `llm-cost-and-token-engineering`, `rag-grounding-and-faithfulness`,
+  and `llm-evals-and-judges`, all three now under a learner contract.
 - [x] **Wave 2 authored (2026-08-06)** - all 10 packs below. Authored strictly from public
   sources: the vault nominated the *topics*, and each authoring agent worked from a
   self-contained brief with no access to the private source at all, so the inspiration-only

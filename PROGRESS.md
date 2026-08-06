@@ -15,6 +15,19 @@ _Last updated: 2026-08-06_
 
 ## Done
 
+- 2026-08-06 - **Community tier trimmed to eight packs.** The seven packs whose subjects did
+  not fit the maintainer's actual direction were removed from both the community tier and the
+  tenant vault: `data/sql-joins-and-grain`, `data/analytics-engineering-with-dbt`,
+  `data/semantic-layers-and-metric-governance`, `infrastructure/observability-foundations`,
+  `product-and-design/web-accessibility-audits`,
+  `software-engineering/browser-e2e-testing-with-playwright`, and
+  `working-skills/evidence-based-bug-reporting`. What remains is the six `ai-and-agents`
+  courses now under contract plus `software-engineering/git-fundamentals` and
+  `meta/contributing-to-meno`. `INDEX.md` regenerated; no ledger event referenced a removed
+  course, so no study history was orphaned. The wave-2 entry below is left as written - it
+  records what happened at the time, and the four now-unused domain slugs stay in
+  `DOMAINS.md`, which is a vocabulary for future packs rather than an index of current ones.
+
 - 2026-08-06 - **Tenant courses group by domain: one grouping across all three tiers.**
   `content/tenants/<t>/<course-slug>/` became `content/tenants/<t>/<domain>/<course-slug>/`,
   matching `content/community/<domain>/<slug>/` exactly. The tiers had drifted: packs were
