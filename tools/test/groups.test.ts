@@ -3,19 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { parse as parseYaml } from 'yaml';
-import {
-  parseGroups,
-  serializeGroups,
-  addGroup,
-  renameGroup,
-  removeGroup,
-  setCourseGroup,
-  resolveGroups,
-  EMPTY_GROUPS,
-  MAX_GROUPS,
-  domainTitle,
-} from '../../lib/groups.ts';
+import { parseGroups, resolveGroups, EMPTY_GROUPS, MAX_GROUPS, domainTitle, type GroupsDoc } from '../../lib/groups.ts';
 import { checkGroups } from '../validate.ts';
 
 // --- parsing (permissive: a malformed file must never throw) ---
@@ -65,66 +53,35 @@ test('a dangerous id from a hand-edited file is dropped, never used as a key', (
   assert.equal(warnings.length, 1);
 });
 
-// --- serialization (never string concatenation: a title must not be able to inject YAML) ---
-
-test('a title containing YAML metacharacters round-trips unchanged', () => {
-  const nasty = 'AI: the "real" stuff\nid: injected\n- *alias &anchor #tag';
-  const doc = addGroup(EMPTY_GROUPS, nasty);
-  const reparsed = parseGroups(serializeGroups(doc));
-  assert.equal(reparsed.warnings.length, 0);
-  assert.equal(reparsed.doc.groups[0].title, nasty.replace(/\s+/g, ' ').trim());
-});
-
-test('the serialized file is valid YAML with the documented top-level shape', () => {
-  const doc = addGroup(EMPTY_GROUPS, 'Version Control');
-  const raw = serializeGroups(doc);
-  const parsed = parseYaml(raw) as { schema_version: number; groups: unknown[] };
-  assert.equal(parsed.schema_version, 1);
-  assert.equal(parsed.groups.length, 1);
-});
-
-// --- mutations ---
-
-test('a group id is derived from its title and stays unique', () => {
-  let doc = addGroup(EMPTY_GROUPS, 'Software Fundamentals');
-  assert.equal(doc.groups[0].id, 'software-fundamentals');
-  doc = addGroup(doc, 'Software fundamentals');
-  assert.deepEqual(doc.groups.map((g) => g.id), ['software-fundamentals', 'software-fundamentals-2']);
-});
-
-test('a title that slugifies to nothing still yields a usable id', () => {
-  const doc = addGroup(EMPTY_GROUPS, '???');
-  assert.match(doc.groups[0].id, /^group(-\d+)?$/);
-  assert.equal(doc.groups[0].title, '???');
-});
-
-test('an empty or oversized title is refused with a 400', () => {
-  assert.throws(() => addGroup(EMPTY_GROUPS, '   '), (e: { status?: number }) => e.status === 400);
-  assert.throws(() => addGroup(EMPTY_GROUPS, 'x'.repeat(201)), (e: { status?: number }) => e.status === 400);
-});
+// --- the group count is capped at parse time (the only enforcement point left) ---
 
 test('the group count is capped', () => {
-  let doc = EMPTY_GROUPS;
-  for (let i = 0; i < MAX_GROUPS; i++) doc = addGroup(doc, `Group ${i}`);
-  assert.throws(() => addGroup(doc, 'One too many'), (e: { status?: number }) => e.status === 400);
+  const entries = Array.from(
+    { length: MAX_GROUPS + 1 },
+    (_, i) => `  - id: group-${i}\n    title: Group ${i}\n    courses: []\n`,
+  ).join('');
+  const { doc, warnings } = parseGroups(`schema_version: 1\ngroups:\n${entries}`);
+  assert.equal(doc.groups.length, MAX_GROUPS);
+  assert.ok(warnings.some((w) => /more than \d+ groups/i.test(w)));
 });
 
-test('renaming changes the title and never the id', () => {
-  const doc = renameGroup(addGroup(EMPTY_GROUPS, 'AI'), 'ai', 'Artificial Intelligence');
-  assert.equal(doc.groups[0].id, 'ai');
-  assert.equal(doc.groups[0].title, 'Artificial Intelligence');
+// --- a hand-edited file is the only remaining author, so hostility must still be parsed safely ---
+
+test('a properly quoted hostile title parses back as one plain string, nothing extra claimed', () => {
+  const nasty = 'AI: the "real" stuff\nid: injected\n- *alias &anchor #tag';
+  const yaml = `schema_version: 1\ngroups:\n  - id: ai\n    title: ${JSON.stringify(nasty)}\n    courses: [rust]\n`;
+  const { doc, warnings } = parseGroups(yaml);
+  assert.equal(warnings.length, 0);
+  assert.equal(doc.groups.length, 1, 'the quoted metacharacters mint no extra group');
+  assert.equal(doc.groups[0].title, nasty.replace(/\s+/g, ' ').trim());
+  assert.deepEqual(doc.groups[0].courses, ['rust'], 'no extra course is claimed');
 });
 
-test('renaming or deleting an unknown group is a 404', () => {
-  assert.throws(() => renameGroup(EMPTY_GROUPS, 'nope', 'x'), (e: { status?: number }) => e.status === 404);
-  assert.throws(() => removeGroup(EMPTY_GROUPS, 'nope'), (e: { status?: number }) => e.status === 404);
-});
+// --- resolution against the tree walk ---
 
 test('deleting a group drops the group and never the courses', () => {
-  let doc = addGroup(EMPTY_GROUPS, 'AI');
-  doc = setCourseGroup(doc, 'llm-agents', 'ai');
-  doc = removeGroup(doc, 'ai');
-  assert.deepEqual(doc.groups, []);
+  // the state a delete leaves behind: no group left claiming the course
+  const doc: GroupsDoc = { schema_version: 1, groups: [] };
   const resolved = resolveGroups(doc, [{ slug: 'llm-agents', dir: 'ai-and-agents/llm-agents' }]);
   assert.deepEqual(resolved.ungrouped, [], 'the course is not orphaned');
   assert.deepEqual(
@@ -134,31 +91,8 @@ test('deleting a group drops the group and never the courses', () => {
   );
 });
 
-test('moving a course puts it in exactly one group', () => {
-  let doc = addGroup(addGroup(EMPTY_GROUPS, 'AI'), 'Version Control');
-  doc = setCourseGroup(doc, 'git-fundamentals', 'ai');
-  doc = setCourseGroup(doc, 'git-fundamentals', 'version-control');
-  assert.deepEqual(doc.groups[0].courses, []);
-  assert.deepEqual(doc.groups[1].courses, ['git-fundamentals']);
-});
-
-test('moving a course to no group removes it from every group', () => {
-  let doc = setCourseGroup(addGroup(EMPTY_GROUPS, 'AI'), 'llm-agents', 'ai');
-  doc = setCourseGroup(doc, 'llm-agents', null);
-  assert.deepEqual(doc.groups[0].courses, []);
-});
-
-test('moving a course to an unknown group is a 404', () => {
-  assert.throws(
-    () => setCourseGroup(EMPTY_GROUPS, 'llm-agents', 'nope'),
-    (e: { status?: number }) => e.status === 404,
-  );
-});
-
-// --- resolution against the tree walk ---
-
 test('a slug that no longer exists on disk drops out with a warning, never an error', () => {
-  const doc = setCourseGroup(addGroup(EMPTY_GROUPS, 'AI'), 'deleted-course', 'ai');
+  const doc: GroupsDoc = { schema_version: 1, groups: [{ id: 'ai', title: 'AI', courses: ['deleted-course'] }] };
   const resolved = resolveGroups(doc, [{ slug: 'still-here', dir: 'data/still-here' }]);
   assert.deepEqual(resolved.groups[0].courses, []);
   assert.deepEqual(resolved.ungrouped, []);
@@ -185,7 +119,7 @@ test('with no groups at all, courses group by their domain directory in walk ord
 });
 
 test('an explicit group always wins over the domain it came from', () => {
-  const doc = setCourseGroup(addGroup(EMPTY_GROUPS, 'Version Control'), 'git', 'version-control');
+  const doc: GroupsDoc = { schema_version: 1, groups: [{ id: 'version-control', title: 'Version Control', courses: ['git'] }] };
   const resolved = resolveGroups(doc, [
     { slug: 'git', dir: 'software-engineering/git' },
     { slug: 'rust', dir: 'software-engineering/rust' },
@@ -201,7 +135,7 @@ test('an explicit group always wins over the domain it came from', () => {
 });
 
 test('explicit groups always sort ahead of derived ones', () => {
-  const doc = setCourseGroup(addGroup(EMPTY_GROUPS, 'Zebra'), 'rust', 'zebra');
+  const doc: GroupsDoc = { schema_version: 1, groups: [{ id: 'zebra', title: 'Zebra', courses: ['rust'] }] };
   const resolved = resolveGroups(doc, [
     { slug: 'llm-agents', dir: 'ai-and-agents/llm-agents' },
     { slug: 'rust', dir: 'software-engineering/rust' },
@@ -210,7 +144,7 @@ test('explicit groups always sort ahead of derived ones', () => {
 });
 
 test('a derived section id can never collide with a group id', () => {
-  const doc = setCourseGroup(addGroup(EMPTY_GROUPS, 'Software engineering'), 'git', 'software-engineering');
+  const doc: GroupsDoc = { schema_version: 1, groups: [{ id: 'software-engineering', title: 'Software engineering', courses: ['git'] }] };
   const resolved = resolveGroups(doc, [
     { slug: 'git', dir: 'software-engineering/git' },
     { slug: 'rust', dir: 'software-engineering/rust' },

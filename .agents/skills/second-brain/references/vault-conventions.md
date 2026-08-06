@@ -12,7 +12,7 @@ The full spec for how tenant content hangs together as an Obsidian vault. Genera
 content/tenants/<tenant>/
   home.md                      tenant home note (top of the graph)
   todos.md                     shared queue (see todo-format.md)
-  groups.yml                   course groups (see below; app-writable)
+  groups.yml                   course groups (see below; agent- and hand-edited, never app-written)
   sources/                     user-supplied materials (never rewritten by agents)
   progress/                    ledger.jsonl, mastery.yml (data, not notes; no wikilinks needed)
   <domain>/                    one of DOMAINS.md's slugs; same vocabulary as content/community/
@@ -109,14 +109,14 @@ field on each course:
    of the rendered list with a warning; nothing auto-deletes and nothing breaks.
 4. **Deleting a group deletes the grouping only.** Its courses fall back to their domains, the
    same spirit as `todos.md`, where lines are checked off or parked but never removed.
-5. **Three writers, one discipline.** The app writes it through its group routes, Obsidian or a
-   text editor can edit it by hand, and an agent files new courses into it. The app guards its
-   own writes with a content hash, so a hand edit between read and write is refused rather than
-   overwritten - but an agent editing the file directly bypasses that, so read it immediately
-   before writing it.
+5. **Two writers, one file.** An agent writes it and Obsidian or a text editor edits it by hand;
+   the study app reads it and never writes it. That means there is no content-hash guard between
+   you and a human editing the same file, so read it immediately before you write it and write it
+   whole - the same discipline the app used to enforce for itself, now yours to keep.
 
-**Group operations** (agent side): create a group, rename one, delete one (courses fall back to
-their domains), and file or move a course. Filing is for when the domain is genuinely the wrong
+**Group operations**: create a group, rename one, delete one (courses fall back to
+their domains), and file or move a course. Since v1.6 these are the only way a group changes at
+all; the app has no group editing surface. Filing is for when the domain is genuinely the wrong
 answer - a course whose domain already reads well needs no group at all, and an explicit group
 that merely restates its domain is noise. Before creating a group, read the existing ones and
 reuse one if it fits; the vocabulary is deliberately open, unlike

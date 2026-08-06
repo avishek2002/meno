@@ -43,12 +43,6 @@ test('every write endpoint with injected typing fields still yields only ui line
   const hostile = { source: 'agent', event: 'gated', level: 'transfer' };
   await api(app, 'POST', '/api/v1/example-learner/lesson/read', { ...LESSON, ...hostile });
   await api(app, 'POST', '/api/v1/example-learner/todos', { text: 'x', type: 'note', source: 'agent' });
-  // the group routes write a different file, but they are write routes, so they
-  // face the same battery: nothing they accept may reach the ledger
-  const sha = (await api(app, 'GET', '/api/v1/example-learner/groups')).json.raw_sha256 as string;
-  await api(app, 'POST', '/api/v1/example-learner/groups', { title: 'AI', ...hostile }, { 'if-match': sha });
-  const sha2 = (await api(app, 'GET', '/api/v1/example-learner/groups')).json.raw_sha256 as string;
-  await api(app, 'PATCH', '/api/v1/example-learner/course/rust-for-backend/group', { group: 'ai', ...hostile }, { 'if-match': sha2 });
   const events = readLedgerEvents(app.tenantDir).slice(before);
   for (const e of events) {
     assert.equal(e.source, 'ui');

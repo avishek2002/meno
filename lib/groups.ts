@@ -1,8 +1,8 @@
 // Course groups: a tenant's own organization of their own courses, and the one
-// implementation of it - the app server writes through these functions,
+// implementation of it - the app server reads through these functions,
 // tools/validate.ts checks with them, and an agent following second-brain reads
-// the same file. Groups are display metadata and nothing else: a course's
-// membership never changes a byte of course content.
+// and writes the same file. Groups are display metadata and nothing else: a
+// course's membership never changes a byte of course content.
 //
 // Two layers, and the second is why this file is not just a lookup. A course
 // already has a place in the tree - it sits at <vault>/<domain>/<slug>/, from
@@ -17,10 +17,11 @@
 //
 // Everything here is pure. The file is parsed permissively (a hand-edited or
 // half-written groups.yml renders inert with a warning, never throws - the same
-// degraded-path rule the rest of the app follows) and serialized through the
-// yaml package's stringify, never string concatenation, so no group title can
-// inject structure into the document that holds it.
-import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
+// degraded-path rule the rest of the app follows). There is no writer left in
+// this file (v1.6): the app only reads, so an agent and a human editing YAML by
+// hand are the only authors, and both can already write arbitrary YAML - the
+// injection guard a serializer would provide has nothing left to protect.
+import { parse as parseYaml } from 'yaml';
 
 export interface Group {
   id: string;
@@ -53,7 +54,6 @@ export interface WalkedCourse {
 
 export const SCHEMA_VERSION = 1;
 export const MAX_GROUPS = 100;
-export const MAX_TITLE = 200;
 export const EMPTY_GROUPS: GroupsDoc = Object.freeze({ schema_version: SCHEMA_VERSION, groups: [] }) as GroupsDoc;
 
 const ID = /^[a-z0-9]+(-[a-z0-9]+)*$/;
@@ -61,39 +61,10 @@ const ID = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 // caller can turn a group id into a prototype write however it keys its maps
 const RESERVED_IDS = new Set(['__proto__', 'constructor', 'prototype']);
 
-const bad = (message: string, status: number): Error => Object.assign(new Error(message), { status });
-
 const clone = (doc: GroupsDoc): GroupsDoc => ({
   schema_version: doc.schema_version || SCHEMA_VERSION,
   groups: doc.groups.map((g) => ({ ...g, courses: [...g.courses] })),
 });
-
-/** Titles are one line: trimmed, inner whitespace collapsed, length-capped. */
-export function normalizeTitle(raw: unknown): string {
-  if (typeof raw !== 'string') throw bad('missing or invalid "title"', 400);
-  const title = raw.normalize('NFC').replace(/\s+/g, ' ').trim();
-  if (title === '') throw bad('a group title cannot be empty', 400);
-  if (title.length > MAX_TITLE) throw bad(`a group title cannot exceed ${MAX_TITLE} characters`, 400);
-  return title;
-}
-
-/** Kebab-case id derived from the title once, at creation, then stable for life. */
-export function slugifyGroupId(title: string): string {
-  const slug = title
-    .normalize('NFKD')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-  return ID.test(slug) && !RESERVED_IDS.has(slug) ? slug : 'group';
-}
-
-function uniqueId(base: string, taken: Set<string>): string {
-  if (!taken.has(base)) return base;
-  for (let n = 2; ; n++) {
-    const candidate = `${base}-${n}`;
-    if (!taken.has(candidate)) return candidate;
-  }
-}
 
 /**
  * Permissive read. Anything that does not match the shape is dropped with a
@@ -162,58 +133,6 @@ export function parseGroups(raw: string): { doc: GroupsDoc; warnings: string[] }
     groups.push({ id, title: title.normalize('NFC').replace(/\s+/g, ' ').trim(), courses: kept });
   }
   return { doc: { schema_version: SCHEMA_VERSION, groups }, warnings };
-}
-
-const HEADER = `# Course groups for this tenant - how the study app lays out your course list.
-# Purely organizational: a course's group never changes its content. A group here
-# overrides the default, which is the course's own domain directory. Format owner:
-# .agents/skills/second-brain/references/vault-conventions.md
-`;
-
-export function serializeGroups(doc: GroupsDoc): string {
-  return HEADER + stringifyYaml({ schema_version: SCHEMA_VERSION, groups: doc.groups });
-}
-
-// --- mutations (each returns a new document; each throws an HTTP-shaped error) ---
-
-export function addGroup(doc: GroupsDoc, rawTitle: unknown): GroupsDoc {
-  const title = normalizeTitle(rawTitle);
-  const next = clone(doc);
-  if (next.groups.length >= MAX_GROUPS) throw bad(`a tenant cannot have more than ${MAX_GROUPS} groups`, 400);
-  const id = uniqueId(slugifyGroupId(title), new Set(next.groups.map((g) => g.id)));
-  next.groups.push({ id, title, courses: [] });
-  return next;
-}
-
-function requireGroup(doc: GroupsDoc, id: string): Group {
-  const group = doc.groups.find((g) => g.id === id);
-  if (!group) throw bad(`no group "${id}"`, 404);
-  return group;
-}
-
-export function renameGroup(doc: GroupsDoc, id: string, rawTitle: unknown): GroupsDoc {
-  const title = normalizeTitle(rawTitle);
-  const next = clone(doc);
-  requireGroup(next, id).title = title;
-  return next;
-}
-
-/** Deleting a group deletes the grouping, never the courses - they fall back to Ungrouped. */
-export function removeGroup(doc: GroupsDoc, id: string): GroupsDoc {
-  const next = clone(doc);
-  requireGroup(next, id);
-  next.groups = next.groups.filter((g) => g.id !== id);
-  return next;
-}
-
-/** A course belongs to exactly one group, enforced here rather than hoped for. */
-export function setCourseGroup(doc: GroupsDoc, slug: string, groupId: string | null): GroupsDoc {
-  if (typeof slug !== 'string' || !ID.test(slug)) throw bad('missing or invalid course slug', 400);
-  const next = clone(doc);
-  if (groupId !== null) requireGroup(next, groupId);
-  for (const g of next.groups) g.courses = g.courses.filter((c) => c !== slug);
-  if (groupId !== null) requireGroup(next, groupId).courses.push(slug);
-  return next;
 }
 
 /** A domain slug rendered for a human: "ai-and-agents" -> "AI and agents". */
