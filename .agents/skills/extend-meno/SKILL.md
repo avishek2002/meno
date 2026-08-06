@@ -26,7 +26,7 @@ This skill owns safe local modification: the difference between "Meno is a produ
 Step-by-step versions with commands live in [references/recipes.md](references/recipes.md).
 
 - **Add a hand-made course** - build the same tree the generators build (profile, manifests, hub, lessons), validate against the format references; hand-made and generated courses are indistinguishable to the app and tutor.
-- **Amend an existing course** - add, retitle, or resequence lessons and modules in a course that already exists: manifest edits per the manifest spec, then `generate-module` for any new bodies. This recipe owns "add a lesson on X to my course" requests (including `#gen` todos of that shape).
+- **Amend an existing course** - add, retitle, or resequence lessons and modules in a course that already exists: manifest edits per the manifest spec, then `generate-module` for any new bodies. This recipe owns "add a lesson on X to my course" requests (including `#course #for-agent` todos of that shape).
 - **Add a custom skill** - scaffold under `.agents/skills/<name>/`, symlink, list in `AGENTS.md`, then cold-start test it: a fresh agent session must execute it from the SKILL.md alone.
 - **Adjust shipped behavior** (question menus, lesson template, conventions) - prefer an additive custom skill or reference note over editing a shipped skill; a shipped-skill edit is allowed but recorded in a local `docs/local-divergences.md`, because upstream pulls will conflict exactly there and future-you needs to know which side to keep.
 - **Draft a topic pack** - a pre-built course under `content/community/` following the same manifests; the full spec arrives in Phase 8, so mark drafts as such.

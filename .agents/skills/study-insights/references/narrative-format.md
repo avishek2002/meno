@@ -78,8 +78,8 @@ metrics_snapshot:
    `(repeated - first suggested YYYY-MM-DD)`; anything the learner declines in the same
    conversation becomes an unchecked `todos.md` line instead of being dropped.
 5. **Topics you might want** - at most 3, each with the evidence that surfaced it
-   (`referenced_but_untaught`, a `#note` todo, an uncovered `sources/` file, or the profile
-   goal read against current coverage) - never a topic outside that pool.
+   (`referenced_but_untaught`, a `#admin #for-me` todo, an uncovered `sources/` file, or the
+   profile goal read against current coverage) - never a topic outside that pool.
 6. **Limits of this report** - required. Starts from the snapshot's own `limits` array.
 
 ## The cite-your-numbers rule

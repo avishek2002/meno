@@ -7,6 +7,10 @@
 // The study-insights skill QUOTES this output; it never computes a number.
 import { deriveMastery, type LedgerEvent, type Mastery } from './mastery.ts';
 import type { VaultGraph } from './vault.ts';
+// type-only, so it is erased before Node ever sees it (same reasoning as
+// insights-io.ts's parseTodos import) - app/shared/types.ts is the one place
+// the two todo axes are defined, and TodoCounts' keys must match them exactly
+import type { TodoAudience, TodoKind } from '../app/shared/types.ts';
 
 export interface Rate {
   value: number | null;
@@ -19,11 +23,11 @@ const rate = (n: number, of: number): Rate =>
   of === 0 ? { value: null, n, of, reason: 'insufficient_data' } : { value: Math.round((n / of) * 100) / 100, n, of };
 
 export interface TodoCounts {
-  gen: number;
-  repo: number;
-  note: number;
-  done: number;
-  open: number;
+  byKind: Record<TodoKind, number>; // open count per kind, every key present (0 when none)
+  byAudience: Record<TodoAudience, number>; // open count per audience, every key present
+  done: number; // all done lines
+  open: number; // all open lines, including untyped ones - not guaranteed to equal
+  // the sum of either record above
 }
 
 export interface ManifestInfo {

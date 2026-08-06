@@ -12,7 +12,12 @@ import { checkInsights } from '../validate.ts';
 const EXAMPLE = fileURLToPath(new URL('../../examples/example-learner', import.meta.url));
 const AS_OF = '2026-08-09';
 
-const EMPTY_TODOS: TodoCounts = { gen: 0, repo: 0, note: 0, done: 0, open: 0 };
+const EMPTY_TODOS: TodoCounts = {
+  byKind: { course: 0, 'content-fix': 0, vault: 0, feature: 0, bug: 0, study: 0, admin: 0 },
+  byAudience: { 'for-agent': 0, 'for-me': 0 },
+  done: 0,
+  open: 0,
+};
 
 test('computeInsights over the committed example tenant is deterministic', () => {
   const inputs = loadInsightsInputs(EXAMPLE);

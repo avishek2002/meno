@@ -15,6 +15,34 @@ _Last updated: 2026-08-06_
 
 ## Done
 
+- 2026-08-06 - **Todo tags split into two orthogonal axes: seven kinds, two audiences.**
+  The old three-tag namespace (`#gen`/`#repo`/`#note`) cut at the wrong angle - one tag cannot
+  carry both what the work is and who can do it. Replaced with kind (`#course`,
+  `#content-fix`, `#vault`, `#feature`, `#bug`, `#study`, `#admin`, exactly one per line) and
+  audience (`#for-agent`, `#for-me`, exactly one per line), independent of each other.
+  `todo-format.md` rewritten as the canonical owner (both axis tables, the line format, the
+  read-only back-compat aliases mapping the three old tags onto the new pair, the
+  `addTodo` default-section table, and a lifecycle section that keys "scanned"/"acted" off
+  `#for-agent` rather than a kind). `vault-conventions.md`'s closed-namespace paragraph
+  updated to list all nine tags. Every skill's inline reference to the old tags
+  (second-brain, extend-meno, elicit-needs, generate-curriculum, study-insights,
+  narrative-format.md) retagged to the pair that actually fits each sentence - not a blind
+  substitution: generate-curriculum's empty-`sources/` reminder became `#vault #for-me`
+  (vault work the user must do), study-insights' topic-candidate pool became
+  `#admin #for-me` (a latent personal note, not an already-actionable request). Both
+  committed fixtures (`examples/example-learner/todos.md`,
+  `examples/seeded-faults/publish-fixture/todos.md`) retagged; the example-learner one
+  extended to show the axis range (`#course #for-agent`, `#study #for-me`,
+  `#vault #for-me`). `docs/specs/insights.md`'s `usage.todos` metric updated to the new
+  `{ byKind, byAudience, done, open }` shape. `docs/specs/app.md` notes that this is a
+  breaking change to `GET :tenant/todos`'s `type` value set, which
+  `docs/integration-surface.md` declares stable - accepted because no in-house tooling
+  consumes it yet. Types (`app/shared/types.ts`), the parser/writer (`app/server/todos.ts`),
+  API validation (`app/server/routes.ts`), `lib/insights.ts`'s `TodoCounts`, and the client
+  UI (kind/audience selects, glossary, guidebook, pills, InsightsPage tiles) landed in the
+  same change - see the concurrent TypeScript-side entry (if separately logged) for that
+  half; this entry covers the documentation and fixture half.
+
 - 2026-08-06 - **v1.6: course-list collapse and filter, and the group write surface removed.**
   The course list is now native `<details>`/`<summary>` sections with a `Collapse all` /
   `Expand all` control and a filter input that substring-matches course titles and slugs,

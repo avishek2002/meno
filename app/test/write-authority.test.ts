@@ -42,7 +42,14 @@ test('every write endpoint with injected typing fields still yields only ui line
   const before = readLedgerEvents(app.tenantDir).length;
   const hostile = { source: 'agent', event: 'gated', level: 'transfer' };
   await api(app, 'POST', '/api/v1/example-learner/lesson/read', { ...LESSON, ...hostile });
-  await api(app, 'POST', '/api/v1/example-learner/todos', { text: 'x', type: 'note', source: 'agent' });
+  // a valid kind/audience pair on purpose: a payload the validator rejects would never reach
+  // the write path, so the hostile typing fields below would go untested
+  await api(app, 'POST', '/api/v1/example-learner/todos', {
+    text: 'x',
+    type: 'admin',
+    audience: 'for-me',
+    ...hostile,
+  });
   const events = readLedgerEvents(app.tenantDir).slice(before);
   for (const e of events) {
     assert.equal(e.source, 'ui');

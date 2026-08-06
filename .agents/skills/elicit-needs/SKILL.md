@@ -46,7 +46,7 @@ the pack covers, its audience and hours, and offer it as "a vetted structure exi
 adopt it as your skeleton (recommended), or generate fresh". Either choice still hands off into
 `generate-curriculum` next; adopting just tells it which pack to start from.
 
-Hand off without a gap: offer to continue straight into [`generate-curriculum`](../generate-curriculum/SKILL.md) in this same session - the contract says the learner studies today, and the skeleton plus module 1 is what makes that true. Only if the user declines, leave a `#gen` todo in `todos.md` so the queue remembers.
+Hand off without a gap: offer to continue straight into [`generate-curriculum`](../generate-curriculum/SKILL.md) in this same session - the contract says the learner studies today, and the skeleton plus module 1 is what makes that true. Only if the user declines, leave a `#course #for-agent` todo in `todos.md` so the queue remembers.
 
 ## Re-clarification mode (invoked from tutor sessions)
 

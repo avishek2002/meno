@@ -77,11 +77,12 @@ data without it feeling like a second gate.
   overdue", not "study more"). If a suggestion repeats one from an earlier report, mark it
   `(repeated - first suggested YYYY-MM-DD)` by checking prior `insights/*-insights.md`
   frontmatter dates. If the learner declines a suggestion in conversation, add it to
-  `todos.md` as an unchecked `#gen` or `#repo` line per
+  `todos.md` as an unchecked line, kind `#course` or `#feature` as fits the suggestion and
+  audience `#for-agent`, per
   [todo-format.md](../second-brain/references/todo-format.md) rather than dropping it -
   same rule second-brain uses for any declined proposal.
 - **Topics you might want** - at most 3. The candidate pool is exactly:
-  `vault.referenced_but_untaught` entries, open `#note` todos that read as topic requests,
+  `vault.referenced_but_untaught` entries, open `#admin #for-me` todos that read as topic requests,
   filenames under `sources/` that no course currently covers, and the profile's stated
   goal read against what is actually taught so far. Never invent a topic outside this
   pool. For each candidate, name the evidence that surfaced it. Do not generate anything

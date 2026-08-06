@@ -25,7 +25,7 @@ import { parseLedger, type LedgerEvent } from './mastery.ts';
 import { loadVaultFiles, buildVaultGraph, type VaultGraph } from './vault.ts';
 import { parseLesson } from './lesson.ts';
 import type { ManifestInfo, TodoCounts } from './insights.ts';
-import { parseTodos } from '../app/server/todos.ts';
+import { parseTodos, TODO_KINDS, TODO_AUDIENCES } from '../app/server/todos.ts';
 
 export function readInsightsLedger(tenantDir: string): LedgerEvent[] {
   const ledgerPath = join(tenantDir, 'progress', 'ledger.jsonl');
@@ -37,18 +37,23 @@ export function loadInsightsVault(tenantDir: string): VaultGraph {
   return buildVaultGraph(loadVaultFiles(tenantDir));
 }
 
-// Per-type open counts (gen/repo/note), done total, open total - open total
-// counts every unfinished line regardless of type (including the untyped ones
-// TODO_LINE still parses), so it is not guaranteed to equal gen+repo+note.
+// Per-kind and per-audience open counts, done total, open total - open total
+// counts every unfinished line regardless of tags (including the untyped ones
+// TODO_LINE still parses), so it is not guaranteed to equal the sum of either
+// record.
 export function loadTodoCounts(tenantDir: string): TodoCounts {
   const file = join(tenantDir, 'todos.md');
   const raw = existsSync(file) ? readFileSync(file, 'utf8') : '';
   const all = parseTodos(raw).sections.flatMap((s) => s.todos);
-  const openOfType = (t: 'gen' | 'repo' | 'note'): number => all.filter((td) => td.type === t && !td.done).length;
+  const byKind = Object.fromEntries(
+    TODO_KINDS.map((k) => [k, all.filter((td) => td.type === k && !td.done).length]),
+  ) as TodoCounts['byKind'];
+  const byAudience = Object.fromEntries(
+    TODO_AUDIENCES.map((a) => [a, all.filter((td) => td.audience === a && !td.done).length]),
+  ) as TodoCounts['byAudience'];
   return {
-    gen: openOfType('gen'),
-    repo: openOfType('repo'),
-    note: openOfType('note'),
+    byKind,
+    byAudience,
     done: all.filter((td) => td.done).length,
     open: all.filter((td) => !td.done).length,
   };
