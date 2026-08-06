@@ -11,14 +11,14 @@ import { walkTenant, vaultIndex } from './tree.ts';
 import { renderMarkdown } from './markdown.ts';
 import { gradeCheck } from './checks.ts';
 import { appendUiEvent, readLedgerEvents } from './ledger.ts';
-import { parseTodos, addTodo, patchTodo, parkTodo, sha256 } from './todos.ts';
+import { parseTodos, addTodo, patchTodo, parkTodo, sha256, TODO_KINDS, TODO_AUDIENCES } from './todos.ts';
 import { readGroups } from './groups.ts';
 import { resolveGroups } from '../../lib/groups.ts';
 import { parseLesson } from '../../lib/lesson.ts';
 import { deriveMastery } from '../../lib/mastery.ts';
 import { computeInsights } from '../../lib/insights.ts';
 import { loadInsightsInputs } from '../../lib/insights-io.ts';
-import type { LessonResponse, PublicCheck, SubmitRequest, SubmitResponse, InsightsResponse, GroupsResponse } from '../shared/types.ts';
+import type { LessonResponse, PublicCheck, SubmitRequest, SubmitResponse, InsightsResponse, GroupsResponse, TodoKind, TodoAudience } from '../shared/types.ts';
 import { writeFileAtomic } from './atomic.ts';
 
 interface Ctx {
@@ -272,9 +272,15 @@ const postTodos: Handler = async (req, res, p, ctx) => {
   const body = await readBody(req);
   const text = str(body.text, 'text');
   const type = str(body.type, 'type');
-  if (!['gen', 'repo', 'note'].includes(type)) throw Object.assign(new Error('type must be gen|repo|note'), { status: 400 });
+  const audience = str(body.audience, 'audience');
+  if (!TODO_KINDS.includes(type as TodoKind)) {
+    throw Object.assign(new Error(`type must be one of ${TODO_KINDS.join(', ')}`), { status: 400 });
+  }
+  if (!TODO_AUDIENCES.includes(audience as TodoAudience)) {
+    throw Object.assign(new Error(`audience must be one of ${TODO_AUDIENCES.join(', ')}`), { status: 400 });
+  }
   const result = withTodosFile(ctx, p.tenant, req, (raw) =>
-    addTodo(raw, text, type as 'gen' | 'repo' | 'note', typeof body.section === 'string' ? body.section : undefined),
+    addTodo(raw, text, type as TodoKind, audience as TodoAudience, typeof body.section === 'string' ? body.section : undefined),
   );
   json(res, 200, result);
 };

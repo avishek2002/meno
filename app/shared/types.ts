@@ -109,10 +109,21 @@ export interface SubmitResponse {
   event_ts: string;
 }
 
+// Two orthogonal axes replacing the old single-tag namespace (#gen/#repo/#note):
+// kind is what the work is, audience is who can do it. See
+// .agents/skills/second-brain/references/todo-format.md for the full contract,
+// including the read-only back-compat aliases app/server/todos.ts still parses.
+export type TodoKind = 'course' | 'content-fix' | 'vault' | 'feature' | 'bug' | 'study' | 'admin';
+export type TodoAudience = 'for-agent' | 'for-me';
+
 export interface Todo {
   line: number; // 0-based index into the raw file
   text: string;
-  type: 'gen' | 'repo' | 'note' | null;
+  // field name deliberately unchanged - GET :tenant/todos is stable surface
+  // (docs/integration-surface.md); only the value set changed, which is a
+  // breaking change to that surface's payload shape, noted in docs/specs/app.md
+  type: TodoKind | null;
+  audience: TodoAudience | null;
   done: boolean;
   completedOn: string | null;
 }

@@ -49,6 +49,10 @@ write-authority seam (decision 14) is enforced in code.
 7. Todos: create, edit, complete, and park over `todos.md`, line-precise. Every mutation
    carries an `If-Match` content hash; an Obsidian edit between read and write returns
    409 and the client re-reads. Lines are never deleted - only checked off or parked.
+   `GET :tenant/todos` is declared stable surface in
+   [docs/integration-surface.md](../integration-surface.md), and the two-axis tag rewrite
+   (todo-format.md) changes that response's `type` field to a new value set - a breaking
+   change to that surface, accepted because no in-house tooling consumes it yet.
 8. Course groups, in two layers, read-only to the app. A course already sits under a domain
    directory, so the course list groups by domain with no setup at all; `groups.yml` holds the
    learner's own named groups for what a domain cannot say ("Version Control", "Software

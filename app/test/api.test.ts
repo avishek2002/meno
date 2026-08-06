@@ -8,6 +8,8 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { withTenant, api, type TestApp } from './helpers.ts';
 import { readLedgerEvents } from '../server/ledger.ts';
+import { parseTodos, addTodo, patchTodo } from '../server/todos.ts';
+import type { TodoKind } from '../shared/types.ts';
 
 const L = { course: 'rust-for-backend', module: '01-syntax-and-ownership-basics' };
 
@@ -96,7 +98,13 @@ test('todos round-trip touches only the intended lines', async () => {
   const todosPath = join(app.tenantDir, 'todos.md');
   const before = readFileSync(todosPath, 'utf8').split('\n');
   const { json: list } = await api(app, 'GET', '/api/v1/example-learner/todos');
-  await api(app, 'POST', '/api/v1/example-learner/todos', { text: 'review borrowing notes', type: 'note' }, { 'if-match': String(list.raw_sha256) });
+  await api(
+    app,
+    'POST',
+    '/api/v1/example-learner/todos',
+    { text: 'review borrowing notes', type: 'admin', audience: 'for-me' },
+    { 'if-match': String(list.raw_sha256) },
+  );
   const afterAdd = readFileSync(todosPath, 'utf8').split('\n');
   // every pre-existing line survives in order (a subsequence), and the only
   // substantive addition is the todo line (plus its section scaffolding)
@@ -107,7 +115,7 @@ test('todos round-trip touches only the intended lines', async () => {
     cursor++;
   }
   const added = afterAdd.filter((l) => !before.includes(l));
-  assert.deepEqual(added.filter((l) => l.startsWith('- ')), ['- [ ] review borrowing notes #note']);
+  assert.deepEqual(added.filter((l) => l.startsWith('- ')), ['- [ ] review borrowing notes #admin #for-me']);
   assert.ok(added.every((l) => l.startsWith('- ') || l.startsWith('## ') || l === ''));
 
   const { json: list2 } = await api(app, 'GET', '/api/v1/example-learner/todos');
@@ -118,7 +126,7 @@ test('todos round-trip touches only the intended lines', async () => {
   const afterDone = readFileSync(todosPath, 'utf8').split('\n');
   const changed = afterDone.filter((l, i) => afterAdd[i] !== l);
   assert.equal(changed.length, 1);
-  assert.match(changed[0], /^- \[x\] review borrowing notes #note ✅ \d{4}-\d{2}-\d{2}$/);
+  assert.match(changed[0], /^- \[x\] review borrowing notes #admin #for-me ✅ \d{4}-\d{2}-\d{2}$/);
 });
 
 test('a stale If-Match returns 409 instead of clobbering an Obsidian edit', async () => {
@@ -126,8 +134,89 @@ test('a stale If-Match returns 409 instead of clobbering an Obsidian edit', asyn
   // simulate an external edit after our read
   const todosPath = join(app.tenantDir, 'todos.md');
   writeFileSync(todosPath, readFileSync(todosPath, 'utf8') + '- [ ] edited in obsidian #note\n');
-  const res = await api(app, 'POST', '/api/v1/example-learner/todos', { text: 'x', type: 'gen' }, { 'if-match': String(list.raw_sha256) });
+  const res = await api(
+    app,
+    'POST',
+    '/api/v1/example-learner/todos',
+    { text: 'x', type: 'course', audience: 'for-agent' },
+    { 'if-match': String(list.raw_sha256) },
+  );
   assert.equal(res.status, 409);
+});
+
+test('POST /todos 400s on an unknown kind and on a missing or unknown audience', async () => {
+  const { json: list } = await api(app, 'GET', '/api/v1/example-learner/todos');
+  const ifMatch = { 'if-match': String(list.raw_sha256) };
+  const badKind = await api(app, 'POST', '/api/v1/example-learner/todos', { text: 'x', type: 'nope', audience: 'for-agent' }, ifMatch);
+  assert.equal(badKind.status, 400);
+  assert.match(String(badKind.json.error), /type must be one of/);
+  const missingAudience = await api(app, 'POST', '/api/v1/example-learner/todos', { text: 'x', type: 'course' }, ifMatch);
+  assert.equal(missingAudience.status, 400);
+  const badAudience = await api(app, 'POST', '/api/v1/example-learner/todos', { text: 'x', type: 'course', audience: 'nope' }, ifMatch);
+  assert.equal(badAudience.status, 400);
+  assert.match(String(badAudience.json.error), /audience must be one of/);
+});
+
+test('parsing a line with both new tags yields the right kind and audience, in either tag order', () => {
+  const raw = '# Todos\n\n## Content\n- [ ] a #course #for-agent\n- [ ] b #for-me #vault\n';
+  const todos = parseTodos(raw).sections.flatMap((s) => s.todos);
+  assert.deepEqual(
+    todos.map((t) => ({ text: t.text, type: t.type, audience: t.audience })),
+    [
+      { text: 'a', type: 'course', audience: 'for-agent' },
+      { text: 'b', type: 'vault', audience: 'for-me' },
+    ],
+  );
+});
+
+test('the three old tags still parse to their alias targets', () => {
+  const raw = '# Todos\n\n## Content\n- [ ] a #gen\n- [ ] b #repo\n- [ ] c #note\n';
+  const todos = parseTodos(raw).sections.flatMap((s) => s.todos);
+  assert.deepEqual(
+    todos.map((t) => ({ type: t.type, audience: t.audience })),
+    [
+      { type: 'course', audience: 'for-agent' },
+      { type: 'feature', audience: 'for-agent' },
+      { type: 'admin', audience: 'for-me' },
+    ],
+  );
+});
+
+test('an explicit new tag beats an alias on the same line', () => {
+  const raw = '# Todos\n\n## Content\n- [ ] a #gen #vault\n';
+  const todo = parseTodos(raw).sections.flatMap((s) => s.todos)[0];
+  // kind comes from the explicit #vault tag, not the #gen alias's course;
+  // audience has no explicit tag on this line, so it still falls back to the alias
+  assert.equal(todo.type, 'vault');
+  assert.equal(todo.audience, 'for-agent');
+});
+
+test('patchTodo text-edit preserves both tags and the completion marker', () => {
+  const raw = '# Todos\n\n## Content\n- [x] old text #course #for-agent ✅ 2026-08-05\n';
+  const next = patchTodo(raw, 3, { text: 'new text' }, '2026-08-06');
+  assert.equal(next.split('\n')[3], '- [x] new text #course #for-agent ✅ 2026-08-05');
+});
+
+test('addTodo puts each kind under its default section heading', () => {
+  const cases: [TodoKind, string][] = [
+    ['course', 'Content'],
+    ['content-fix', 'Content'],
+    ['vault', 'Vault'],
+    ['feature', 'Setup'],
+    ['bug', 'Setup'],
+    ['study', 'Study'],
+    ['admin', 'Notes'],
+  ];
+  for (const [kind, heading] of cases) {
+    const next = addTodo('# Todos\n', 'x', kind, 'for-agent');
+    const lines = next.split('\n');
+    const headingLine = lines.findIndex((l) => l.trim() === `## ${heading}`);
+    assert.notEqual(headingLine, -1, `expected a "## ${heading}" section for kind ${kind}`);
+    assert.ok(
+      lines.slice(headingLine + 1).some((l) => l.startsWith(`- [ ] x #${kind} #for-agent`)),
+      `expected the new ${kind} todo under "## ${heading}"`,
+    );
+  }
 });
 
 test('concurrent submits plus an agent appender never corrupt the ledger', async () => {

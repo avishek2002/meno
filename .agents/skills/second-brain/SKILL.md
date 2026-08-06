@@ -25,7 +25,7 @@ Full spec with naming, folders, tags, and hub templates: [references/vault-conve
 
 ## Operations
 
-Shared rule for all of them: a proposal the user declines becomes an unchecked todo in `todos.md` (typed `#gen` or `#repo` as appropriate) - declined is not dropped.
+Shared rule for all of them: a proposal the user declines becomes an unchecked todo in `todos.md` (kind `#course`, `#vault`, `#feature`, or `#bug` as appropriate, audience `#for-agent`) - declined is not dropped.
 
 - **Weave in** (after any new note or content batch): link it from its hub, add its lateral links, then check its backlinks - if nothing points TO it beyond the hub, ask whether an existing note should.
 - **Hub refresh**: regenerate a hub's derived parts (Mermaid map, link lists) from the manifests; preserve every human-written line. Hubs are part machine-view, part journal - only the machine part regenerates. The home note's course list is grouped per `groups.yml`, recomputed at every refresh rather than stored twice.

@@ -50,6 +50,24 @@ export const GUIDE: GuideSection[] = [
     ],
   },
   {
+    id: 'todo-tags',
+    title: 'Todo tags: kind and audience',
+    paras: [
+      'Every todo carries two independent tags. Kind says what the work is, and routes it to the right skill if the agent ever acts on it. Audience says who can do it, and is the actual permission gate: the agent may propose a "for agent" todo, but never a "for me" one - proposing is still the ceiling either way, it always asks before acting.',
+    ],
+    list: [
+      { label: 'Course', body: 'New learning content to generate - a course, module, or lesson.' },
+      { label: 'Content fix', body: 'Existing content is wrong or stale - a bad claim, a dead citation.' },
+      { label: 'Vault', body: 'Vault work - wikilinks, hub notes, orphans, adding files to sources/.' },
+      { label: 'Feature', body: 'Add or change how this Meno instance works.' },
+      { label: 'Bug', body: 'Something in this Meno instance is broken.' },
+      { label: 'Study', body: 'Learning or practice work to do yourself.' },
+      { label: 'Admin', body: 'A personal reminder.' },
+      { label: 'For agent', body: 'The agent may propose doing it. Proposing is still the ceiling - it always asks before acting.' },
+      { label: 'For me', body: 'Yours. The agent reads it for context and may remind you, but never acts on it.' },
+    ],
+  },
+  {
     id: 'what-the-app-will-not-do',
     title: 'What this app deliberately will not do',
     paras: [

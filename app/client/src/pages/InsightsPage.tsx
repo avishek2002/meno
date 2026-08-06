@@ -10,6 +10,7 @@ import { useRegisterRevalidate } from '../RevalidateContext';
 import { EmptyState } from '../components/EmptyState';
 import type { InsightsResponse, Rate } from '../../../shared/types.ts';
 import { InfoTip } from '../components/InfoTip';
+import { TODO_KIND_INFO } from '../todoTags';
 
 function RateText({ value }: { value: Rate }) {
   if (value.value === null) return <span className="rate-empty">not enough data ({value.n})</span>;
@@ -210,12 +211,18 @@ export function InsightsPage({ tenant }: { tenant: string }) {
           <Stat label="Reads">{usage.surface_mix.reads}</Stat>
         </div>
         <div className="stat-grid">
-          <Stat label="Todos: content">{usage.todos.gen} open</Stat>
-          <Stat label="Todos: repo">{usage.todos.repo} open</Stat>
-          <Stat label="Todos: note">{usage.todos.note} open</Stat>
+          <Stat label="Todos: for agent">{usage.todos.byAudience['for-agent']} open</Stat>
+          <Stat label="Todos: for me">{usage.todos.byAudience['for-me']} open</Stat>
           <Stat label="Todos: done">{usage.todos.done}</Stat>
           <Stat label="Todos: open total">{usage.todos.open}</Stat>
         </div>
+        <ul className="todo-kind-breakdown">
+          {TODO_KIND_INFO.map((k) => (
+            <li key={k.kind}>
+              {k.label}: {usage.todos.byKind[k.kind]}
+            </li>
+          ))}
+        </ul>
         {usage.planned_debt.length > 0 && (
           <table>
             <thead>

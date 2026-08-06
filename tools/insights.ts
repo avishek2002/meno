@@ -56,7 +56,9 @@ function summarize(r: InsightsReport): string {
   const s = r.usage.surface_mix;
   lines.push(`  surface mix: ui_recognition=${s.ui_recognition} agent_recognition=${s.agent_recognition} agent_transfer=${s.agent_transfer} reads=${s.reads}`);
   const t = r.usage.todos;
-  lines.push(`  todos: gen=${t.gen} repo=${t.repo} note=${t.note} open=${t.open} done=${t.done}`, '');
+  const byKind = Object.entries(t.byKind).map(([k, n]) => `${k}=${n}`).join(' ');
+  const byAudience = Object.entries(t.byAudience).map(([a, n]) => `${a}=${n}`).join(' ');
+  lines.push(`  todos: ${byAudience} | ${byKind} | open=${t.open} done=${t.done}`, '');
 
   lines.push('Vault health');
   lines.push(`  orphaned notes: ${r.vault.orphaned_notes.length}`);

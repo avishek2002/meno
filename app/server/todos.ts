@@ -1,13 +1,28 @@
 // Line-precise todos.md operations. The format is owned by
-// second-brain/references/todo-format.md: markdown checkboxes, one closed
-// hashtag set, completion via "✅ YYYY-MM-DD", lines never deleted - only
-// checked off or moved to "## Parked". Every mutation is a whole-file atomic
-// replace guarded by the caller's If-Match content hash.
+// second-brain/references/todo-format.md: markdown checkboxes, two closed
+// hashtag axes (kind, audience), completion via "✅ YYYY-MM-DD", lines never
+// deleted - only checked off or moved to "## Parked". Every mutation is a
+// whole-file atomic replace guarded by the caller's If-Match content hash.
+//
+// Back-compat: the old single-tag namespace (#gen/#repo/#note) still parses,
+// read-only, via ALIASES below - never written again by any writer here.
 import { createHash } from 'node:crypto';
-import type { Todo, TodosResponse } from '../shared/types.ts';
+import type { TodoAudience, TodoKind, TodosResponse } from '../shared/types.ts';
 
 const TODO_LINE = /^- \[( |x)\] (.*)$/;
-const TYPE_TAG = /#(gen|repo|note)\b/;
+export const TODO_KINDS: TodoKind[] = ['course', 'content-fix', 'vault', 'feature', 'bug', 'study', 'admin'];
+export const TODO_AUDIENCES: TodoAudience[] = ['for-agent', 'for-me'];
+const KIND_TAG = /#(course|content-fix|vault|feature|bug|study|admin)\b/;
+const AUDIENCE_TAG = /#(for-agent|for-me)\b/;
+const ALIAS_TAG = /#(gen|repo|note)\b/;
+// every tag string this parser recognizes, for stripping/preserving as a
+// group - kept in sync with KIND_TAG | AUDIENCE_TAG | ALIAS_TAG above
+const ALL_TAGS = /#(course|content-fix|vault|feature|bug|study|admin|for-agent|for-me|gen|repo|note)\b/g;
+const ALIASES: Record<string, { kind: TodoKind; audience: TodoAudience }> = {
+  gen: { kind: 'course', audience: 'for-agent' },
+  repo: { kind: 'feature', audience: 'for-agent' },
+  note: { kind: 'admin', audience: 'for-me' },
+};
 const COMPLETED = /✅\s*(\d{4}-\d{2}-\d{2})/;
 
 export const sha256 = (s: string): string => createHash('sha256').update(s).digest('hex');
@@ -27,10 +42,17 @@ export function parseTodos(raw: string): TodosResponse {
     const m = line.match(TODO_LINE);
     if (!m) continue;
     const body = m[2];
+    // an explicit kind/audience tag wins over an alias on the same line;
+    // each axis falls back to the alias's half only when that axis has no
+    // explicit tag of its own
+    const alias = ALIASES[body.match(ALIAS_TAG)?.[1] ?? ''];
+    const kind = (body.match(KIND_TAG)?.[1] as TodoKind | undefined) ?? alias?.kind ?? null;
+    const audience = (body.match(AUDIENCE_TAG)?.[1] as TodoAudience | undefined) ?? alias?.audience ?? null;
     current.todos.push({
       line: i,
-      text: body.replace(TYPE_TAG, '').replace(COMPLETED, '').trim(),
-      type: (body.match(TYPE_TAG)?.[1] as Todo['type']) ?? null,
+      text: body.replace(ALL_TAGS, '').replace(COMPLETED, '').replace(/\s+/g, ' ').trim(),
+      type: kind,
+      audience,
       done: m[1] === 'x',
       completedOn: body.match(COMPLETED)?.[1] ?? null,
     });
@@ -38,9 +60,19 @@ export function parseTodos(raw: string): TodosResponse {
   return { sections: sections.filter((s) => s.heading !== '' || s.todos.length > 0), raw_sha256: sha256(raw) };
 }
 
-export function addTodo(raw: string, text: string, type: 'gen' | 'repo' | 'note', section?: string): string {
-  const heading = section ?? (type === 'repo' ? 'Repo' : type === 'gen' ? 'Content' : 'Notes');
-  const line = `- [ ] ${text} #${type}`;
+const DEFAULT_SECTION: Record<TodoKind, string> = {
+  course: 'Content',
+  'content-fix': 'Content',
+  vault: 'Vault',
+  feature: 'Setup',
+  bug: 'Setup',
+  study: 'Study',
+  admin: 'Notes',
+};
+
+export function addTodo(raw: string, text: string, kind: TodoKind, audience: TodoAudience, section?: string): string {
+  const heading = section ?? DEFAULT_SECTION[kind];
+  const line = `- [ ] ${text} #${kind} #${audience}`;
   const lines = raw.split('\n');
   const idx = lines.findIndex((l) => l.trim() === `## ${heading}`);
   if (idx === -1) {
@@ -68,9 +100,12 @@ export function patchTodo(
   let body = m[2];
   let mark = m[1];
   if (patch.text !== undefined) {
-    const type = body.match(TYPE_TAG)?.[0] ?? '';
+    // preserve every recognized tag (kind, audience, or an old alias) in the
+    // order it appeared, plus the completion marker - a text edit rewrites
+    // only the text, same rule as the single-tag format did
+    const tags = body.match(ALL_TAGS) ?? [];
     const done = body.match(COMPLETED)?.[0] ?? '';
-    body = [patch.text.trim(), type, done].filter(Boolean).join(' ');
+    body = [patch.text.trim(), ...tags, done].filter(Boolean).join(' ');
   }
   if (patch.done !== undefined) {
     mark = patch.done ? 'x' : ' ';

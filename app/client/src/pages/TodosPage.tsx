@@ -7,10 +7,9 @@ import { useResource } from '../useResource';
 import { useRegisterRevalidate } from '../RevalidateContext';
 import { EmptyState } from '../components/EmptyState';
 import { postJson, patchJson, ApiError } from '../api';
-import type { TodosResponse } from '../../../shared/types.ts';
+import type { TodoAudience, TodoKind, TodosResponse } from '../../../shared/types.ts';
 import { InfoTip } from '../components/InfoTip';
-
-const TYPES: Array<'gen' | 'repo' | 'note'> = ['gen', 'repo', 'note'];
+import { TODO_KIND_INFO, TODO_AUDIENCE_INFO, kindInfo, audienceInfo } from '../todoTags';
 
 export function TodosPage({ tenant }: { tenant: string }) {
   const base = `/api/v1/${encodeURIComponent(tenant)}/todos`;
@@ -18,7 +17,8 @@ export function TodosPage({ tenant }: { tenant: string }) {
   useRegisterRevalidate(revalidate);
 
   const [newText, setNewText] = useState('');
-  const [newType, setNewType] = useState<'gen' | 'repo' | 'note'>('gen');
+  const [newKind, setNewKind] = useState<TodoKind>('course');
+  const [newAudience, setNewAudience] = useState<TodoAudience>('for-agent');
   const [busy, setBusy] = useState<number | 'new' | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [editing, setEditing] = useState<number | null>(null);
@@ -42,7 +42,7 @@ export function TodosPage({ tenant }: { tenant: string }) {
     setBusy('new');
     setNotice(null);
     try {
-      await postJson(base, { text: newText.trim(), type: newType }, ifMatch);
+      await postJson(base, { text: newText.trim(), type: newKind, audience: newAudience }, ifMatch);
       setNewText('');
       revalidate();
     } catch (e) {
@@ -113,17 +113,33 @@ export function TodosPage({ tenant }: { tenant: string }) {
           placeholder="New todo"
           disabled={busy === 'new'}
         />
-        <select value={newType} onChange={(e) => setNewType(e.target.value as 'gen' | 'repo' | 'note')} disabled={busy === 'new'}>
-          {TYPES.map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </select>
+        <label className="todo-create-select">
+          Kind <InfoTip entry="todoKind" />
+          <select value={newKind} onChange={(e) => setNewKind(e.target.value as TodoKind)} disabled={busy === 'new'}>
+            {TODO_KIND_INFO.map((k) => (
+              <option key={k.kind} value={k.kind}>
+                {k.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="todo-create-select">
+          Audience <InfoTip entry="todoAudience" />
+          <select value={newAudience} onChange={(e) => setNewAudience(e.target.value as TodoAudience)} disabled={busy === 'new'}>
+            {TODO_AUDIENCE_INFO.map((a) => (
+              <option key={a.audience} value={a.audience}>
+                {a.label}
+              </option>
+            ))}
+          </select>
+        </label>
         <button type="submit" disabled={busy === 'new' || !newText.trim()}>
           Add
         </button>
       </form>
+      <p className="todo-create-helper">
+        {kindInfo(newKind).blurb} {audienceInfo(newAudience).blurb}
+      </p>
 
       {totalTodos === 0 ? (
         <EmptyState title={`No todos yet for ${tenant}`} body="Nothing is queued here yet." />
@@ -165,7 +181,8 @@ export function TodosPage({ tenant }: { tenant: string }) {
                       {t.text}
                     </button>
                   )}
-                  {t.type && <span className={`type-tag type-${t.type}`}>{t.type}</span>}
+                  {t.type && <span className={`type-tag type-${t.type}`}>{kindInfo(t.type).label}</span>}
+                  {t.audience && <span className={`audience-tag audience-${t.audience}`}>{audienceInfo(t.audience).label}</span>}
                   {t.completedOn && <span className="completed-on">{t.completedOn}</span>}
                   <button type="button" className="park-btn" disabled={busy === t.line} onClick={() => void park(t.line)}>
                     Park

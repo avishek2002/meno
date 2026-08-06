@@ -63,6 +63,14 @@ export const GLOSSARY = {
     term: 'Shared queue',
     body: 'todos.md is one file shared by you, this app, and your agent. The agent reads it at session start and proposes acting on what it finds; it never acts without asking.',
   },
+  todoKind: {
+    term: 'Kind',
+    body: 'What the work is - a new course, a content fix, vault upkeep, a feature, a bug, study, or admin. It routes the todo to the right skill, if any. See the guidebook for what each of the seven means.',
+  },
+  todoAudience: {
+    term: 'Audience',
+    body: 'Who can do it: "for agent" means the agent may propose doing it (still never without asking first); "for me" means it is yours, and the agent only reads it for context.',
+  },
   insights: {
     term: 'Insights',
     body: 'Counts and rates computed straight from your ledger, shown in one neutral palette with no pass or fail colouring. For a written interpretation, ask your agent for an insights report.',

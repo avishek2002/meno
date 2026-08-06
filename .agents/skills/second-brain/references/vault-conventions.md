@@ -129,7 +129,7 @@ The tenant home note's derived block groups its course list the same way, recomp
 
 ## Tags (two closed namespaces)
 
-Vault tags on notes: `#stale` (content flagged by the review_after sweep), `#todo-linked` (note referenced by an open todo), `#hand-made` (course or note not generated). Todo-type hashtags inside `todos.md` (`#gen`, `#repo`, `#note` - see todo-format.md) are a separate, equally closed namespace scoped to that one file; Obsidian will show both families in its tag pane, which is expected. Propose additions to either list rather than inventing tags ad hoc; topics are links, not tags.
+Vault tags on notes: `#stale` (content flagged by the review_after sweep), `#todo-linked` (note referenced by an open todo), `#hand-made` (course or note not generated). Todo hashtags inside `todos.md` - the seven kind tags (`#course`, `#content-fix`, `#vault`, `#feature`, `#bug`, `#study`, `#admin`) and the two audience tags (`#for-agent`, `#for-me`) - see todo-format.md, are a separate, equally closed namespace scoped to that one file; Obsidian will show both families in its tag pane, which is expected. Propose additions to either list rather than inventing tags ad hoc; topics are links, not tags.
 
 ## Graph hygiene invariants
 

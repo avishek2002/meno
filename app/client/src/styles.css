@@ -28,6 +28,24 @@
   --code-bg: #f2f1ec;
   --shadow: 0 1px 2px rgba(20, 20, 15, 0.08);
   --radius: 8px;
+  /* Todo kind colors: a plain categorical palette, deliberately not the
+     pass/fail set above (accent/warning/correct/incorrect) - a kind is a
+     category, not a judgment. admin reuses the neutral badge colors below. */
+  --kind-course-bg: #e8f0fb;
+  --kind-course-border: #1d5fae;
+  --kind-course-text: #14487e;
+  --kind-content-fix-bg: #e6f5f3;
+  --kind-content-fix-border: #12806f;
+  --kind-content-fix-text: #0b5c50;
+  --kind-feature-bg: #ececfb;
+  --kind-feature-border: #4b3fbf;
+  --kind-feature-text: #362d8c;
+  --kind-bug-bg: #eef1f4;
+  --kind-bug-border: #55677c;
+  --kind-bug-text: #3c4a5a;
+  --kind-study-bg: #f5efe4;
+  --kind-study-border: #8a6a34;
+  --kind-study-text: #6b5226;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -55,6 +73,21 @@
     --incorrect-text: #f0a49d;
     --code-bg: #1f1f26;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    --kind-course-bg: #172942;
+    --kind-course-border: #7bb2f0;
+    --kind-course-text: #b6d4f7;
+    --kind-content-fix-bg: #123a34;
+    --kind-content-fix-border: #3fb39f;
+    --kind-content-fix-text: #8fe0d1;
+    --kind-feature-bg: #241f45;
+    --kind-feature-border: #8f82e0;
+    --kind-feature-text: #c3bbf2;
+    --kind-bug-bg: #232a33;
+    --kind-bug-border: #91a4b8;
+    --kind-bug-text: #c3d0dc;
+    --kind-study-bg: #3a2f18;
+    --kind-study-border: #c9a15a;
+    --kind-study-text: #e8cf9c;
   }
 }
 
@@ -833,11 +866,26 @@ th {
   background: var(--bg);
 }
 
-.todo-create select {
+.todo-create-select {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.todo-create-select select {
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 0.45rem 0.6rem;
   background: var(--bg);
+  color: var(--text);
+}
+
+.todo-create-helper {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin: -0.5rem 0 1.25rem;
 }
 
 .todo-create button,
@@ -904,6 +952,70 @@ th {
 
 .type-tag {
   text-transform: none;
+}
+
+/* Seven kinds, one plain categorical hue each - see the --kind-* variables
+   above for why this is not the pass/fail palette. admin stays on the
+   default neutral badge (bg-subtle/text-muted/border) - it is the plainest
+   kind, a personal reminder with nowhere to route. */
+.type-course {
+  background: var(--kind-course-bg);
+  border-color: var(--kind-course-border);
+  color: var(--kind-course-text);
+}
+
+.type-content-fix {
+  background: var(--kind-content-fix-bg);
+  border-color: var(--kind-content-fix-border);
+  color: var(--kind-content-fix-text);
+}
+
+.type-vault {
+  background: var(--violet-bg);
+  border-color: var(--violet-border);
+  color: var(--violet-text);
+}
+
+.type-feature {
+  background: var(--kind-feature-bg);
+  border-color: var(--kind-feature-border);
+  color: var(--kind-feature-text);
+}
+
+.type-bug {
+  background: var(--kind-bug-bg);
+  border-color: var(--kind-bug-border);
+  color: var(--kind-bug-text);
+}
+
+.type-study {
+  background: var(--kind-study-bg);
+  border-color: var(--kind-study-border);
+  color: var(--kind-study-text);
+}
+
+/* Audience: visibly distinct from the kind pill by shape (square corners,
+   no fill) rather than another hue - the palette above is already spent on
+   kind, and audience is a permission gate, not a category. */
+.audience-tag {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.audience-for-agent {
+  border-color: var(--link);
+  color: var(--link);
+}
+
+.audience-for-me {
+  border-style: dashed;
 }
 
 .completed-on {
@@ -973,6 +1085,20 @@ th {
 .stat-value {
   font-size: 1.05rem;
   font-weight: 600;
+}
+
+/* Compact per-kind breakdown under the audience stat tiles - seven full-size
+   tiles would overweight the least useful signal (open count for the agent
+   vs for the user is what matters; the per-kind split is detail underneath). */
+.todo-kind-breakdown {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1.2rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
 }
 
 .rate-value {

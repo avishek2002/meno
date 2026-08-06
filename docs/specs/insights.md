@@ -123,7 +123,7 @@ metric considers meaningful; below it, the field is `null` rather than a fabrica
 | `usage.lessons_never_opened` | non-planned lessons with no `read` or recognition `scored` event | - |
 | `usage.planned_debt` | per module, count of lessons still `status: planned` | - |
 | `usage.surface_mix` | raw counts of `ui_recognition`, `agent_recognition`, `agent_transfer` scored events, and `reads` | - |
-| `usage.todos` | `TodoCounts`: open count per type (`gen`/`repo`/`note`), `done` total, `open` total (all types) | - |
+| `usage.todos` | `TodoCounts`: open count per kind (`course`/`content-fix`/`vault`/`feature`/`bug`/`study`/`admin`, every key present) and per audience (`for-agent`/`for-me`, every key present), `done` total, `open` total (all lines, including untyped ones - not guaranteed to equal either breakdown's sum) | - |
 | `vault.orphaned_notes` | `.md` files unreachable from `home.md` | - |
 | `vault.broken_links` | per file, wikilink targets that resolve to nothing | - |
 | `vault.ambiguous_basenames` | basenames claimed by more than one file | - |
