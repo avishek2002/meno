@@ -1,0 +1,59 @@
+schema_version: 1
+module: 04-managed-data-services
+title: Managed data services
+status: skeleton
+serves: [O1, O2]
+prerequisites: [03-backend-compute]
+est_hours: 4
+concepts:                      # siblings: the store types, the resource that runs out first, the store you reach for instead
+  - managed-database-types
+  - connection-limits
+  - object-and-specialised-stores
+objectives:
+  - id: M4-1
+    text: Match a described access pattern to a store type - relational, document, key-value cache, object, vector - and name what the runner-up store would make expensive
+    bloom: analyze
+  - id: M4-2
+    text: Explain why a serverless compute layer exhausts a relational database's connection slots, using the documented process-per-connection model, and evaluate pooling as the bridge
+    bloom: analyze
+  - id: M4-3
+    text: Determine when a file belongs in object storage rather than in a database or on the instance disk, reasoning from durability, size and the ephemeral-filesystem contract
+    bloom: analyze
+sources:                       # 4, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "What is Amazon S3? (AWS Documentation)"
+    url: https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html
+    archived_url: https://web.archive.org/web/20260803190736/https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html
+    accessed: 2026-08-06
+    source_type: web
+    why: the bucket / object / key model, strong read-after-write consistency for PUT and DELETE in all Regions with last-writer-wins on concurrent writes and no cross-key atomicity, and the storage-class ladder from Standard through Infrequent Access to Glacier Deep Archive - the trade-offs lesson 3 has the learner reason about
+  - title: "PostgreSQL: Architectural Fundamentals"
+    url: https://www.postgresql.org/docs/current/tutorial-arch.html
+    archived_url: https://web.archive.org/web/20260806033602/https://www.postgresql.org/docs/current/tutorial-arch.html
+    accessed: 2026-08-06
+    source_type: web
+    why: the primary statement that PostgreSQL "starts ('forks') a new process for each connection" - the mechanism that makes connections expensive and is the root cause of the serverless-plus-relational-database failure lesson 2 is built around
+  - title: "PostgreSQL: Connections and Authentication (runtime configuration)"
+    url: https://www.postgresql.org/docs/current/runtime-config-connection.html
+    archived_url: https://web.archive.org/web/20260803102520/https://www.postgresql.org/docs/current/runtime-config-connection.html
+    accessed: 2026-08-06
+    source_type: web
+    why: the concrete ceiling behind that mechanism - max_connections defaulting to about 100, resources including shared memory sized directly from it, and superuser_reserved_connections holding back three slots - the numbers lesson 2 does its arithmetic against
+  - title: "PgBouncer features"
+    url: https://www.pgbouncer.org/features.html
+    archived_url: https://web.archive.org/web/20260806033709/https://www.pgbouncer.org/features.html
+    accessed: 2026-08-06
+    source_type: web
+    why: the standard bridge for that limit, with the three pooling modes (session, transaction, statement) and the stated cost of each - transaction pooling breaking session-scoped features, statement pooling disallowing multi-statement transactions - so lesson 2 can name what the fix takes away, not just that it exists
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-the-database-is-a-service.md
+    title: The database as somebody else's problem
+    concept: managed-database-types
+    status: planned
+  - file: 02-connections-are-the-scarce-resource.md
+    title: Connections are the resource that runs out
+    concept: connection-limits
+    status: planned
+  - file: 03-object-storage-and-the-rest.md
+    title: Object storage, caches, and vectors
+    concept: object-and-specialised-stores
+    status: planned

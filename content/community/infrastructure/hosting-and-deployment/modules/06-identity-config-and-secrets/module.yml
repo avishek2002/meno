@@ -1,0 +1,53 @@
+schema_version: 1
+module: 06-identity-config-and-secrets
+title: Identity, configuration, and the deploy seam
+status: skeleton
+serves: [O3]
+prerequisites: [05-one-request-end-to-end]
+est_hours: 3
+concepts:                      # siblings: who may act, what the running copy is told, how the copy gets there
+  - authentication-and-authorization
+  - config-and-secrets
+  - the-deploy-seam
+objectives:
+  - id: M6-1
+    text: Distinguish authentication from authorization in a described access failure, and determine which policy layer produced a denial under default-deny evaluation
+    bloom: analyze
+  - id: M6-2
+    text: Evaluate a configuration and secret-handling scheme against documented guidance, identifying which values may live in the repository, which in the environment, and which require a managed secret store
+    bloom: analyze
+  - id: M6-3
+    text: Analyze where a deployment pipeline attaches to a host, and identify what must be true of a build for the same artifact to run in more than one environment
+    bloom: analyze
+sources:                       # 3, each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "How IAM works (AWS Identity and Access Management User Guide)"
+    url: https://docs.aws.amazon.com/IAM/latest/UserGuide/intro-structure.html
+    archived_url: https://web.archive.org/web/20260806032719/https://docs.aws.amazon.com/IAM/latest/UserGuide/intro-structure.html
+    accessed: 2026-08-06
+    source_type: web
+    why: "the request-context model lesson 1 teaches - principal, actions, resources, environment data - and the explicit evaluation rules the learner must be able to apply: all requests denied by default, an explicit allow overriding that default, and an explicit deny in any policy overriding every allow"
+  - title: "Secrets Management Cheat Sheet (OWASP Cheat Sheet Series)"
+    url: https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html
+    archived_url: https://web.archive.org/web/20260806032759/https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html
+    accessed: 2026-08-06
+    source_type: web
+    why: the vendor-neutral security guidance lesson 2 grades schemes against - rotation so stolen credentials expire quickly, least privilege over the secret store itself, dynamic short-lived credentials, and the specific warning that environment variables are "generally accessible to all processes and may be included in logs or system dumps" and are therefore not recommended where another method exists
+  - title: "The Twelve-Factor App, III. Config"
+    url: https://12factor.net/config
+    archived_url: https://web.archive.org/web/20260806032838/https://12factor.net/config
+    accessed: 2026-08-06
+    source_type: web
+    why: the counterweight to the OWASP position - the widely adopted store-config-in-the-environment convention every platform in this course implements - so lesson 2 presents a real tension between two credible sources rather than a single rule, which is what the analyze ceiling requires
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-who-are-you-and-what-may-you-do.md
+    title: Two different questions
+    concept: authentication-and-authorization
+    status: planned
+  - file: 02-config-and-secrets.md
+    title: What the running copy is told
+    concept: config-and-secrets
+    status: planned
+  - file: 03-the-deploy-seam.md
+    title: How the copy gets there
+    concept: the-deploy-seam
+    status: planned
