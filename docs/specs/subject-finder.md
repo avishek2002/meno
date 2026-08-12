@@ -132,6 +132,20 @@ course, because a contract the learner confirmed is what every downstream skill 
     than writing observations and candidates from almost nothing, and offers a fresh
     `elicit-needs` interview instead: naming a topic directly never needed this subsystem. See
     [find-subjects/SKILL.md](../../.agents/skills/find-subjects/SKILL.md)'s thin-evidence check.
+12. **A candidate is checked against the tenant's existing courses before it is ever checked
+    against the community index.** `lib/course-dirs.ts`'s `listCourses` (`node
+    tools/list-courses.ts <tenant-dir> --json`, `npm run courses`) reads course manifests and
+    each course directory's `profile.md` presence only - never `progress/ledger.jsonl` or
+    `progress/mastery.yml`, which stay out of scope for this subsystem (see Boundaries). A
+    candidate matching a course that already carries a `profile.md` is reported as a
+    confirmed-contract finding and never proposed as a new candidate; a candidate matching a
+    course with no `profile.md` is proposed as starting that existing skeleton rather than a
+    fresh generation. Only a candidate matching neither is then checked against
+    `content/community/INDEX.md`. See
+    [find-subjects/references/report-format.md](../../.agents/skills/find-subjects/references/report-format.md)'s
+    three routing outcomes. This defect was found on `find-subjects`' first real run against a
+    real workspace: routing checked the community index only and proposed two courses the
+    tenant already held.
 
 ## Architecture
 
@@ -373,6 +387,10 @@ Three tiers, deliberately unequal in how much they are allowed to claim.
 11. Every structural fact in a narrative report traces to a field in that day's snapshot.
 12. A root whose approved path is missing or is not a directory never reports `status: 'ok'`;
     every other root does.
+13. No candidate in a narrative report's "Courses worth taking" section names a course already
+    under contract in the tenant (an existing course carrying `profile.md`). A candidate
+    matching such a course is reported as a confirmed-contract finding instead, never as a
+    proposed candidate.
 
 ## Verified by
 
@@ -403,6 +421,15 @@ Three tiers, deliberately unequal in how much they are allowed to claim.
   `status: 'missing'`; a root pointed at a regular file yields `status: 'not-a-directory'`; a
   genuinely empty real directory yields `status: 'ok'` and none of the three is conflated with
   another).
+- Invariant 13: procedural, not machine-verified - no validate check parses a generated
+  report's "Courses worth taking" section semantically to catch a course name that duplicates
+  an existing one, so this invariant is instructed in
+  [find-subjects/SKILL.md](../../.agents/skills/find-subjects/SKILL.md) protocol step 10 and
+  [find-subjects/references/report-format.md](../../.agents/skills/find-subjects/references/report-format.md),
+  not enforced by the gate. What IS machine-verified is the ground truth the check depends on:
+  `lib/course-dirs.ts`'s `listCourses` (confirmed-versus-skeleton by `profile.md` presence) is
+  unit-tested in `tools/test/course-dirs.test.ts`, including against the committed
+  `examples/example-learner` tree's one confirmed course and one skeleton course.
 
 ## Limits
 
