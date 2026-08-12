@@ -15,6 +15,40 @@ _Last updated: 2026-08-12_
 
 ## Done
 
+- 2026-08-12 - **find-subjects: candidates duplicated courses the tenant already held.** Found
+  on the subsystem's first real run against a real workspace: two of three proposed candidates
+  (`ai-and-agents/llm-evals-and-judges` and `infrastructure/hosting-and-deployment`) were
+  courses already under contract in the learner's vault. The defect: protocol step 10 routed
+  every candidate by grepping `content/community/INDEX.md` for a matching pack, but never
+  checked which courses the tenant already had, so the same evidence that should have surfaced
+  "you're already covered here" instead produced a fresh proposal. Nothing in the gate or the
+  three-reviewer process caught it - it surfaced only because a human read `home.md` by hand
+  during the vault-weaving step. Proposing a course someone is already enrolled in is exactly
+  the kind of error that costs the whole report its credibility.
+
+  Fix: added `lib/course-dirs.ts`'s `listCourses` (and its CLI, `node tools/list-courses.ts
+  <tenant-dir> --json` / `npm run courses`), reusing the existing `findCourseDirs` walk rather
+  than inventing a parallel one. It returns, per course, domain, slug, title, and whether
+  `profile.md` exists - the line between "under contract" and "unstarted skeleton", the
+  distinction protocol step 10 now routes on. `SKILL.md` step 10 and
+  `references/report-format.md`'s "Courses worth taking" section now specify three routing
+  outcomes: already under contract (report it as a confirmed-contract finding, never propose
+  it), an unstarted skeleton (propose starting the existing one, not fresh generation), or no
+  match (the existing community-index or fresh-interview routing, unchanged). `docs/specs/
+  subject-finder.md` gained "How it behaves" item 12 and invariant 13.
+
+  Scope boundary held: this reads only course manifests and `profile.md`'s presence, never
+  `progress/ledger.jsonl` or `progress/mastery.yml` - holding a contract is not the same as
+  having studied it, and the settled decision that find-subjects does not consume study
+  insights or the ledger stands unchanged.
+
+  What is machine-checked versus prose-only: `listCourses` itself is unit-tested
+  (`tools/test/course-dirs.test.ts`), including against the committed `examples/example-
+  learner` tree's one confirmed course (`rust-for-backend`) and one skeleton course
+  (`git-fundamentals`). Nothing yet re-checks that a generated narrative report's routing
+  decision actually matches what `listCourses` returned that run - invariant 13's "Verified by"
+  entry says so plainly rather than claiming a gate check that was not built.
+
 - 2026-08-12 - **find-subjects: partial approval scanned nothing.** Found on the subsystem's
   first real run, against a real workspace, hours after it shipped green. `collectWorkspace`
   guarded discovery with `if (drift.pending_approval.length === 0)`, so any unapproved sibling
@@ -781,6 +815,13 @@ _Last updated: 2026-08-12_
 
 ## On the agenda (backlog, not started)
 
+- **The scanner counts scratch git repositories inside agent tool caches as real projects** - on
+  a `find-subjects` run, 4 of 13 discovered repositories were throwaway directories under a tool
+  cache (one at depth 6, three temporary ones at depth 4, each with 1 commit and 0 documentation
+  files), which diluted every marker ratio in the report (6 of 13 was really 6 of 9). Candidate
+  fixes: extend the prune list, or ignore a repository with no manifest, no readme, and a single
+  commit. The report currently discloses the dilution in its Limits section, which is honest but
+  not a fix.
 - **Decision 19 program** (plan: `docs/plans/content-accuracy-and-community.md`): (1) blocking
   self-audit in `generate-module` + seeded-fault fixtures + eval scorers that drill the
   auditor; (2) the five-pack community slate (git-and-github and agent-harness-craft first);
