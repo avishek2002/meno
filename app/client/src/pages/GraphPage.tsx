@@ -21,7 +21,17 @@ import { useResource } from '../useResource';
 import { useRegisterRevalidate } from '../RevalidateContext';
 import { EmptyState } from '../components/EmptyState';
 import { InfoTip } from '../components/InfoTip';
-import { EDGE_STROKE_WIDTH, fitToViewTransform, hasNoConnectionEdges, hopNeighborhood, resolveFocus, seedPosition } from '../graphLayout.ts';
+import {
+  EDGE_STROKE_WIDTH,
+  filterGraphByGroups,
+  fitToViewTransform,
+  groupCounts,
+  hasNoConnectionEdges,
+  hopNeighborhood,
+  resolveFocus,
+  seedPosition,
+} from '../graphLayout.ts';
+import type { GraphGroupCount } from '../graphLayout.ts';
 import type { GraphEdge, GraphNode, GraphNodeState, GraphResponse } from '../../../shared/types.ts';
 
 interface SimNode extends SimulationNodeDatum {
@@ -101,22 +111,42 @@ interface TooltipInfo {
 
 const GROUP_SWATCH_INDEXES = Array.from({ length: GROUP_PALETTE_SIZE }, (_, i) => i);
 
-function GraphLegend({ groups }: { groups: GraphResponse['groups'] }) {
+// The legend and the group filter are the same concern (docs/specs/graph.md,
+// "How it behaves" item 2): the legend names what a fill colour means, the
+// filter turns that colour on and off, so one toggle carries both - a real
+// checkbox with a label, not a clickable div, wired to a count computed over
+// the FULL node list so it always shows what turning the toggle off is about
+// to hide, never what an earlier toggle already hid.
+function GraphLegend({
+  groupCounts,
+  groupIndex,
+  visibleGroupIds,
+  onToggleGroup,
+}: {
+  groupCounts: GraphGroupCount[];
+  groupIndex: Map<string, number>;
+  visibleGroupIds: ReadonlySet<string | null>;
+  onToggleGroup: (id: string | null) => void;
+}) {
   return (
-    <div className="graph-legend" aria-label="Legend">
+    <div className="graph-legend" aria-label="Legend and group filter">
       <div className="graph-legend-channel">
         <h3>Group (fill colour)</h3>
+        <p className="graph-legend-note">Turn a group off to hide it from the graph.</p>
         <ul>
-          {groups.map((g, i) => (
-            <li key={g.id}>
-              <span className="graph-legend-swatch" style={{ background: `var(--graph-group-${i % GROUP_PALETTE_SIZE})` }} />
-              {g.title}
-            </li>
-          ))}
-          <li>
-            <span className="graph-legend-swatch" style={{ background: 'var(--text-muted)' }} />
-            No group
-          </li>
+          {groupCounts.map((g) => {
+            const checkboxId = `graph-group-toggle-${g.id ?? 'ungrouped'}`;
+            const color = groupColorVar(g.id, groupIndex);
+            return (
+              <li key={checkboxId}>
+                <input type="checkbox" id={checkboxId} checked={visibleGroupIds.has(g.id)} onChange={() => onToggleGroup(g.id)} />
+                <label htmlFor={checkboxId} className="graph-legend-toggle-label">
+                  <span className="graph-legend-swatch" style={{ background: color }} />
+                  {g.title} ({g.count})
+                </label>
+              </li>
+            );
+          })}
         </ul>
       </div>
       <div className="graph-legend-channel">
@@ -177,6 +207,12 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
   const [tooltip, setTooltip] = useState<TooltipInfo | null>(null);
   const [hasCentered, setHasCentered] = useState<string | null>(null); // the focus value already centered on
   const [hasFitted, setHasFitted] = useState(false); // whether fit-to-view has already run for this data load
+  // null means "no override yet": every group is visible, the default this
+  // resets to on every fresh fetch (design point 3 - the graph must look
+  // exactly as it does today on first load, including after an explicit
+  // re-read). Deliberately component state only, never the URL (design
+  // point 10 - nothing links into a filtered graph).
+  const [groupOverride, setGroupOverride] = useState<Set<string | null> | null>(null);
 
   const svgElRef = useRef<SVGSVGElement | null>(null);
   const panRef = useRef<{ pointerId: number; startX: number; startY: number; startTx: number; startTy: number } | null>(null);
@@ -185,22 +221,65 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
   );
   const suppressClickRef = useRef<string | null>(null);
 
-  // Physics: computed fresh whenever the response changes, torn down on
-  // unmount. Manual ticking (no timer) keeps the result reproducible.
+  // The counts the legend/filter panel shows - always over the FULL,
+  // unfiltered node list (graphLayout.groupCounts), so a toggle always shows
+  // what it is about to hide rather than what an earlier toggle already hid.
+  const legendGroupCounts = useMemo(() => (data ? groupCounts(data.nodes, data.groups) : []), [data]);
+
+  // Every group visible, including the ungrouped bucket only if it has any
+  // members - the identity filter a fresh load renders under.
+  const defaultVisibleGroupIds = useMemo(() => {
+    const ids = new Set<string | null>((data?.groups ?? []).map((g) => g.id));
+    if (data?.nodes.some((n) => n.group === null)) ids.add(null);
+    return ids;
+  }, [data]);
+
+  // A fresh fetch always starts from "everything visible" - any earlier
+  // filter choice was scoped to the response it was made against.
   useEffect(() => {
-    if (!data) return;
+    setGroupOverride(null);
+  }, [data]);
+
+  const visibleGroupIds = groupOverride ?? defaultVisibleGroupIds;
+
+  const toggleGroup = useCallback(
+    (id: string | null): void => {
+      setGroupOverride((prev) => {
+        const next = new Set(prev ?? defaultVisibleGroupIds);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        return next;
+      });
+    },
+    [defaultVisibleGroupIds],
+  );
+
+  // The subgraph actually fed to physics and paint (docs/specs/graph.md, this
+  // change): a hidden node is cut here, before the simulation ever sees it,
+  // not just dimmed or skipped at render time - graphLayout.filterGraphByGroups
+  // also drops every edge with a now-missing endpoint.
+  const visibleGraph = useMemo(() => {
+    if (!data) return null;
+    return filterGraphByGroups(data.nodes, data.edges, visibleGroupIds);
+  }, [data, visibleGroupIds]);
+
+  // Physics: computed fresh whenever the visible subgraph changes - a fresh
+  // response, or a group toggled on or off - torn down on unmount. Manual
+  // ticking (no timer) keeps the result reproducible.
+  useEffect(() => {
+    if (!visibleGraph) return;
     let cancelled = false;
     setPositions(null);
     setHasFitted(false);
     void (async () => {
       const { forceSimulation, forceLink, forceManyBody, forceCenter, forceCollide } = await import('d3-force');
       if (cancelled) return;
-      const count = data.nodes.length;
-      const simNodes: SimNode[] = data.nodes.map((n) => {
+      const count = visibleGraph.nodes.length;
+      const simNodes: SimNode[] = visibleGraph.nodes.map((n) => {
         const seed = seedPosition(n.id, count);
         return { id: n.id, inDegree: n.in_degree, x: seed.x, y: seed.y };
       });
-      const simLinks: SimLink[] = data.edges.map((e) => ({ source: e.source, target: e.target, kind: e.kind }));
+      const simLinks: SimLink[] = visibleGraph.edges.map((e) => ({ source: e.source, target: e.target, kind: e.kind }));
       // The two-generic overload of forceSimulation (nodes + a link datum
       // type) has to be selected with an explicit type argument - it cannot
       // be inferred from nodesData alone, since links are attached later.
@@ -228,7 +307,7 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
     return () => {
       cancelled = true;
     };
-  }, [data]);
+  }, [visibleGraph]);
 
   const nodeIds = useMemo(() => data?.nodes.map((n) => n.id) ?? [], [data]);
   const resolvedFocus = useMemo(() => resolveFocus(focus, nodeIds), [focus, nodeIds]);
@@ -237,12 +316,16 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
 
   // Fit-to-view once, the first time settled positions are available for a
   // load with no incoming focus - never re-fired by a later pan, zoom, or
-  // drag, and re-armed only when the data changes (the physics effect above
-  // resets hasFitted on every new fetch). At the maintainer's real node
-  // count, seedPosition's radius exceeds the fixed VIEW_SIZE viewBox, so
-  // without this the graph opens mostly off-screen. Skipped when a focus is
-  // resolved: the centering effect below already centers on that one node,
-  // which matters more here than the whole graph being visible at once.
+  // drag, and re-armed whenever the visible subgraph changes (the physics
+  // effect above resets hasFitted on every new fetch AND every group toggle,
+  // so a filter change refits the remaining subgraph to fill the frame
+  // instead of sitting wherever it settled inside the old bounds). At the
+  // maintainer's real node count, seedPosition's radius exceeds the fixed
+  // VIEW_SIZE viewBox, so without this the graph opens mostly off-screen.
+  // Skipped when a focus is resolved: the centering effect below already
+  // centers on that one node, which matters more here than the whole graph
+  // being visible at once - and that priority holds during filtering too,
+  // since neither effect's dependencies change because of it.
   useEffect(() => {
     if (!positions || resolvedFocus) return;
     if (hasFitted) return;
@@ -371,7 +454,7 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
 
   if (loading && !data) return <p className="status-line">Loading graph...</p>;
   if (error) return <p className="status-line status-error">Could not load graph: {error}</p>;
-  if (!data) return null;
+  if (!data || !visibleGraph) return null;
   if (data.nodes.length === 0) {
     return (
       <EmptyState
@@ -384,15 +467,23 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
 
   // The highlight set: the hovered node's 1-hop neighborhood while hovering,
   // else the focused node's 2-hop neighborhood while a focus is resolved,
-  // else null - which the render below reads as "dim nothing".
+  // else null - which the render below reads as "dim nothing". Walked over
+  // the VISIBLE edge set, not the full one: a path that only exists through a
+  // currently-hidden node must not light up two visible nodes as neighbors.
   const highlight = hoveredId
-    ? hopNeighborhood(hoveredId, data.edges, HOVER_HOPS)
+    ? hopNeighborhood(hoveredId, visibleGraph.edges, HOVER_HOPS)
     : resolvedFocus
-      ? hopNeighborhood(resolvedFocus, data.edges, FOCUS_HOPS)
+      ? hopNeighborhood(resolvedFocus, visibleGraph.edges, FOCUS_HOPS)
       : null;
 
   const half = VIEW_SIZE / 2;
+  // Deliberately the FULL, unfiltered edge set (docs/specs/graph.md, this
+  // change) - this notice means "no connection edge has been AUTHORED", not
+  // "none is currently visible". If the group filter hides the last
+  // connection edge, this must stay false: telling the maintainer to run a
+  // second-brain sweep for edges that already exist would be a lie.
   const noConnectionsYet = hasNoConnectionEdges(data.edges);
+  const nothingVisible = visibleGraph.nodes.length === 0;
 
   return (
     <section className="graph-page">
@@ -414,88 +505,105 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
         </p>
       )}
       <div className="graph-canvas-wrap">
-        <svg
-          ref={setSvgRef}
-          className="graph-svg"
-          viewBox={`${-half} ${-half} ${VIEW_SIZE} ${VIEW_SIZE}`}
-          role="group"
-          aria-label={`Knowledge graph for ${tenant}: ${data.nodes.length} notes, ${data.edges.length} connections`}
-          onPointerDown={onBackgroundPointerDown}
-          onPointerMove={onBackgroundPointerMove}
-          onPointerUp={onBackgroundPointerUp}
-          onPointerLeave={onBackgroundPointerUp}
-        >
-          <g transform={`translate(${transform.x} ${transform.y}) scale(${transform.k})`}>
-            {data.edges.map((edge) => {
-              const from = positions.get(edge.source);
-              const to = positions.get(edge.target);
-              if (!from || !to) return null;
-              const dimmed = highlight ? !highlight.has(edge.source) || !highlight.has(edge.target) : false;
-              const thick = edge.kind === 'connection';
-              return (
-                <line
-                  key={`${edge.source}->${edge.target}:${edge.kind}`}
-                  x1={from.x}
-                  y1={from.y}
-                  x2={to.x}
-                  y2={to.y}
-                  className={thick ? 'graph-edge graph-edge-connection' : 'graph-edge graph-edge-thin'}
-                  strokeWidth={EDGE_STROKE_WIDTH[edge.kind]}
-                  opacity={dimmed ? 0.12 : thick ? 0.9 : 0.45}
-                >
-                  {edge.reason && <title>{edge.reason}</title>}
-                </line>
-              );
-            })}
+        {nothingVisible ? (
+          // All groups toggled off (design point 6): the existing empty
+          // state, not a blank canvas and not a crash. The legend/filter
+          // panel stays rendered below so a group can be turned back on -
+          // there is no other way back in, since filter state is component
+          // state only (design point 10, no URL).
+          <EmptyState
+            title="No groups selected"
+            body="Every course group is turned off in the filter panel below. Turn one back on to see the graph again."
+          />
+        ) : (
+          <svg
+            ref={setSvgRef}
+            className="graph-svg"
+            viewBox={`${-half} ${-half} ${VIEW_SIZE} ${VIEW_SIZE}`}
+            role="group"
+            aria-label={`Knowledge graph for ${tenant}: ${visibleGraph.nodes.length} notes, ${visibleGraph.edges.length} connections`}
+            onPointerDown={onBackgroundPointerDown}
+            onPointerMove={onBackgroundPointerMove}
+            onPointerUp={onBackgroundPointerUp}
+            onPointerLeave={onBackgroundPointerUp}
+          >
+            <g transform={`translate(${transform.x} ${transform.y}) scale(${transform.k})`}>
+              {visibleGraph.edges.map((edge) => {
+                const from = positions.get(edge.source);
+                const to = positions.get(edge.target);
+                if (!from || !to) return null;
+                const dimmed = highlight ? !highlight.has(edge.source) || !highlight.has(edge.target) : false;
+                const thick = edge.kind === 'connection';
+                return (
+                  <line
+                    key={`${edge.source}->${edge.target}:${edge.kind}`}
+                    x1={from.x}
+                    y1={from.y}
+                    x2={to.x}
+                    y2={to.y}
+                    className={thick ? 'graph-edge graph-edge-connection' : 'graph-edge graph-edge-thin'}
+                    strokeWidth={EDGE_STROKE_WIDTH[edge.kind]}
+                    opacity={dimmed ? 0.12 : thick ? 0.9 : 0.45}
+                  >
+                    {edge.reason && <title>{edge.reason}</title>}
+                  </line>
+                );
+              })}
 
-            {data.nodes.map((node) => {
-              const pos = positions.get(node.id);
-              if (!pos) return null;
-              const color = groupColorVar(node.group, groupIndex);
-              const visual = nodeVisual(node.state, color);
-              const r = nodeRadius(node.in_degree);
-              const dimmed = highlight ? !highlight.has(node.id) : false;
-              const clickable = node.route !== null;
-              // A ghost node has no route and no file to open - it renders as
-              // an image rather than a link, never a click target
-              // (docs/specs/graph.md, "How it behaves" item 6), and its label
-              // says so via stateLabel.
-              const label = `${node.title}, ${stateLabel(node.state)}`;
+              {visibleGraph.nodes.map((node) => {
+                const pos = positions.get(node.id);
+                if (!pos) return null;
+                const color = groupColorVar(node.group, groupIndex);
+                const visual = nodeVisual(node.state, color);
+                const r = nodeRadius(node.in_degree);
+                const dimmed = highlight ? !highlight.has(node.id) : false;
+                const clickable = node.route !== null;
+                // A ghost node has no route and no file to open - it renders as
+                // an image rather than a link, never a click target
+                // (docs/specs/graph.md, "How it behaves" item 6), and its label
+                // says so via stateLabel.
+                const label = `${node.title}, ${stateLabel(node.state)}`;
 
-              return (
-                <g
-                  key={node.id}
-                  role={clickable ? 'link' : 'img'}
-                  aria-label={label}
-                  tabIndex={clickable ? 0 : -1}
-                  className={clickable ? 'graph-node graph-node-clickable' : 'graph-node'}
-                  opacity={dimmed ? 0.15 : visual.opacity}
-                  onPointerDown={(e) => onNodePointerDown(e, node.id)}
-                  onPointerMove={onNodePointerMove}
-                  onPointerUp={onNodePointerUp}
-                  onPointerEnter={(e) => showTooltip(e, node)}
-                  onPointerLeave={hideTooltip}
-                  onFocus={(e) => showTooltip(e, node)}
-                  onBlur={hideTooltip}
-                  onClick={() => activateNode(node)}
-                  onKeyDown={(e) => onNodeKeyDown(e, node)}
-                >
-                  <circle
-                    cx={pos.x}
-                    cy={pos.y}
-                    r={r}
-                    fill={visual.fill}
-                    stroke={visual.stroke}
-                    strokeWidth={visual.strokeWidth}
-                    strokeDasharray={visual.dash}
-                  />
-                </g>
-              );
-            })}
-          </g>
-        </svg>
+                return (
+                  <g
+                    key={node.id}
+                    role={clickable ? 'link' : 'img'}
+                    aria-label={label}
+                    tabIndex={clickable ? 0 : -1}
+                    className={clickable ? 'graph-node graph-node-clickable' : 'graph-node'}
+                    opacity={dimmed ? 0.15 : visual.opacity}
+                    onPointerDown={(e) => onNodePointerDown(e, node.id)}
+                    onPointerMove={onNodePointerMove}
+                    onPointerUp={onNodePointerUp}
+                    onPointerEnter={(e) => showTooltip(e, node)}
+                    onPointerLeave={hideTooltip}
+                    onFocus={(e) => showTooltip(e, node)}
+                    onBlur={hideTooltip}
+                    onClick={() => activateNode(node)}
+                    onKeyDown={(e) => onNodeKeyDown(e, node)}
+                  >
+                    <circle
+                      cx={pos.x}
+                      cy={pos.y}
+                      r={r}
+                      fill={visual.fill}
+                      stroke={visual.stroke}
+                      strokeWidth={visual.strokeWidth}
+                      strokeDasharray={visual.dash}
+                    />
+                  </g>
+                );
+              })}
+            </g>
+          </svg>
+        )}
 
-        <GraphLegend groups={data.groups} />
+        <GraphLegend
+          groupCounts={legendGroupCounts}
+          groupIndex={groupIndex}
+          visibleGroupIds={visibleGroupIds}
+          onToggleGroup={toggleGroup}
+        />
 
         {tooltip && (
           <div className="graph-tooltip" style={{ left: tooltip.left, top: tooltip.top }} role="status">

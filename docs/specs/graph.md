@@ -1,6 +1,6 @@
 # Graph spec
 
-*Status: current as of v1.8. Canonical formats owned elsewhere: vault and hub conventions
+*Status: current as of v1.9. Canonical formats owned elsewhere: vault and hub conventions
 including the `## Connects to` block in
 [second-brain/references/vault-conventions.md](../../.agents/skills/second-brain/references/vault-conventions.md),
 manifests in
@@ -28,7 +28,8 @@ feature therefore creates a class of edge (`meno:connects`) as well as rendering
    **Node style** is state: `ghost` for a lesson a manifest plans but no file exists for,
    `generated` for a written note, `mastered` for a lesson whose concept the ledger says is
    mastered. **Size** is the number of distinct notes pointing at this one. A legend names all
-   three; three channels are unreadable without a key.
+   three; three channels are unreadable without a key. The group filter (item 11) is a control
+   over which nodes render, not a fourth channel painted onto them.
 3. Edges come from three places and are drawn at two weights. Resolved wikilinks are `reference`
    edges and `module.yml` `lessons[]` entries are `membership` edges to their course hub, both
    thin and neutral; a hub's `meno:connects` bullets are `connection` edges, thick and accented.
@@ -51,11 +52,13 @@ feature therefore creates a class of edge (`meno:connects`) as well as rendering
    else nothing is focused and the whole graph renders. `LessonPage` and `CoursePage` carry a
    "Show in graph" link that uses the basename form.
 8. Layout is deterministic. Each node's starting angle and radius are hashed from its id, so the
-   same vault lays out identically on every load and a screenshot means something. There is no
-   force slider, no search box, no time-lapse, no group filter: each of those exists in Obsidian
-   to tame a hairball, and at this vault's scale, with deterministic seeding, there is no
-   hairball. `?focus=` plus hover-dim is the substitute. Add them when the picture stops being
-   readable, and let that be the trigger.
+   same vault lays out identically on every load and a screenshot means something. There is still
+   no force slider, no search box, no time-lapse: each of those exists in Obsidian to tame a
+   hairball, and at this vault's scale, with deterministic seeding, there is no hairball.
+   `?focus=` plus hover-dim is the substitute. Add them when the picture stops being readable, and
+   let that be the trigger. The group filter (item 11) was cut from v1 on the same reasoning,
+   sized to a 92-node estimate; the real tenant vault renders 198 nodes, 106 of them ghosts, which
+   is a hairball by any definition, so v1.9 reverses that one cut and adds the filter back.
 9. Degraded paths. A malformed `meno:connects` block costs its edges and nothing else: the hub is
    still a node, the response is still 200, and the problem lands in `warnings`. An unresolvable
    connects target is dropped from the picture and reported by validate as an error. A one-sided
@@ -63,6 +66,25 @@ feature therefore creates a class of edge (`meno:connects`) as well as rendering
    renders the onboarding empty state, not an empty canvas.
 10. Nothing on this screen writes. There is no POST counterpart, no layout is saved, and dragging a
     node moves it for this session only.
+11. The group filter lives with the legend - the legend names what a fill colour means, the
+    filter turns that colour on and off, so one control does both. One toggle per entry in
+    `groups`, plus a synthetic "Ungrouped" toggle only when at least one node has `group === null`
+    (the tenant home note and `todos.md` carry no course group); each toggle shows the group's
+    swatch, its title, and how many nodes currently belong to it, counted over the full,
+    unfiltered node list so a toggle always shows what it is about to hide. Every group starts
+    visible, so the graph looks exactly as it does today on first load. Hiding a group removes its
+    nodes and every edge with a now-missing endpoint from the `d3-force` input, not just from the
+    paint - otherwise the physics keeps fighting over nodes nobody can see - and the simulation
+    re-runs and re-fits to the visible subgraph on every toggle, the same way it re-fits on a fresh
+    load; an explicit `?focus=` still takes priority over fitting either way. Turning every group
+    off renders the same empty state an unfiltered empty vault renders, not a blank canvas, with
+    the filter panel still visible so a group can be turned back on - there is no other way back
+    in, since filter state is component state only and is deliberately never written to the URL
+    (nothing links into a *filtered* graph the way `LessonPage`/`CoursePage` link into a focused
+    one). A separate notice above the canvas tells the maintainer to run a `second-brain` sweep
+    when the graph has nodes but no `connection` edge at all; that notice is computed from the
+    full, unfiltered edge list and must never react to the filter - it means the sweep has not run
+    yet, not that the filter is currently hiding the one `connection` edge that exists.
 
 ## Architecture
 
@@ -86,10 +108,12 @@ feature therefore creates a class of edge (`meno:connects`) as well as rendering
   rather than canvas at this scale buys free hit testing, CSS theming, and real elements for the
   accessibility tree.
 - `app/client/src/graphLayout.ts` - the pure half of the view: id hashing and seed positions,
-  focus resolution, and n-hop neighbourhood sets. A `.ts` file among `.tsx` on purpose, for the
-  same reason `courseList.ts` is: the root `tsconfig` compiles `app/**/*.ts` without the DOM lib,
-  so naming a browser global there fails typecheck instead of failing review, and `node --test`
-  covers it like the server.
+  focus resolution, n-hop neighbourhood sets, and (since v1.9) the group filter's two pure
+  functions - `groupCounts` for the legend/filter toggle labels and `filterGraphByGroups` for the
+  visible subgraph handed to `d3-force`. A `.ts` file among `.tsx` on purpose, for the same reason
+  `courseList.ts` is: the root `tsconfig` compiles `app/**/*.ts` without the DOM lib, so naming a
+  browser global there fails typecheck instead of failing review, and `node --test` covers it like
+  the server.
 - `tools/validate.ts` - the `connects` check.
 
 ```mermaid
@@ -159,6 +183,13 @@ endpoint, and no node position, zoom level, or focus is persisted anywhere - not
     and `app/client/src/graphLayout.ts` names no browser global and imports no React.
 15. The graph subsystem writes nothing: no route mutates a file for it and no view state is
     persisted.
+16. `groupCounts` returns one row per group in the server's own order, each counted over the
+    full, unfiltered node list, plus a synthetic `id: null` "Ungrouped" row - and only that row -
+    when at least one node has `group === null`; a vault where every node sits in some group gets
+    no such row at all.
+17. `filterGraphByGroups` returns exactly the nodes whose `group` is in the visible-groups set
+    (`null` included for the ungrouped bucket) and only the edges whose BOTH endpoints survive
+    that cut; every group hidden yields an empty subgraph, never a throw.
 
 ## Verified by
 
@@ -173,13 +204,22 @@ endpoint, and no node position, zoom level, or focus is persisted anywhere - not
 - Invariants 13, 14: `app/test/graph-layout.test.ts`, which unit-tests `graphLayout.ts` the way
   `app/test/course-list.test.ts` unit-tests `courseList.ts`, plus a source grep for browser
   globals and React imports.
+- Invariants 16, 17: `app/test/graph-layout.test.ts`, the `groupCounts` and `filterGraphByGroups`
+  blocks - server-order rows plus a conditional Ungrouped row, the identity when every group is
+  visible, hiding one group dropping its nodes and every edge touching them (including a
+  cross-group edge whose OTHER endpoint stayed visible), hiding only the ungrouped bucket, and
+  every group hidden yielding an empty subgraph rather than a crash.
 - The second course in `examples/example-learner/` is the living spec: a reciprocal
   `meno:connects` pair, membership edges, and two ghost lessons, all of it covered by
   `npm run validate` in the gate.
 - **Not visually verified.** The picture itself - force convergence, the three channels reading
   apart at a glance, dark mode, hover dimming - is reasoned about rather than observed, in the
-  same honest position as the guidebook and the v1.6 course list. Worth one manual pass in a
-  browser before trusting it.
+  same honest position as the guidebook and the v1.6 course list. The group filter added in v1.9
+  is in the same position: the pure counting and subgraph-cut functions are unit-tested, but the
+  checkbox interaction, the refit-after-toggle behaviour, and the composition that keeps the
+  no-connections notice reacting to the unfiltered edge list rather than the filtered one are
+  reasoned about from the source, not observed. Worth one manual pass in a browser before trusting
+  either.
 
 ## Open questions
 
@@ -197,3 +237,8 @@ endpoint, and no node position, zoom level, or focus is persisted anywhere - not
 4. Whether `state` should have a fourth value for a written but never-studied lesson. Today
    `generated` covers both "written" and "read but unproven"; splitting it would need a fourth
    node style, which is exactly the channel budget this view refused to exceed.
+5. Whether the group filter's selection should ever survive a reload. Deliberately cut from v1.9:
+   `?focus=` exists because `LessonPage` and `CoursePage` link into a focused graph, but nothing
+   links into a *filtered* one, and persisting filter state would mean generalizing the router's
+   single-purpose query handling for no current consumer. Component state only for now; revisit if
+   a future page wants to link in with a group already hidden.

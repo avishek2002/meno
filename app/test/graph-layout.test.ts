@@ -9,7 +9,9 @@ import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import {
   EDGE_STROKE_WIDTH,
+  filterGraphByGroups,
   fitToViewTransform,
+  groupCounts,
   hashId,
   hasNoConnectionEdges,
   hopNeighborhood,
@@ -218,6 +220,81 @@ test('fitToViewTransform: identity for zero nodes, centers a single node without
     { x: 10, y: 10 },
   ];
   assert.equal(fitToViewTransform(small, 900, 40).k, 1);
+});
+
+// --- group filter: counting for the legend/filter toggles, and the subgraph cut fed to d3-force ---
+
+test('groupCounts: one row per server group in order, plus Ungrouped only when a node has group === null', () => {
+  const groups = [
+    { id: 'group-a', title: 'Group A' },
+    { id: 'group-b', title: 'Group B' },
+  ];
+  const nodes = [{ group: 'group-a' }, { group: 'group-a' }, { group: 'group-b' }, { group: null }];
+
+  assert.deepEqual(groupCounts(nodes, groups), [
+    { id: 'group-a', title: 'Group A', count: 2 },
+    { id: 'group-b', title: 'Group B', count: 1 },
+    { id: null, title: 'Ungrouped', count: 1 },
+  ]);
+
+  // no node has group === null: no Ungrouped row at all, not a zero-count one
+  const allGrouped = [{ group: 'group-a' }, { group: 'group-b' }];
+  assert.deepEqual(groupCounts(allGrouped, groups), [
+    { id: 'group-a', title: 'Group A', count: 1 },
+    { id: 'group-b', title: 'Group B', count: 1 },
+  ]);
+});
+
+const FILTER_NODES = [
+  { id: 'a1', group: 'course-a' },
+  { id: 'a2', group: 'course-a' },
+  { id: 'b1', group: 'course-b' },
+  { id: 'home', group: null },
+];
+
+const FILTER_EDGES = [
+  { source: 'a1', target: 'a2' }, // both endpoints in course-a
+  { source: 'a1', target: 'b1' }, // spans course-a and course-b
+  { source: 'b1', target: 'home' }, // spans course-b and the ungrouped bucket
+];
+
+test('filterGraphByGroups: every group visible is the identity', () => {
+  const all = new Set<string | null>(['course-a', 'course-b', null]);
+  assert.deepEqual(filterGraphByGroups(FILTER_NODES, FILTER_EDGES, all), { nodes: FILTER_NODES, edges: FILTER_EDGES });
+});
+
+test('filterGraphByGroups: hiding one group drops its nodes and every edge touching them, including a cross-group edge with only one side hidden', () => {
+  const visible = new Set<string | null>(['course-a', null]); // course-b hidden
+  const result = filterGraphByGroups(FILTER_NODES, FILTER_EDGES, visible);
+
+  assert.deepEqual(result.nodes, [
+    { id: 'a1', group: 'course-a' },
+    { id: 'a2', group: 'course-a' },
+    { id: 'home', group: null },
+  ]);
+  // a1<->b1 is gone even though a1 stayed visible - only b1 was hidden, and that is enough to drop the edge
+  // b1<->home is gone for the same reason
+  assert.deepEqual(result.edges, [{ source: 'a1', target: 'a2' }]);
+});
+
+test('filterGraphByGroups: hiding the ungrouped bucket drops only the null-group nodes', () => {
+  const visible = new Set<string | null>(['course-a', 'course-b']); // null (ungrouped) hidden
+  const result = filterGraphByGroups(FILTER_NODES, FILTER_EDGES, visible);
+
+  assert.deepEqual(result.nodes, [
+    { id: 'a1', group: 'course-a' },
+    { id: 'a2', group: 'course-a' },
+    { id: 'b1', group: 'course-b' },
+  ]);
+  assert.deepEqual(result.edges, [
+    { source: 'a1', target: 'a2' },
+    { source: 'a1', target: 'b1' },
+  ]);
+});
+
+test('filterGraphByGroups: every group hidden yields an empty subgraph, not a crash', () => {
+  const result = filterGraphByGroups(FILTER_NODES, FILTER_EDGES, new Set<string | null>());
+  assert.deepEqual(result, { nodes: [], edges: [] });
 });
 
 test('exactly one client file exports resolveFocus: graphLayout.ts', () => {

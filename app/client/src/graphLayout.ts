@@ -139,6 +139,62 @@ export function hasNoConnectionEdges(edges: readonly LayoutEdgeWithKind[]): bool
  * always yields the same output, so a caller applying this once per
  * settled-position set stays deterministic across loads.
  */
+/** One row per group toggle (docs/specs/graph.md, "How it behaves" item 2). */
+export interface GraphGroupCount {
+  /** a `groups.yml`-resolved group id, or null for the synthetic "no course group" bucket */
+  id: string | null;
+  title: string;
+  count: number;
+}
+
+/**
+ * One row per legend/filter toggle: every group in the server's own order,
+ * each with how many nodes currently resolve to it, plus a synthetic
+ * "Ungrouped" row - but only when at least one node has `group === null`
+ * (the tenant home note and `todos.md` carry no course group; a vault where
+ * every node sits in a course gets no such row at all). Counted over the
+ * full node list handed in, so a caller passing the unfiltered graph always
+ * shows what a toggle is about to hide, never what filtering already hid.
+ */
+export function groupCounts(
+  nodes: readonly { group: string | null }[],
+  groups: readonly { id: string; title: string }[],
+): GraphGroupCount[] {
+  const rows: GraphGroupCount[] = groups.map((g) => ({
+    id: g.id,
+    title: g.title,
+    count: nodes.filter((n) => n.group === g.id).length,
+  }));
+  const ungroupedCount = nodes.filter((n) => n.group === null).length;
+  if (ungroupedCount > 0) rows.push({ id: null, title: 'Ungrouped', count: ungroupedCount });
+  return rows;
+}
+
+export interface FilteredSubgraph<N, E> {
+  nodes: N[];
+  edges: E[];
+}
+
+/**
+ * The group filter's simulation-level cut: a hidden group has to disappear
+ * from the d3-force input, not just from the paint, or the physics keeps
+ * fighting over nodes nobody can see and the visible layout comes out wrong.
+ * Returns the nodes whose `group` (null included, for the ungrouped bucket)
+ * is in `visibleGroupIds`, and only the edges whose BOTH endpoints survive
+ * that cut - an edge with exactly one hidden endpoint is dropped entirely,
+ * never drawn dangling toward a node that is not there.
+ */
+export function filterGraphByGroups<N extends { id: string; group: string | null }, E extends LayoutEdge>(
+  nodes: readonly N[],
+  edges: readonly E[],
+  visibleGroupIds: ReadonlySet<string | null>,
+): FilteredSubgraph<N, E> {
+  const visibleNodes = nodes.filter((n) => visibleGroupIds.has(n.group));
+  const visibleIds = new Set(visibleNodes.map((n) => n.id));
+  const visibleEdges = edges.filter((e) => visibleIds.has(e.source) && visibleIds.has(e.target));
+  return { nodes: visibleNodes, edges: visibleEdges };
+}
+
 export function fitToViewTransform(points: readonly SeedPosition[], viewSize: number, margin: number): FitTransform {
   if (points.length === 0) return { x: 0, y: 0, k: 1 };
   if (points.length === 1) return { x: -points[0].x, y: -points[0].y, k: 1 };

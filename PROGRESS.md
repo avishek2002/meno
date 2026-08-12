@@ -15,6 +15,31 @@ _Last updated: 2026-08-12_
 
 ## Done
 
+- 2026-08-12 - **Graph view: a course-group filter, reversing a v1 cut.** The knowledge graph
+  shipped without a group filter because it was sized to a 92-node estimate; the real tenant vault
+  renders 198 nodes (106 of them ghosts), which is exactly the hairball scale the v1 cut said would
+  be the trigger to add one back, so the maintainer asked for it. The filter lives with the legend
+  (same concern: the legend names what a fill colour means, the filter turns it on and off) - a
+  real `<input type="checkbox">` plus `<label>` per group, showing its swatch, title, and node
+  count, with a synthetic "Ungrouped" toggle only when a node has `group === null`. Two new pure
+  functions in `graphLayout.ts` carry the logic: `groupCounts` (one row per server-order group plus
+  the conditional Ungrouped row, counted over the full unfiltered node list) and
+  `filterGraphByGroups` (the visible nodes plus only the edges whose both endpoints survive),
+  covered by five new `app/test/graph-layout.test.ts` cases - identity, one group off, all off, the
+  ungrouped bucket, and a cross-group edge with only one side hidden. Hiding a group removes it from
+  the `d3-force` simulation input, not just the paint, and the simulation re-runs and re-fits to the
+  remaining subgraph on every toggle; turning every group off renders the same empty state an empty
+  vault renders, with the filter panel still visible so a group can be turned back on. The
+  "no cross-course connections authored yet" notice stayed wired to the FULL, unfiltered edge list
+  on purpose - it means a `second-brain` sweep hasn't run, not that the filter is hiding the one
+  `connection` edge that exists, and getting that backwards would tell the maintainer to author
+  edges that already exist. No URL state: deliberate, logged as a new open question in
+  `docs/specs/graph.md` (nothing links into a *filtered* graph the way `?focus=` links into a
+  focused one). Spec bumped to v1.9 with a new "How it behaves" item, two new invariants, and the
+  "not visually verified" caveat extended to the toggle/refit interaction - all four gate commands
+  green, but the checkbox interaction and refit-after-toggle behavior are reasoned about from source
+  only, unobserved in a browser.
+
 - 2026-08-12 - **`AGENTS.md` routes agents by intent.** A cold-started agent could learn what
   Meno is and how tenancy works but not which of the two jobs it had been handed: the skill list
   was flat and `CONTRIBUTING.md` went unmentioned, so an agent asked to fix a study-app bug had
