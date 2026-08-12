@@ -15,6 +15,26 @@ _Last updated: 2026-08-12_
 
 ## Done
 
+- 2026-08-12 - **`AGENTS.md` routes agents by intent.** A cold-started agent could learn what
+  Meno is and how tenancy works but not which of the two jobs it had been handed: the skill list
+  was flat and `CONTRIBUTING.md` went unmentioned, so an agent asked to fix a study-app bug had
+  to find the gate on its own, and one asked to add a lesson had to find `extend-meno` on its
+  own. A "Route by intent" section now sits above the skill list with the two tracks
+  (contributing to Meno itself, working on this user's learning content), the write boundary
+  between them, `publish-to-community` as the single crossing, and org deployment as neither.
+  Settled by grill before writing: no new instruction file (a second entry point is a ranked
+  risk, and the routing content is owned by files that already exist), the skill list stays
+  flat and canonical (splitting it would make "every skill is listed in `AGENTS.md`" ambiguous
+  for future skill authors and mis-home the two skills that live in both tracks), and the
+  "use two separate agent sessions" habit stays a maintainer preference rather than shipping as
+  advice. `docs/specs/repo-and-tenancy.md` gained routing as a derivable and extended the Phase
+  0 cold-start acceptance run to check it; deliberately not a validate check, since a validator
+  can only grep for the heading and would keep passing while the content rots. Smoke test run
+  on Claude Code (Sonnet) in a clean clone with user settings off: the study-app bug named the
+  contributing track, the `examples/` fixture boundary, and the gate; the add-a-lesson request
+  routed to the amend recipe and refused to treat the committed fixture as tenant content; the
+  what-is-this question still produced the interview chain and the user-guide link.
+
 - 2026-08-12 - **Knowledge graph view: `#/t/:tenant/graph`, one picture of the whole tenant
   vault joined to the ledger.** Contract confirmed through a ten-question grill
   (`docs/specs/graph.md`), then built in three parallel streams against a frozen contract.
