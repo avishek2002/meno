@@ -10,6 +10,19 @@ Named for Plato's *Meno* and its paradox: how can you search for something when 
 
 Meno rests on three pillars: **Obsidian** as the second brain (each tenant's `content/tenants/<tenant>/` directory is itself a vault of connected markdown), **a localhost app** for daily study, tracking, and todos, and **the agent** (you) for creating content and extending the instance.
 
+## Route by intent
+
+Two kinds of work happen in this repository and they touch different files. Settle which one a request is before acting on it.
+
+- **Contributing to Meno** - changing the system itself: a skill, the study app, tooling, schemas, or the docs. Read [CONTRIBUTING.md](CONTRIBUTING.md) first: what lands where, the gate (`npm run gate`), the eval gate required for any generation-skill change, and the fresh-session smoke test required for any skill or entry-point change. The invariants in `extend-meno` bind upstream changes too. A change meant for one instance rather than for every Meno user is an extension, not a contribution - `extend-meno` owns those.
+- **Learning** - creating or changing this user's own course material. Read [docs/how-meno-works.md](docs/how-meno-works.md) for the journey end to end. A new course runs `elicit-needs`, then `generate-curriculum`, then `generate-module`. An existing course is amended through `extend-meno`'s amend-an-existing-course recipe, which owns adding, retitling, and resequencing lessons and modules. Studying is `tutor-session`.
+
+**The boundary between the two.** Work on the repository never reads or writes anything under `content/tenants/`; the base system is built and tested against the committed `examples/` fixtures instead. Work on learning content never edits base files directly; anything that changes how this instance behaves goes through `extend-meno`, which keeps schemas, tenancy, and entry points intact.
+
+**Where learning work becomes a contribution.** A finished course worth sharing goes through `publish-to-community`, which transcribes it onto a fresh topic-pack tree, sanitizes it, and hands it to the contributing track and its gate. That is the only path from tenant content to a pull request.
+
+Deploying Meno for an organization is neither track - it is not a change to this repository at all. See [docs/org-deployment.md](docs/org-deployment.md).
+
 ## Current status: v1 built
 
 All eight phases of the plan are complete: seven skills, JSON schemas with a validate
