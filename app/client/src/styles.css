@@ -1546,7 +1546,19 @@ th {
 
 .graph-legend-note {
   color: var(--text-muted);
+  margin: 0 0 0.3rem;
+}
+
+.graph-legend-channel input[type='checkbox'] {
   margin: 0;
+  flex-shrink: 0;
+}
+
+.graph-legend-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
 }
 
 @media (max-width: 40rem) {
