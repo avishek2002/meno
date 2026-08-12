@@ -8,3 +8,7 @@ groups:
     title: Systems Programming
     courses:
       - rust-for-backend
+  - id: version-control
+    title: Version Control
+    courses:
+      - git-fundamentals

@@ -1,0 +1,18 @@
+schema_version: 1
+slug: git-fundamentals
+title: Git fundamentals
+created: 2026-08-12
+status: active                 # active | draft (draft = topic packs not yet adopted)
+hub: ./git-fundamentals-hub.md
+objectives:
+  - id: O1
+    text: Apply git's commit graph and branching model to track, branch, and merge changes to a small project
+    bloom: apply
+    assessed_by: module 1's planned exercises, once written, walking a real commit history and a merge
+modules:                       # ordered; every field here mirrors module.yml at regen time
+  - n: 1
+    slug: 01-commits-and-history
+    title: Commits and history
+    status: skeleton
+    est_hours: 3
+    serves: [O1]

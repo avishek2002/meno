@@ -79,6 +79,10 @@ export const GLOSSARY = {
     term: 'Vault note',
     body: 'Your content is an Obsidian vault as well as an app - the same markdown files, connected by wikilinks. A muted link points at a note that does not exist yet, which is authoring intent rather than an error.',
   },
+  graphView: {
+    term: 'Graph',
+    body: 'Every note in your vault as one picture, plus how it hangs together: colour is the course group, hollow versus solid is planned/written/mastered, and size is how many notes point at a note. Thick lines are courses you said connect to each other; thin lines are ordinary references and course structure. A ghost node has no file yet and cannot be opened.',
+  },
 } as const satisfies Record<string, GlossaryEntry>;
 
 export type GlossaryKey = keyof typeof GLOSSARY;

@@ -16,6 +16,14 @@ function stripMd(file: string): string {
   return file.replace(/\.md$/, '');
 }
 
+// The basename form graphLayout.ts's focus resolution understands: strip the
+// directory and the .md suffix from the hub file, so this link never needs
+// to know the course's own directory (docs/specs/graph.md invariant 13).
+function hubBasename(hub: string): string {
+  const slash = hub.lastIndexOf('/');
+  return stripMd(slash === -1 ? hub : hub.slice(slash + 1));
+}
+
 export function CoursePage({ tenant, course }: { tenant: string; course: string }) {
   const { data, error, loading, revalidate } = useResource<CourseResponse>(
     `/api/v1/${encodeURIComponent(tenant)}/course/${encodeURIComponent(course)}`,
@@ -35,6 +43,12 @@ export function CoursePage({ tenant, course }: { tenant: string; course: string 
       <header className="course-header">
         <h1>{data.title}</h1>
         <span className={`status-badge status-${data.status}`}>{data.status}</span>
+        <a
+          className="show-in-graph"
+          href={`#/t/${encodeURIComponent(tenant)}/graph?focus=${encodeURIComponent(hubBasename(data.hub))}`}
+        >
+          Show in graph
+        </a>
       </header>
 
       {data.objectives.length > 0 && (

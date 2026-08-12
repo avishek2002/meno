@@ -59,6 +59,7 @@ validate and the renderer can never disagree about what a file says.
 | `pack-attribution` | every pack has a `CONTRIBUTORS.yml` with at least one `unit: pack` record; every record's unit resolves against what the pack contains (objective ids in `course.yml`, module directories, `lessons[].file` and `sources[].url` in `module.yml`, files under `notes/`) unless marked `action: removed`; records are oldest-first; `by` is a handle or `anonymous`. A source url the module no longer cites is a warning, not an error - citation upkeep makes attribution stale, not wrong | v1.5 |
 | `groups` | wherever a `groups.yml` is found: schema-valid entries, unique group ids, no course in two groups, every listed slug is a course in that tenant (at either accepted depth, matching `lib/course-dirs.ts`). A course in no group is a warning, not an error - it renders under its domain, which is the normal case | v1.5 |
 | `pack-safety` | community content is markdown/YAML only; error-level patterns (scripts, inline handlers, credential-shaped strings, private-key blocks, curl-pipe-to-shell, mermaid click/href) and warning-level patterns (instruction-shaped phrases, plain-http URLs) | v1.2 |
+| `connects` | a hub's `## Connects to` block (`lib/connects.ts` grammar and diagnostics); an unresolvable target is an error, a one-sided pair (hub A names hub B but not the reverse) is a warning | v1.8 |
 
 Planned: `vault` (wikilink resolution, orphan detection - needs the app's resolver).
 

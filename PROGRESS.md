@@ -15,6 +15,39 @@ _Last updated: 2026-08-12_
 
 ## Done
 
+- 2026-08-12 - **Knowledge graph view: `#/t/:tenant/graph`, one picture of the whole tenant
+  vault joined to the ledger.** Contract confirmed through a ten-question grill
+  (`docs/specs/graph.md`), then built in three parallel streams against a frozen contract.
+  Measured before design: every wikilink in the real tenant vault was course-local, so the
+  feature had to create a class of edge, not just render existing links - a course hub's
+  `## Connects to` section (`<!-- meno:connects:start -->`, owned by `second-brain`) is now the
+  authored source of cross-course edges, parsed once by `lib/connects.ts` and shared by
+  `lib/graph.ts` and `tools/validate.ts`'s new `connects` check. `GET /api/v1/:tenant/graph`
+  (read-only, no cache, joins `walkTenant`, `resolveGroups`, and `deriveMastery` - no fifth
+  walk) returns every vault note plus every planned-but-unwritten lesson as a node, with three
+  visual channels (fill = course group, style = ghost/generated/mastered, size = incoming
+  links) and three edge kinds deduplicated to one edge per pair (`connection` > `reference` >
+  `membership`). `GraphPage.tsx` renders it as React SVG with `d3-force` physics (dynamically
+  imported, following the `mermaid.tsx` precedent), deterministic hash-seeded layout so a
+  screenshot means something, pan/zoom/drag/click/hover, and `?focus=<value>` deep-linking
+  resolved exact-id-then-basename-then-suffix. The example tenant grew a second, deliberately
+  minimal course (`examples/example-learner/software-engineering/git-fundamentals/`) as the
+  living spec: a reciprocal `meno:connects` pair with `rust-for-backend`, a membership edge, and
+  two ghost lessons - the shapes the fixture exists to exercise, not a course to actually study.
+
+  Two risks knowingly accepted: cross-course edges refresh only on an explicit `second-brain`
+  sweep, so a newly added course is invisible in the graph until someone asks for one -
+  preferred over a writer that would clobber judgment (an honest cross-course reason) it cannot
+  reproduce from a manifest; and the picture itself - force convergence, whether the three
+  visual channels read apart at a glance, dark mode, hover dimming - is reasoned about rather
+  than observed, the same honest position the guidebook and the v1.6 course list shipped in.
+  Worth one manual pass in a browser before trusting it.
+
+  Step two, not in this change: a `second-brain` sweep writing real `meno:connects` blocks
+  across the eight hubs in `content/tenants/main`, so the real tenant's cross-course structure
+  actually shows up. That work needs to read real lesson bodies to write honest reasons, is
+  judgment rather than engineering, and is gitignored so no gate could verify it here.
+
 - 2026-08-12 - **Content-cost page: a localhost view of which courses cost the most to
   generate.** Contract (`docs/specs/cost.md`) confirmed across two grill rounds, then built and
   adversarially reviewed in the same day. Attributes coding-agent token spend and API-list-
