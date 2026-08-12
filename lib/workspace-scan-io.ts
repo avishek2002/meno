@@ -7,7 +7,7 @@
 // GitProbe is injectable so a committed test fixture never needs a nested .git directory (which
 // git itself would treat as a submodule boundary, breaking checkout of this repo). fixtureGit
 // reads a small FIXTURE-git.json sidecar instead of shelling out to git at all.
-import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, writeFileSync, mkdtempSync, type Dirent } from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, writeFileSync, mkdtempSync, type Dirent } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
@@ -243,6 +243,13 @@ function sortEntries(entries: Dirent[]): Dirent[] {
   return [...entries].sort((a, b) => Buffer.compare(Buffer.from(a.name), Buffer.from(b.name)));
 }
 
+/** Determinism item 1, applied to a plain name list rather than a Dirent list: approved_children
+ *  as read from roots.yml carries whatever order the user happened to write entries in, and that
+ *  order must never change the snapshot. */
+function sortChildNames(names: string[]): string[] {
+  return [...names].sort((a, b) => Buffer.compare(Buffer.from(a), Buffer.from(b)));
+}
+
 function safeIsSymlink(e: Dirent): boolean {
   try {
     return e.isSymbolicLink();
@@ -279,8 +286,10 @@ export interface RootDrift {
   pending_approval: string[];
 }
 
-/** spec invariant 5: a root whose immediate children changed since approval is not scanned;
- *  its new children are surfaced here instead. Reads only directory names, opens no file. */
+/** spec invariant 5: a child directory that is new since approval, or was never approved, is not
+ *  scanned; it is surfaced here instead, per child rather than as a veto over the whole root -
+ *  collectWorkspace still scans every other, approved child normally. Reads only directory names,
+ *  opens no file. */
 export function checkRootDrift(root: ApprovedRoot): RootDrift {
   let real: string;
   try {
@@ -921,6 +930,63 @@ function discoverRepos(
   }
 }
 
+/**
+ * Descends into a root that is not itself a repository one approved child at a time, instead of
+ * from the root as a whole - the bug this replaces treated any non-empty pending_approval as a
+ * veto over the entire root, so approving a subset of a root's children (the case a workspace
+ * holding client or employer repositories alongside the user's own most needs) silently scanned
+ * nothing at all. Each approved child is resolved to `join(rootRealpath, child)` and, if it
+ * exists, is not a symlink, is a directory, is not prune-listed, and is not secret-named, handed
+ * to discoverRepos at depth 1 - the depth an immediate child sits at relative to its root, exactly
+ * what the old whole-root recursion would have assigned it (discoverRepos(root, root, 0, ...)
+ * recursing into an entry always called itself with depth 1 for that entry). The
+ * `1 > budgets.max_depth` check mirrors the identical guard discoverRepos applies before
+ * recursing into any ordinary entry it finds via readdirSync (its own depth parameter there is 0,
+ * the root's own depth) - reproduced here rather than left to discoverRepos itself, since a call
+ * starting directly at depth 1 has no way to know whether the root it descended from was itself
+ * within budget.
+ *
+ * A non-symlink, non-prune, non-secret child that no longer exists on disk is collected into the
+ * returned list rather than silently skipped like a symlink or a prune-listed name would be -
+ * those are policy skips this subsystem makes everywhere and never discloses per-entry; a renamed
+ * or deleted *approved* directory is instead the same class of surprise RootStatus already
+ * distinguishes at the root level (an approved path that vanished must not read the same as one
+ * that was simply never present). Iterates in Buffer.compare order (Determinism item 1): roots.yml
+ * entry order is user-authored and must never change the snapshot.
+ */
+function discoverApprovedChildren(
+  rootRealpath: string,
+  approvedChildren: string[],
+  rootId: string,
+  rootLabel: string,
+  budgets: ScanBudgets,
+  git: GitProbe,
+  out: RepoObservation[],
+  docBudget: DocBudgetState,
+  state: RepoDiscoveryState,
+): string[] {
+  const missing: string[] = [];
+  for (const child of sortChildNames(approvedChildren)) {
+    if (state.repos_truncated) break; // already proven; nothing left to learn from another child
+    const childDir = join(rootRealpath, child);
+    let st;
+    try {
+      st = lstatSync(childDir);
+    } catch {
+      missing.push(child);
+      continue;
+    }
+    if (st.isSymbolicLink() || !st.isDirectory()) continue;
+    if (PRUNE_DIRS.has(child) || isSecretDir(child, basename(rootRealpath))) continue;
+    if (1 > budgets.max_depth) {
+      state.depth_truncated = true; // a subtree exists here that was never searched
+      continue;
+    }
+    discoverRepos(rootRealpath, childDir, 1, rootId, rootLabel, budgets, git, out, docBudget, state);
+  }
+  return missing;
+}
+
 // --- collectWorkspace --------------------------------------------------------------------------
 
 /**
@@ -932,9 +998,10 @@ function discoverRepos(
  * cross-repo derivation (language shares, the 90-day bucket, aggregate coverage, truncation)
  * stays in computeWorkspaceScan.
  *
- * A root with pending approval (checkRootDrift) is not scanned at all - its repos list comes
- * back empty and its drift is surfaced by the caller (tools/scan.ts), which is what decides the
- * process exit code.
+ * A root whose immediate children include one that is new since approval, or was never approved
+ * (checkRootDrift), still scans every other, approved child normally - only the drifted child
+ * itself is skipped and surfaced in pending_approval. The caller (tools/scan.ts) is what decides
+ * the process exit code from that.
  */
 export function collectWorkspace(roots: ApprovedRoot[], budgets: ScanBudgets, git: GitProbe = gitCli): WorkspaceObservation {
   // max_roots is enforced here, for real, before any of the excess roots are so much as
@@ -958,7 +1025,7 @@ export function collectWorkspace(roots: ApprovedRoot[], budgets: ScanBudgets, gi
       // machine. Distinct from 'not-a-directory' below - both used to collapse into the same
       // repos: [] result an empty-but-present root also produces (Finding 2: a missing root and
       // a root that is a file were indistinguishable from an empty one).
-      rootObs.push({ root_id: id, label: root.label, repos: [], pending_approval: [], repos_truncated: false, depth_truncated: false, status: 'missing' });
+      rootObs.push({ root_id: id, label: root.label, repos: [], pending_approval: [], missing_children: [], repos_truncated: false, depth_truncated: false, status: 'missing' });
       continue;
     }
     let rootStat;
@@ -967,14 +1034,14 @@ export function collectWorkspace(roots: ApprovedRoot[], budgets: ScanBudgets, gi
     } catch {
       // realpathSync succeeded but the path vanished before stat could run - a genuine race, not
       // the common case; treated the same as never having existed.
-      rootObs.push({ root_id: id, label: root.label, repos: [], pending_approval: [], repos_truncated: false, depth_truncated: false, status: 'missing' });
+      rootObs.push({ root_id: id, label: root.label, repos: [], pending_approval: [], missing_children: [], repos_truncated: false, depth_truncated: false, status: 'missing' });
       continue;
     }
     if (!rootStat.isDirectory()) {
       // realpathSync resolves a path whether it names a file or a directory, so an approved
       // root that was replaced with a plain file (or always was one) still passes it - only
       // stat's isDirectory() catches this.
-      rootObs.push({ root_id: id, label: root.label, repos: [], pending_approval: [], repos_truncated: false, depth_truncated: false, status: 'not-a-directory' });
+      rootObs.push({ root_id: id, label: root.label, repos: [], pending_approval: [], missing_children: [], repos_truncated: false, depth_truncated: false, status: 'not-a-directory' });
       continue;
     }
     // real (the resolved absolute path) is still used here for traversal confinement and drift
@@ -983,14 +1050,26 @@ export function collectWorkspace(roots: ApprovedRoot[], budgets: ScanBudgets, gi
     const drift = checkRootDrift({ ...root, path: real });
     const repos: RepoObservation[] = [];
     const discoveryState: RepoDiscoveryState = { repos_truncated: false, depth_truncated: false };
-    if (drift.pending_approval.length === 0) {
+    // A root that is itself a repository has no children to partition by approval - scan it
+    // whole, same as before. Otherwise descend per approved child (discoverApprovedChildren,
+    // above): approving a subset of a root's children is the case this subsystem most needs to
+    // get right, and the bug this replaces treated ANY unapproved or newly-appeared sibling
+    // (drift.pending_approval non-empty) as a veto over the entire root, silently scanning
+    // nothing. pending_approval keeps its meaning unchanged - the children this root drifted on,
+    // still surfaced and still never scanned - only the decision to scan every OTHER, approved
+    // child changes.
+    let missingChildren: string[] = [];
+    if (git.isRepo(real)) {
       discoverRepos(real, real, 0, id, root.label, budgets, git, repos, docBudget, discoveryState);
+    } else {
+      missingChildren = discoverApprovedChildren(real, root.approved_children, id, root.label, budgets, git, repos, docBudget, discoveryState);
     }
     rootObs.push({
       root_id: id,
       label: root.label,
       repos,
       pending_approval: drift.pending_approval,
+      missing_children: missingChildren,
       repos_truncated: discoveryState.repos_truncated,
       depth_truncated: discoveryState.depth_truncated,
       status: 'ok',

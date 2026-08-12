@@ -21,6 +21,7 @@
       "label": "fixture-workspace",
       "repos_found": 3,
       "pending_approval": [],
+      "missing_children": [],
       "status": "ok"
     }
   ],
