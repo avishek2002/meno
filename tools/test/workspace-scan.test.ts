@@ -1213,3 +1213,86 @@ test('PART C: gitCli ignores a global i18n.logOutputEncoding setting in the call
     process.env.HOME = originalHome;
   }
 });
+
+// --- 16. scratch repo dilution: cache pruning and the substantive-only denominator -------------
+// PROGRESS.md, "The scanner counts scratch git repositories inside agent tool caches as real
+// projects": on a real scan, 4 of 13 discovered repositories sat under a coding agent's plugin
+// cache directory (three throwaway temp_git_* clones with one commit and zero documentation
+// files, one installed third-party plugin), diluting every marker ratio in the report. Two
+// complementary fixes: PRUNE_DIRS gained cache/.cache/caches (never descend into a tool cache at
+// all), and computeWorkspaceScan classifies each repo as substantive/not so the coverage ratios
+// use a denominator of real projects even when a scratch repo evades the prune list some other
+// way (a bare "temp-repos" directory outside any cache/, for instance).
+
+test('a repo with no manifest, no readme, and one commit is classified non-substantive, is still listed, and is excluded from marker_coverage\'s denominator', () => {
+  const base = tmpRoot();
+  // A substantive sibling so total_repos and substantive_repos can be told apart, and
+  // marker_coverage's real denominator (1) can be told apart from the unfiltered count (2).
+  const realProject = mkFixtureRepo(base, 'real-project', { commits: [{ date: '2026-08-01', author: 'a', subject: 'feat: init' }] });
+  writeFileSync(join(realProject, 'README.md'), 'a real project');
+  const scratchRepo = mkFixtureRepo(base, 'temp_git_1234_abcd', { commits: [{ date: '2026-08-01', author: 'a', subject: 'wip' }] });
+  writeFileSync(join(scratchRepo, 'index.js'), '1');
+
+  const roots: ApprovedRoot[] = [{ label: 'work', path: base, approved_children: ['real-project', 'temp_git_1234_abcd'] }];
+  const snapshot = computeWorkspaceScan(collectWorkspace(roots, DEFAULT_BUDGETS, fixtureGit), META);
+
+  const scratch = snapshot.repos.find((r) => r.name === 'temp_git_1234_abcd')!;
+  assert.equal(scratch.substantive, false, 'no manifest, no readme, one commit: non-substantive');
+  assert.ok(snapshot.repos.some((r) => r.name === 'temp_git_1234_abcd'), 'a non-substantive repo is still listed in repos - nothing is hidden');
+  assert.equal(snapshot.aggregate.total_repos, 2, 'total_repos counts every repository found, substantive or not');
+  assert.equal(snapshot.aggregate.substantive_repos, 1, 'only the real project is substantive');
+  // The actual bug this fixes: assert the denominator number directly, not merely that a rate
+  // object exists. Before this change, `of` would read 2 (diluted by the scratch repo).
+  assert.equal(snapshot.aggregate.marker_coverage.readme.of, 1, "marker_coverage's denominator must be substantive_repos, not total_repos");
+});
+
+test('a repo with a readme but no manifest and one commit is classified per the rule as written: a readme alone already breaks the non-substantive AND, so it is substantive', () => {
+  const base = tmpRoot();
+  const repo = mkFixtureRepo(base, 'readme-only', { commits: [{ date: '2026-08-01', author: 'a', subject: 'chore: init' }] });
+  writeFileSync(join(repo, 'README.md'), 'just a readme, no manifest');
+
+  const roots: ApprovedRoot[] = [{ label: 'work', path: base, approved_children: ['readme-only'] }];
+  const snapshot = computeWorkspaceScan(collectWorkspace(roots, DEFAULT_BUDGETS, fixtureGit), META);
+
+  const repoSnap = snapshot.repos.find((r) => r.name === 'readme-only')!;
+  assert.equal(repoSnap.substantive, true);
+});
+
+test('a directory named "cache" nested inside an approved root is never descended into; a repository beneath it contributes nothing', () => {
+  const base = tmpRoot();
+  const agentToolDir = join(base, 'agent-tool');
+  mkdirSync(agentToolDir, { recursive: true });
+  // Mirrors the real defect's shape: a scratch repo several levels under a tool's own cache/
+  // directory, discovered by the recursive walk rather than approved directly as a child.
+  const cacheRepoDir = join(agentToolDir, 'cache', 'plugins', 'temp_git_9999_xyz');
+  mkdirSync(cacheRepoDir, { recursive: true });
+  writeFileSync(join(cacheRepoDir, 'FIXTURE-git.json'), JSON.stringify({ commits: [], remote: null }));
+  const realProject = mkFixtureRepo(base, 'real-project');
+  writeFileSync(join(realProject, 'README.md'), 'x');
+
+  const roots: ApprovedRoot[] = [{ label: 'work', path: base, approved_children: ['agent-tool', 'real-project'] }];
+  const obs = collectWorkspace(roots, DEFAULT_BUDGETS, fixtureGit);
+
+  assert.deepEqual(
+    obs.roots[0].repos.map((r) => r.name),
+    ['real-project'],
+    'the repository under agent-tool/cache/ must never be discovered',
+  );
+});
+
+test('a limits line names the non-substantive count when one exists, and no such line appears when none exists', () => {
+  const baseWithScratch = tmpRoot();
+  const real = mkFixtureRepo(baseWithScratch, 'real-project', { commits: [{ date: '2026-08-01', author: 'a', subject: 'feat: x' }] });
+  writeFileSync(join(real, 'README.md'), 'x');
+  mkFixtureRepo(baseWithScratch, 'temp_git_0001_aaaa', { commits: [{ date: '2026-08-01', author: 'a', subject: 'wip' }] });
+  const rootsWithScratch: ApprovedRoot[] = [{ label: 'work', path: baseWithScratch, approved_children: ['real-project', 'temp_git_0001_aaaa'] }];
+  const withScratch = computeWorkspaceScan(collectWorkspace(rootsWithScratch, DEFAULT_BUDGETS, fixtureGit), META);
+  assert.ok(withScratch.limits.some((l) => l.includes('1 of 2 discovered repositories')), 'a limits line must name the non-substantive count');
+
+  const baseClean = tmpRoot();
+  const cleanRepo = mkFixtureRepo(baseClean, 'real-project', { commits: [{ date: '2026-08-01', author: 'a', subject: 'feat: x' }] });
+  writeFileSync(join(cleanRepo, 'README.md'), 'x');
+  const rootsClean: ApprovedRoot[] = [{ label: 'work', path: baseClean, approved_children: ['real-project'] }];
+  const clean = computeWorkspaceScan(collectWorkspace(rootsClean, DEFAULT_BUDGETS, fixtureGit), META);
+  assert.ok(!clean.limits.some((l) => l.includes('discovered repositories carried no dependency manifest')), 'no line when every repository is substantive');
+});

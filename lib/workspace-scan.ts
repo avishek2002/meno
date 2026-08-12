@@ -72,7 +72,14 @@ export interface ScanMeta {
 // matches, without the pure module ever seeing which directory it matched in.
 
 /** Directories the walker never descends into (Determinism item 4: .gitignore is deliberately
- *  not consulted; this deterministic list stands in for it). */
+ *  not consulted; this deterministic list stands in for it). 'cache', '.cache', and 'caches'
+ *  were added after a real scan found a coding agent's plugin cache directory contributing four
+ *  non-project repositories (three throwaway `temp_git_*` scratch clones and one installed
+ *  third-party plugin) to a report; the addition generalises to package/plugin caches from other
+ *  tools too. Matched exactly like every other entry here, case-sensitively, by literal name -
+ *  the honest cost is that a project legitimately containing a source directory named `cache`
+ *  (rather than a tool's own cache directory) is skipped too (docs/specs/subject-finder.md,
+ *  Limits). */
 export const PRUNE_DIRS: ReadonlySet<string> = new Set([
   '.git',
   'node_modules',
@@ -85,6 +92,9 @@ export const PRUNE_DIRS: ReadonlySet<string> = new Set([
   'target',
   '__pycache__',
   '.next',
+  'cache',
+  '.cache',
+  'caches',
 ]);
 
 const SECRET_FILE_PATTERNS: readonly string[] = [
@@ -667,6 +677,14 @@ export interface SnapshotRepo {
   symlinks_skipped: number;
   secrets_skipped: number;
   unreadable_dirs: number;
+  /** False when this repository carries no dependency manifest, no readme marker, and at most
+   *  one commit in its history - a directory that is a git repository without being a project
+   *  (a scratch clone, a throwaway experiment). Derived purely from fields this same repo entry
+   *  already carries (manifests, markers.readme, commits_total), never a new filesystem read.
+   *  A non-substantive repository is still listed here and still counted in
+   *  aggregate.total_repos - this field changes which denominator the coverage ratios below use,
+   *  it never hides a repository the scan found. */
+  substantive: boolean;
 }
 
 export interface WorkspaceScanSnapshot {
@@ -680,16 +698,30 @@ export interface WorkspaceScanSnapshot {
   repos: SnapshotRepo[];
   aggregate: {
     total_roots: number;
+    /** Every repository the scan found, substantive or not - this field's meaning is unchanged
+     *  by the substantive split below. */
     total_repos: number;
+    /** Count of total_repos that are substantive (see SnapshotRepo.substantive) - a separate
+     *  field rather than a redefinition of total_repos, so a report can state both "N
+     *  repositories found" and "M of them substantive" without either number silently changing
+     *  meaning underneath it. */
+    substantive_repos: number;
     /** Dependency name -> count of repositories carrying it (deps and dev_deps combined, deduped
      *  per repo so a repo never counts a name twice), sorted by descending count then by
      *  ascending name (Buffer.compare, never localeCompare), capped at max_dependency_names. A
-     *  scoped npm name outside PUBLIC_NPM_SCOPES already arrived as '@private-scope'. */
+     *  scoped npm name outside PUBLIC_NPM_SCOPES already arrived as '@private-scope'. Computed
+     *  over substantive repositories only (see SnapshotRepo.substantive), so a workspace's
+     *  ranked dependency surface describes real projects rather than being diluted by a scratch
+     *  clone or a cache directory's own manifest. */
     dependency_frequency: Record<string, number>;
     /** Manifest kind -> count of repos carrying at least one manifest of that kind. The old
      *  dependency_frequency semantics, renamed once dependency_frequency started naming
-     *  dependencies instead of manifest kinds. */
+     *  dependencies instead of manifest kinds. Computed over substantive repositories only, same
+     *  reasoning as dependency_frequency above. */
     manifest_coverage: Record<string, number>;
+    /** Computed over substantive repositories only (denominator = substantive_repos, not
+     *  total_repos) - a marker ratio like "6 of 13 repos have a lockfile" is only honest about
+     *  what a person actually works in when the 13 excludes throwaway scratch clones. */
     marker_coverage: Record<string, Rate>;
   };
   truncation: { events: TruncationEvent[] };
@@ -779,13 +811,22 @@ export function computeWorkspaceScan(obs: WorkspaceObservation, meta: ScanMeta):
         languageShares[ext] = totalExt > 0 ? Math.round((n / totalExt) * 100) / 100 : 0;
       }
 
+      // A repository is a git repository without being a project when it carries none of the
+      // three positive signals a real project accumulates over time: a dependency manifest, a
+      // readme, or more than one commit. Found on a real scan (PROGRESS.md, "The scanner counts
+      // scratch git repositories inside agent tool caches as real projects"): three throwaway
+      // `temp_git_*` clones with one commit and zero documentation each, diluting every ratio
+      // downstream. Derived only from fields already on this repo entry - no new filesystem read.
+      const commitsTotal = repo.commit_days.length;
+      const substantive = repo.manifests.length > 0 || repo.markers.readme || commitsTotal > 1;
+
       snapRepos.push({
         repo_id: repo.repo_id,
         name: repo.name,
         depth: repo.depth,
         root_label: repo.root_label,
         remote_host: repo.remote_host,
-        commits_total: repo.commit_days.length,
+        commits_total: commitsTotal,
         commits_90d: commits90d,
         commit_types: repo.commit_types,
         keyword_hits: repo.keyword_hits,
@@ -801,6 +842,7 @@ export function computeWorkspaceScan(obs: WorkspaceObservation, meta: ScanMeta):
         symlinks_skipped: repo.symlinks_skipped,
         secrets_skipped: repo.secrets_skipped,
         unreadable_dirs: repo.unreadable_dirs,
+        substantive,
       });
     }
   }
@@ -812,11 +854,19 @@ export function computeWorkspaceScan(obs: WorkspaceObservation, meta: ScanMeta):
     events.push({ cap: 'max_doc_files', limit: b.max_doc_files, observed: null, at_least: b.max_doc_files, scope: 'workspace' });
   }
 
+  // Substantive-only view: aggregate.manifest_coverage, aggregate.dependency_frequency, and
+  // aggregate.marker_coverage are all computed over this subset (docs/specs/subject-finder.md),
+  // so a ratio like "6 of 9 repos carry a lockfile" describes real projects rather than being
+  // diluted by a scratch clone or a cache directory's own manifest. snapRepos itself, and
+  // aggregate.total_repos below, are unchanged - every repository the scan found is still
+  // reported, this only changes which denominator the coverage ratios use.
+  const substantiveRepos = snapRepos.filter((r) => r.substantive);
+
   // aggregate.manifest_coverage: manifest kind -> count of repos carrying at least one manifest
   // of that kind. This is the old dependency_frequency semantics, renamed now that
   // dependency_frequency itself carries dependency names (see below).
   const manifestCoverage: Record<string, number> = {};
-  for (const repo of snapRepos) {
+  for (const repo of substantiveRepos) {
     for (const kind of new Set(repo.manifests.map((m) => m.kind))) {
       manifestCoverage[kind] = (manifestCoverage[kind] ?? 0) + 1;
     }
@@ -830,7 +880,7 @@ export function computeWorkspaceScan(obs: WorkspaceObservation, meta: ScanMeta):
   const depCounts = new Map<string, number>();
   let anyPrivateScopeCollapsed = false;
   let anyPrivateModuleCollapsed = false;
-  for (const repo of snapRepos) {
+  for (const repo of substantiveRepos) {
     const names = new Set<string>();
     for (const m of repo.manifests) {
       for (const n of m.deps) names.add(n);
@@ -854,8 +904,8 @@ export function computeWorkspaceScan(obs: WorkspaceObservation, meta: ScanMeta):
 
   const markerCoverage: Record<string, Rate> = {};
   for (const marker of MARKER_NAMES) {
-    const hits = snapRepos.filter((r) => r.markers[marker]).length;
-    markerCoverage[marker] = rate(hits, snapRepos.length);
+    const hits = substantiveRepos.filter((r) => r.markers[marker]).length;
+    markerCoverage[marker] = rate(hits, substantiveRepos.length);
   }
 
   const limits: string[] = [
@@ -876,6 +926,15 @@ export function computeWorkspaceScan(obs: WorkspaceObservation, meta: ScanMeta):
     if (root.missing_children.length > 0) {
       limits.push(`root '${root.label}': approved director${root.missing_children.length === 1 ? 'y' : 'ies'} not found on disk: ${root.missing_children.join(', ')}`);
     }
+  }
+  // Nothing is hidden: every repository the scan found is still in `repos` and still counted in
+  // total_repos - this line only names how many were excluded from the coverage denominators, so
+  // a report can never quietly imply the ratios covered everything.
+  const nonSubstantiveCount = snapRepos.length - substantiveRepos.length;
+  if (nonSubstantiveCount > 0) {
+    limits.push(
+      `${nonSubstantiveCount} of ${snapRepos.length} discovered repositories carried no dependency manifest, no readme, and at most one commit, and were excluded from marker_coverage, dependency_frequency, and manifest_coverage's denominators (still listed in "repos" and counted in aggregate.total_repos)`,
+    );
   }
   if (anyPrivateScopeCollapsed) {
     limits.push(
@@ -904,6 +963,7 @@ export function computeWorkspaceScan(obs: WorkspaceObservation, meta: ScanMeta):
     aggregate: {
       total_roots: obs.roots.length,
       total_repos: snapRepos.length,
+      substantive_repos: substantiveRepos.length,
       dependency_frequency: dependencyFrequency,
       manifest_coverage: manifestCoverage,
       marker_coverage: markerCoverage,
