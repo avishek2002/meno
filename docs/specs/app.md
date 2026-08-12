@@ -113,6 +113,9 @@ write-authority seam (decision 14) is enforced in code.
    (`#/guide#glossary`), so the route pattern tolerates one trailing fragment and the page
    scrolls to it, honoring `prefers-reduced-motion`. A "Guide" nav link is present on every
    screen including the no-tenant empty state, which is exactly when help is most wanted.
+12. `#/t/:tenant/graph` renders the whole tenant vault as one picture, joined to the ledger -
+    what is planned but unwritten, what is mastered, and how courses connect. See
+    [graph.md](graph.md) for the full behavior.
 
 ## Architecture
 
@@ -142,7 +145,8 @@ One process, two halves, one root `package.json`:
 
 The HTTP surface (base `/api/v1`): reads - `health`, `tenants`, `:tenant/tree`,
 `:tenant/course/:course`, `:tenant/lesson/:course/:module/:file`, `:tenant/note?path=`,
-`:tenant/todos`, `:tenant/progress`, `:tenant/insights`, `:tenant/ledger`, `:tenant/groups`. `:tenant/insights`
+`:tenant/todos`, `:tenant/progress`, `:tenant/insights`, `:tenant/ledger`, `:tenant/groups`,
+`:tenant/graph`. `:tenant/insights`
 has no write counterpart - it computes `lib/insights.ts`'s `computeInsights` fresh over the
 same walk and adds the list of narrative report files under `insights/` (spec:
 [insights.md](insights.md)). Writes (the entire write surface) - `POST :tenant/check/submit`,

@@ -47,6 +47,7 @@ export const GUIDE: GuideSection[] = [
       { label: 'Todos', body: 'The shared queue between you, this app, and your agent. Add, edit, complete, or park items.' },
       { label: 'Progress', body: 'Per-concept mastery, what is due for review, and a feed of recent activity. Every number derives from your ledger.' },
       { label: 'Insights', body: 'Study counts and rates in one neutral palette. For a written interpretation of them, ask your agent for an insights report.' },
+      { label: 'Graph', body: 'Every note in your vault as one picture, joined to your progress: colour is the course group, hollow versus solid is planned/written/mastered, and size is incoming links. Thick lines are courses you said connect; thin lines are ordinary references and course structure. Pan, zoom, drag a node, or click one to open it - a "Show in graph" link on a course or lesson opens here centred on it.' },
     ],
   },
   {

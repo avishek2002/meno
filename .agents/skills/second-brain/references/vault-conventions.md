@@ -68,9 +68,52 @@ graph TD
 **02 borrowing in practice** (planned)
 <!-- meno:derived:end -->
 
+## Connects to
+<!-- meno:connects:start -->
+- [[git-fundamentals-hub|Git fundamentals]] - merging to the default branch is what triggers a redeploy
+<!-- meno:connects:end -->
+
 ## My notes
 (human territory; never regenerated)
 ````
+
+## Connects to (`## Connects to`, cross-course edges)
+
+A hub's own section for the cross-course edges the knowledge-graph view (`docs/specs/graph.md`)
+draws as thick `connection` edges - the connective tissue no manifest carries, because these are
+edges between courses, not within one. The heading sits ABOVE the marker pair,
+`<!-- meno:connects:start -->` / `<!-- meno:connects:end -->`, exactly as a hub's `# Title` sits
+above `meno:derived:start`; the block itself sits AFTER the `meno:derived` block and ABOVE the
+human "My notes" section, as in the example above.
+
+Grammar, one bullet per line, machine-checked by `lib/connects.ts` and `tools/validate.ts`'s
+`connects` check:
+
+```markdown
+- [[target-hub|Title]] - one-line reason
+```
+
+- `target-hub` is the other course's hub note, resolved the same way any wikilink resolves
+  (unique basename wins). A target `tools/validate.ts` cannot resolve is an error; a heading
+  anchor (`[[hub#section]]`) is not a note and is malformed.
+- The reason is required, one line, and says *why* the two courses connect - not "related",
+  the actual causal or structural link a learner would want surfaced.
+- **Edges are undirected, and reciprocating is preferred.** Write the bullet in both hubs. One
+  bullet is enough for the graph - it draws a single edge either way, and a second bullet
+  naming the same pair collapses into that same edge rather than doubling it - but the vault
+  is an Obsidian vault first, and there a one-sided link is invisible from the other note.
+  Someone reading the hosting hub would never learn it connects to git. So a pair where only
+  one hub names the other is a validate warning, not an error: the graph is fine, the vault
+  is the thing that is poorer for it. Reciprocating clears the warning. The two bullets may
+  word the reason differently, and often should - each says why the connection matters when
+  you are standing in that course.
+- **`generate-curriculum` must never touch this block.** It owns `meno:derived`, which is
+  single-course scoped by design; a cross-course edge is invisible to a single-course
+  regeneration, so a generator that "refreshed" this block would silently wipe edges it has no
+  way to see. Only `second-brain`, following the **Connect courses** operation below, writes it.
+- Refreshed only on an explicit `second-brain` sweep - a new course is invisible in the graph
+  view until someone asks for one. Preferred over a writer that would clobber judgment it
+  cannot reproduce from a manifest.
 
 ## Course groups (`groups.yml`, canonical)
 
