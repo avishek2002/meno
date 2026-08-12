@@ -174,11 +174,12 @@ spec row is stale.
 | [specs/citations.md](specs/citations.md) | audit protocol, stale-content flows | Phase 6 | - |
 | [specs/durability.md](specs/durability.md) | init, private mirror, restore | Phase 7 | - |
 | [specs/quality.md](specs/quality.md) | evals, baselines, smoke protocol, topic packs | Phase 8 | - |
-| [specs/insights.md](specs/insights.md) | study-insights snapshot (`lib/insights.ts`), read-only endpoint, CLI, narrative reports | v1.1 | - |
+| [specs/insights.md](specs/insights.md) | study-insights snapshot (`lib/insights.ts`), read-only endpoint, CLI, narrative reports | v1.1 | v1.8 |
 | [specs/community.md](specs/community.md) | topic-pack layout, search-first, publish-to-community, amend-over-fork | v1.2 | - |
 | [org-deployment.md](org-deployment.md) + [integration-surface.md](integration-surface.md) | org deployment: private mirror-clone, `content/org/` knowledge base, RBAC mapped to host primitives, the stable integration surface | v1.3 | - |
 | [specs/supply-chain.md](specs/supply-chain.md) | the contribution trust boundary: CI enforcement, capability paths, what review executes | v1.4 | - |
 | [specs/cost.md](specs/cost.md) | content-cost attribution: cost-source adapter contract, `computeCost` (`lib/cost.ts`), snapshot format, read-only endpoint, CLI, page | v1.7 | - |
+| [specs/subject-finder.md](specs/subject-finder.md) | find-subjects: consent-gated workspace scan (`lib/workspace-scan.ts`), snapshot format, privacy guards, candidate routing, evidence-packet handoff into elicit-needs | v1.8 | - |
 
 Vault conventions (wikilinks, hub notes, todos) deliberately have no spec file: the
 `second-brain` skill and its references are the canonical owner, and a spec would duplicate

@@ -29,9 +29,10 @@ is in [docs/how-meno-works.md](docs/how-meno-works.md).
 
 ## What's inside
 
-- **Seven skills** (`.agents/skills/`) - the program an agent CLI executes: interview,
+- **Ten skills** (`.agents/skills/`) - the program an agent CLI executes: interview,
   curriculum generation, lesson generation, tutoring with mastery gates, citation
-  auditing, vault upkeep, instance extension.
+  auditing, vault upkeep, instance extension, study insights, community publishing,
+  and workspace-evidence subject discovery.
 - **A local-first study app** (`app/`) - Vite + React over a small Node file API; reads
   and writes your markdown directly, grades recognition checks, tracks progress. No
   database, no daemon, binds localhost only.

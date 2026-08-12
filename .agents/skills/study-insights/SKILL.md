@@ -1,6 +1,6 @@
 ---
 name: study-insights
-description: Write a dated narrative report interpreting a learner's study-insights snapshot (sessions, reviews, gates, evidence, usage, vault health) into plain-language observations, stuck points, and up to three suggestions and three topic candidates. User-invoked only - never runs automatically at session start or inside a tutor session. Use when the learner asks "how am I doing", "what does my study data say", "give me an insights report", or similar. Quotes lib/insights.ts's numbers; never computes or invents one.
+description: Write a dated narrative report interpreting a learner's study-insights snapshot (sessions, reviews, gates, evidence, usage, vault health) into plain-language observations, stuck points, and up to three suggestions. User-invoked only - never runs automatically at session start or inside a tutor session. Use when the learner asks "how am I doing", "what does my study data say", "give me an insights report", or similar. Quotes lib/insights.ts's numbers; never computes or invents one.
 ---
 
 # Study insights
@@ -40,7 +40,7 @@ field, its formula, its `min_n`) rather than approximating it in prose.
    if a note for today already exists, overwrite it - one report per day, not per
    invocation) following [references/narrative-format.md](references/narrative-format.md)
    exactly: frontmatter per `schemas/insights.schema.json` with the full snapshot JSON
-   embedded as `metrics_snapshot`, then the six fixed body sections in order.
+   embedded as `metrics_snapshot`, then the five fixed body sections in order.
 4. **Weave it in**, per [second-brain conventions](../second-brain/references/vault-conventions.md):
    update `content/tenants/<tenant>/insights/insights-hub.md` (create it on the first report) to
    list every dated report newest-first inside its `meno:derived` markers, preserving any
@@ -70,25 +70,23 @@ data without it feeling like a second gate.
 - **Where you are stuck** - draw from `reviews.overdue`, `gates.unrepaid_overrides`
   (call these out prominently - an override with no repaying transfer score since is the
   single most actionable fact in the report), `evidence.weak_concepts`, and
-  `evidence.mastered_on_old_evidence`. Every claim here cites the specific item id or
-  concept it is about - "ownership is shaky (first 0.5, still 0.5, n_transfer=1)" not
-  "you're struggling with ownership."
+  `evidence.mastered_on_old_evidence`. Also fold in `vault.referenced_but_untaught` as a
+  fact about a hole in what is taught, not a new-topic pitch - phrase it as "your vault
+  references N concept(s) no lesson currently teaches", naming them; it may mean amending
+  the existing course rather than starting a new one, so it carries no routing
+  instruction. Every claim here cites the specific item id or concept it is about -
+  "ownership is shaky (first 0.5, still 0.5, n_transfer=1)" not "you're struggling with
+  ownership."
 - **Suggestions** - at most 3, concrete and doable ("run a review session - 3 concepts are
-  overdue", not "study more"). If a suggestion repeats one from an earlier report, mark it
-  `(repeated - first suggested YYYY-MM-DD)` by checking prior `insights/*-insights.md`
-  frontmatter dates. If the learner declines a suggestion in conversation, add it to
-  `todos.md` as an unchecked line, kind `#course` or `#feature` as fits the suggestion and
-  audience `#for-agent`, per
+  overdue", not "study more"). Fold in `usage.planned_debt` as a concrete item, phrased as
+  unfinished structure on an existing course - "module X still has N lessons planned but
+  not generated" - never as a new subject. If a suggestion repeats one from an earlier
+  report, mark it `(repeated - first suggested YYYY-MM-DD)` by checking prior
+  `insights/*-insights.md` frontmatter dates. If the learner declines a suggestion in
+  conversation, add it to `todos.md` as an unchecked line, kind `#course` or `#feature` as
+  fits the suggestion and audience `#for-agent`, per
   [todo-format.md](../second-brain/references/todo-format.md) rather than dropping it -
   same rule second-brain uses for any declined proposal.
-- **Topics you might want** - at most 3. The candidate pool is exactly:
-  `vault.referenced_but_untaught` entries, open `#admin #for-me` todos that read as topic requests,
-  filenames under `sources/` that no course currently covers, and the profile's stated
-  goal read against what is actually taught so far. Never invent a topic outside this
-  pool. For each candidate, name the evidence that surfaced it. Do not generate anything
-  here yourself - if the learner wants to act on one, route it through
-  [elicit-needs](../elicit-needs/SKILL.md) like any new-topic request (a course needs a
-  contract before it needs content).
 - **Limits of this report** - required, never omit. Start from the snapshot's own `limits`
   array (quote it) and add anything this narration pass could not do either (e.g., no
   comparison to a prior report exists yet for a first-ever note).
@@ -96,9 +94,9 @@ data without it feeling like a second gate.
 ## Done means
 
 - The note validates against `schemas/insights.schema.json` and passes validate's
-  `insights` check (six sections present, every standalone number in the body traceable to
+  `insights` check (five sections present, every standalone number in the body traceable to
   `metrics_snapshot`).
 - `insights-hub.md` lists the new report and is itself linked from `home.md` - no orphan.
-- Every claim in "Where you are stuck" and "Topics you might want" names its evidence.
+- Every claim in "Where you are stuck" names its evidence.
 - No ledger line was appended and `mastery.yml` was not touched - this skill only reads.
 - The learner heard the report in conversation, not just as a file path.

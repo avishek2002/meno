@@ -210,6 +210,7 @@ manual fallback is four commands: create a private repo by hand, then inside
 | `tools/meno-mirror push <you>` | after a session, so a lost laptop costs nothing |
 | `tools/meno-mirror status <you>` | "did my last backup actually happen?" |
 | `npm run insights` then ask your agent for an insights report | when you want to know how you are doing |
+| `node tools/scan.ts content/tenants/<you> --enumerate` then ask your agent to find subjects | when you suspect you're under-using your own tools but can't name the gap |
 | `npm run cost -- content/tenants/<you> --write` | to see which courses cost the most to generate |
 | `npm run gate` | after you change the instance yourself |
 

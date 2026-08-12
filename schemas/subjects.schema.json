@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/avishek2002/meno/schemas/subjects.schema.json",
+  "title": "Meno narrative subjects-note frontmatter",
+  "description": "Machine-checkable half of the canonical format owned by .agents/skills/find-subjects/references/report-format.md. Body-section, trace-your-facts, and no-raw-path rules are enforced by tools/validate.ts's subjects check. Privacy guards and the consent model live in docs/specs/subject-finder.md.",
+  "type": "object",
+  "required": ["schema_version", "type", "as_of", "generated_at", "roots", "agent", "basis", "workspace_scan"],
+  "properties": {
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "type": { "const": "subjects" },
+    "as_of": { "type": "string", "format": "date" },
+    "generated_at": { "type": "string", "format": "date" },
+    "roots": {
+      "description": "Approved root labels, exactly as recorded in workspace/roots.yml. Labels are user-authored strings, never filesystem paths - the no-raw-path invariant (docs/specs/subject-finder.md, invariant 2) is enforced over this field by validate's subjects check.",
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "agent": { "type": "string", "minLength": 1 },
+    "basis": {
+      "type": "object",
+      "required": ["roots_scanned", "scan_sha256"],
+      "properties": {
+        "roots_scanned": { "type": "integer", "minimum": 0 },
+        "scan_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      },
+      "additionalProperties": true
+    },
+    "workspace_scan": {
+      "type": "object",
+      "description": "The full workspace-scan snapshot (lib/workspace-scan.ts) this note was written from, embedded verbatim - the trace-your-facts validate check searches this object for every structural claim the body makes, exactly as insights notes embed metrics_snapshot."
+    }
+  },
+  "additionalProperties": true
+}

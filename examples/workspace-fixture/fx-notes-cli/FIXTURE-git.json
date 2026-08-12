@@ -1,0 +1,7 @@
+{
+  "commits": [
+    { "date": "2026-07-25", "author": "Priya Nair", "subject": "feat: add markdown export command" },
+    { "date": "2026-05-30", "author": "Priya Nair", "subject": "docs: document the cache flag" }
+  ],
+  "remote": "https://git.example-selfhosted.test/team/notes-cli.git"
+}

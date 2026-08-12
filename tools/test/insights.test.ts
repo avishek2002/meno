@@ -107,9 +107,6 @@ Nothing overdue right now.
 ## Suggestions
 None yet.
 
-## Topics you might want
-None yet.
-
 ## Limits of this report
 This is a synthetic fixture, not a real report.
 `;
@@ -139,9 +136,6 @@ Mostly recognition checks.
 
 ## Where you are stuck
 Nothing overdue right now.
-
-## Topics you might want
-None yet.
 
 ## Limits of this report
 This is a synthetic fixture.
@@ -179,9 +173,6 @@ Nothing overdue right now.
 ## Suggestions
 None yet.
 
-## Topics you might want
-None yet.
-
 ## Limits of this report
 This is a synthetic fixture.
 `;
@@ -204,9 +195,6 @@ See \`5000\` in a code span.
 Nothing overdue right now.
 
 ## Suggestions
-None yet.
-
-## Topics you might want
 None yet.
 
 ## Limits of this report

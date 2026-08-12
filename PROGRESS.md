@@ -15,6 +15,102 @@ _Last updated: 2026-08-12_
 
 ## Done
 
+- 2026-08-12 - **`find-subjects`: workspace-evidence course discovery.** Meno's front door
+  assumed the learner already knows what they want to learn; `elicit-needs` opens with "what will
+  you be able to DO", which is the wrong first question for someone who suspects they are
+  under-using their tools but cannot name the gap - exactly the person the namesake paradox
+  describes. This subsystem surveys the user's approved workspace roots and turns what it finds
+  into observations, a small set of cited alternatives, and ranked course candidates routed either
+  to a community pack or to a fresh interview.
+
+  Spec: `docs/specs/subject-finder.md`. Architecture follows the cost subsystem rather than
+  insights, because cost is the one existing subsystem that already reads outside the repository:
+  `lib/workspace-scan-io.ts` observes and derives nothing, `lib/workspace-scan.ts`
+  (`computeWorkspaceScan`) is pure with `as_of` as a parameter, `tools/scan.ts` (`npm run scan`)
+  is the only caller that reads the clock. No app endpoint by deliberate choice - the localhost
+  server's routes are all confined to the content root today, and a handler that walks arbitrary
+  user directories would be a new traversal surface on a long-running daemon for a snapshot
+  consulted once.
+
+  **The load-bearing decision is that the scanner is the only reader.** The skill never opens a
+  workspace file itself; redacted doc bodies arrive in an ephemeral bundle outside `content/` that
+  the skill deletes when it finishes. That single chokepoint is what converts "no source code
+  bodies", "read depth capped", and "no raw paths in the report" from advisory prose into
+  deterministic behaviour. The spec's Limits section states plainly what remains advisory:
+  paraphrase leakage is not machine-catchable, user-invoked-only is instructed rather than
+  enforced, and a private repository on a public host is indistinguishable offline so
+  `github.com/acme-corp/billing` is recorded verbatim.
+
+  Guards, all with tests: secret-file denylist checked before any open (skipped files are counted,
+  never named, because "there is a `credentials.json` under `clients/acme`" is itself a location
+  fact); doc bodies as an allowlist, not merely a denylist; redaction at emit for credential
+  prefixes, high-diversity runs, and internal hosts; `realpath` traversal confinement with symlinks
+  never followed; consent required before any read, with new child directories surfaced as
+  `pending_approval` rather than scanned. `tools/validate.ts` gained `subjects`, `workspace-scan`,
+  and `workspace-fixture` checks; the absolute-path ban is error-level on this subsystem's own
+  artifacts only, because a lesson about Linux legitimately discusses `/etc/hosts` and a check that
+  fires on those gets switched off within a week.
+
+  Three defects were caught and fixed during the build rather than after. (1) The first
+  implementation dropped dependency NAMES entirely, keeping only manifest-kind counts - which would
+  have made the report signal-free, since `terraform` versus `next` versus `langchain` is precisely
+  how the tool tells infrastructure from frontend from AI work. Names restored across five manifest
+  ecosystems, with private npm scopes collapsed to `@private-scope` and non-allowlisted module hosts
+  to `private-module`, rather than the blanket suppression that caused the loss. (2) The golden
+  snapshot was path-dependent (`root_id = sha256(realpath)`), so it passed locally and would have
+  failed in continuous integration and for every contributor; ids now derive from the user-authored
+  root label, which is also a mild privacy improvement, and label uniqueness is now enforced.
+  (3) The spec specified redaction at "Shannon entropy at or above 4.0", which cannot fire on a
+  hexadecimal alphabet whose maximum is exactly 4.0 - a guard that reads as present and does
+  nothing. Corrected to distinct-character diversity, with the reasoning recorded in the spec.
+
+  Ownership: topic candidates moved out of `study-insights` (AGENTS.md requires one owner per
+  canonical format), taking `## Topics you might want` out of `INSIGHTS_SECTIONS` and the committed
+  example note. The two signals `find-subjects` structurally cannot see - `vault.referenced_but_untaught`
+  and `usage.planned_debt` - stayed behind, redistributed into "Where you are stuck" and
+  "Suggestions" rather than dropped. `elicit-needs` now consumes an evidence packet to pre-answer
+  `prior_level` and `user_sources`, shrinking the interview to 2-3 questions, with precedence
+  stated explicitly as **live probe result > workspace evidence > self-report** so the shrink cannot
+  erode the reason that skill exists.
+
+  Also fixed two staging hazards found before commit: `.gitignore`'s `node_modules/` (trailing
+  slash) did not match the symlink an agent worktree creates, leaving it one `git add -A` from being
+  committed as an absolute-path symlink; and the fixture's deliberate inert `.env` was gitignored,
+  which would have shipped the fixture incomplete and failed its own golden on a fresh checkout.
+
+  **A three-lens adversarial review then found more than the build did, and most of it the gate
+  could never have caught.** Recorded here because the pattern is the lesson, not the individual
+  bugs. (1) The documented protocol could not complete a single end-to-end run: the skill told the
+  agent to run `--read`, but the snapshot was only persisted under an undocumented `--write`, and
+  the consent-record instructions omitted two fields `loadApprovedRoots` requires. Every test passed
+  and the feature was unusable. There is now a test that invokes the real command line exactly as
+  the skill documents it, so prose and behaviour are bound together. (2) The redaction guard barely
+  fired: the distinct-character rule needed 16 distinct characters and a hexadecimal token has at
+  most 16, typically 14 - measured, 1829 of 2000 random 32-character hex tokens were not redacted.
+  **The test that covered it had been calibrated to pass**, using a token containing all sixteen hex
+  digits. That is worse than having no test, because it manufactured confidence. Replaced with a
+  seeded statistical test over 400 tokens plus explicit patterns for connection strings, `Basic` and
+  `Bearer` headers, and generic assignments. (3) Two budgets were reported but never enforced, and
+  `max_depth` capped silently, so a repository buried deep enough produced "you have no
+  repositories" with nothing disclosed. The root cause was subtler than an off-by-one: counts like
+  `docs.length` are capped by construction, so truncation cannot be inferred from them at all.
+  Replaced with explicit walker-set flags proven by looking one item past each cap. The false
+  disclosure this produced had already been baked into the committed golden. (4) Four manifest
+  parsers lied rather than missed - a commented-out pyproject dependency was reported as real, a
+  Poetry inline table yielded `version` and `optional` as dependency names, a Cargo section header
+  with a trailing comment dropped its whole table while reporting success. (5) The two validate
+  checks enforcing the no-raw-paths invariant were dead code: `npm run gate` never walks
+  `content/tenants/`, and no test called them. The skill now runs
+  `node tools/validate.ts content/tenants/<tenant>` as an explicit protocol step, and the spec's
+  "Verified by" section was corrected to stop claiming coverage the gate does not have.
+
+  Two corrections went the other way, against briefs written during this work: the `%an` git format
+  is not mailmap-aware, so a proposed regression test would have passed against unfixed code (a real
+  mechanism, `i18n.logOutputEncoding` mangling a non-ASCII author name, was used instead); and the
+  private-scope guard was nearly extended to blanket-collapse every Go module path, which would have
+  erased the dependency signal for an entire ecosystem to catch a case the host allowlist already
+  handles.
+
 - 2026-08-12 - **Content-cost page: a localhost view of which courses cost the most to
   generate.** Contract (`docs/specs/cost.md`) confirmed across two grill rounds, then built and
   adversarially reviewed in the same day. Attributes coding-agent token spend and API-list-

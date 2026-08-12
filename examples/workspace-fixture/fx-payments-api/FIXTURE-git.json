@@ -1,0 +1,9 @@
+{
+  "commits": [
+    { "date": "2026-08-10", "author": "Alice Chen", "subject": "feat(payments): add refund API endpoint" },
+    { "date": "2026-07-18", "author": "Bob Diaz", "subject": "fix: correct currency rounding for refunds" },
+    { "date": "2026-06-02", "author": "Alice Chen", "subject": "test: add integration tests for refund webhook" },
+    { "date": "2026-02-14", "author": "Alice Chen", "subject": "chore: bump docker base image" }
+  ],
+  "remote": "git@github.com:example-org/payments-api.git"
+}

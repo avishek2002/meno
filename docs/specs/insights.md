@@ -57,6 +57,12 @@ and conflating the two would make gates feel punitive.
 9. Degraded path: a tenant with no ledger lines yet (before any course content has been
    generated) shows the same onboarding empty state every other page shows with no tenant
    content, rather than a report full of zeros.
+10. This subsystem does not generate topic candidates - that responsibility belongs to
+    `find-subjects` ([docs/specs/subject-finder.md](subject-finder.md)), which reads the
+    workspace, not the ledger. Two signals only `computeInsights` can see are folded into
+    existing sections instead of a candidate list: `vault.referenced_but_untaught` becomes
+    an observation in "Where you are stuck", `usage.planned_debt` becomes an item in
+    "Suggestions".
 
 ## Architecture
 
@@ -95,7 +101,7 @@ graph TD
 - `.agents/skills/study-insights/` - the narrative-writing skill; format owned by
   `references/narrative-format.md`.
 - `schemas/insights.schema.json` - narrative note frontmatter contract.
-- `tools/validate.ts`'s `insights` check - frontmatter schema, six required body sections,
+- `tools/validate.ts`'s `insights` check - frontmatter schema, five required body sections,
   cite-your-numbers.
 - `app/client/src/pages/InsightsPage.tsx` - the read-only page, route
   `#/t/:tenant/insights`.

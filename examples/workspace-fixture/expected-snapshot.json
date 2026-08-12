@@ -1,0 +1,348 @@
+{
+  "schema_version": 1,
+  "type": "workspace-scan",
+  "generated_at": "2026-08-12T09:00:00+10:00",
+  "as_of": "2026-08-12",
+  "scanner_version": 1,
+  "budgets": {
+    "max_roots": 8,
+    "max_repos_per_root": 100,
+    "max_depth": 6,
+    "max_dir_entries": 2000,
+    "max_files": 50000,
+    "max_commits_per_repo": 200,
+    "max_doc_files": 40,
+    "max_doc_files_per_repo": 3,
+    "max_dependency_names": 200
+  },
+  "roots": [
+    {
+      "root_id": "aaa77319aca1",
+      "label": "fixture-workspace",
+      "repos_found": 3,
+      "pending_approval": [],
+      "status": "ok"
+    }
+  ],
+  "repos": [
+    {
+      "repo_id": "96516a6f1614",
+      "name": "fx-infra",
+      "depth": 1,
+      "root_label": "fixture-workspace",
+      "remote_host": "gitlab.com",
+      "commits_total": 3,
+      "commits_90d": 2,
+      "commit_types": {
+        "feat": 1,
+        "ci": 1,
+        "chore": 1
+      },
+      "keyword_hits": {
+        "terraform": 1,
+        "ci": 1,
+        "pipeline": 1,
+        "deploy": 1,
+        "docker": 1
+      },
+      "authors": 2,
+      "extensions": {
+        ".toml": 1,
+        ".json": 1,
+        ".md": 3,
+        ".mod": 1,
+        ".sum": 1,
+        ".tf": 1
+      },
+      "language_shares": {
+        ".toml": 0.13,
+        ".json": 0.13,
+        ".md": 0.38,
+        ".mod": 0.13,
+        ".sum": 0.13,
+        ".tf": 0.13
+      },
+      "manifests": [
+        {
+          "kind": "cargo",
+          "deps": [
+            "serde",
+            "tokio"
+          ],
+          "dev_deps": [
+            "criterion"
+          ],
+          "parse_failed": false
+        },
+        {
+          "kind": "go",
+          "deps": [
+            "github.com/spf13/cobra",
+            "github.com/aws/aws-sdk-go",
+            "golang.org/x/sync"
+          ],
+          "dev_deps": [],
+          "parse_failed": false
+        }
+      ],
+      "markers": {
+        "tests": false,
+        "ci": false,
+        "dockerfile": true,
+        "iac": true,
+        "readme": false,
+        "docs_dir": true,
+        "lockfile": true,
+        "license": true
+      },
+      "docs": [
+        {
+          "path": "FIXTURE.md",
+          "bytes": 1158
+        },
+        {
+          "path": "docs/architecture.md",
+          "bytes": 245
+        },
+        {
+          "path": "docs/runbook.md",
+          "bytes": 120
+        }
+      ],
+      "files_walked": 10,
+      "symlinks_skipped": 0,
+      "secrets_skipped": 0,
+      "unreadable_dirs": 0
+    },
+    {
+      "repo_id": "b0b082057938",
+      "name": "fx-notes-cli",
+      "depth": 1,
+      "root_label": "fixture-workspace",
+      "remote_host": "self-hosted",
+      "commits_total": 2,
+      "commits_90d": 2,
+      "commit_types": {
+        "feat": 1,
+        "docs": 1
+      },
+      "keyword_hits": {
+        "cache": 1
+      },
+      "authors": 1,
+      "extensions": {
+        ".json": 1,
+        ".md": 2,
+        ".py": 2,
+        ".toml": 1,
+        ".txt": 1
+      },
+      "language_shares": {
+        ".json": 0.14,
+        ".md": 0.29,
+        ".py": 0.29,
+        ".toml": 0.14,
+        ".txt": 0.14
+      },
+      "manifests": [
+        {
+          "kind": "pyproject",
+          "deps": [
+            "click",
+            "rich",
+            "requests"
+          ],
+          "dev_deps": [
+            "pytest"
+          ],
+          "parse_failed": false
+        },
+        {
+          "kind": "requirements",
+          "deps": [
+            "click",
+            "requests",
+            "pytest"
+          ],
+          "dev_deps": [],
+          "parse_failed": false
+        }
+      ],
+      "markers": {
+        "tests": false,
+        "ci": false,
+        "dockerfile": false,
+        "iac": false,
+        "readme": true,
+        "docs_dir": false,
+        "lockfile": false,
+        "license": false
+      },
+      "docs": [
+        {
+          "path": "FIXTURE.md",
+          "bytes": 1149
+        },
+        {
+          "path": "README.md",
+          "bytes": 337
+        }
+      ],
+      "files_walked": 7,
+      "symlinks_skipped": 0,
+      "secrets_skipped": 0,
+      "unreadable_dirs": 0
+    },
+    {
+      "repo_id": "9e1129e8148c",
+      "name": "fx-payments-api",
+      "depth": 1,
+      "root_label": "fixture-workspace",
+      "remote_host": "github.com",
+      "commits_total": 4,
+      "commits_90d": 3,
+      "commit_types": {
+        "feat": 1,
+        "fix": 1,
+        "test": 1,
+        "chore": 1
+      },
+      "keyword_hits": {
+        "api": 1,
+        "test": 1,
+        "docker": 1
+      },
+      "authors": 2,
+      "extensions": {
+        ".yml": 1,
+        ".json": 3,
+        ".md": 2,
+        ".ts": 3
+      },
+      "language_shares": {
+        ".yml": 0.11,
+        ".json": 0.33,
+        ".md": 0.22,
+        ".ts": 0.33
+      },
+      "manifests": [
+        {
+          "kind": "npm",
+          "deps": [
+            "express",
+            "stripe",
+            "dotenv"
+          ],
+          "dev_deps": [
+            "jest",
+            "typescript",
+            "@types/node"
+          ],
+          "parse_failed": false
+        }
+      ],
+      "markers": {
+        "tests": true,
+        "ci": true,
+        "dockerfile": false,
+        "iac": false,
+        "readme": true,
+        "docs_dir": false,
+        "lockfile": true,
+        "license": false
+      },
+      "docs": [
+        {
+          "path": "FIXTURE.md",
+          "bytes": 2007
+        },
+        {
+          "path": "README.md",
+          "bytes": 483
+        }
+      ],
+      "files_walked": 9,
+      "symlinks_skipped": 1,
+      "secrets_skipped": 3,
+      "unreadable_dirs": 0
+    }
+  ],
+  "aggregate": {
+    "total_roots": 1,
+    "total_repos": 3,
+    "dependency_frequency": {
+      "@types/node": 1,
+      "click": 1,
+      "criterion": 1,
+      "dotenv": 1,
+      "express": 1,
+      "github.com/aws/aws-sdk-go": 1,
+      "github.com/spf13/cobra": 1,
+      "golang.org/x/sync": 1,
+      "jest": 1,
+      "pytest": 1,
+      "requests": 1,
+      "rich": 1,
+      "serde": 1,
+      "stripe": 1,
+      "tokio": 1,
+      "typescript": 1
+    },
+    "manifest_coverage": {
+      "cargo": 1,
+      "go": 1,
+      "pyproject": 1,
+      "requirements": 1,
+      "npm": 1
+    },
+    "marker_coverage": {
+      "tests": {
+        "value": 0.33,
+        "n": 1,
+        "of": 3
+      },
+      "ci": {
+        "value": 0.33,
+        "n": 1,
+        "of": 3
+      },
+      "dockerfile": {
+        "value": 0.33,
+        "n": 1,
+        "of": 3
+      },
+      "iac": {
+        "value": 0.33,
+        "n": 1,
+        "of": 3
+      },
+      "readme": {
+        "value": 0.67,
+        "n": 2,
+        "of": 3
+      },
+      "docs_dir": {
+        "value": 0.33,
+        "n": 1,
+        "of": 3
+      },
+      "lockfile": {
+        "value": 0.67,
+        "n": 2,
+        "of": 3
+      },
+      "license": {
+        "value": 0.33,
+        "n": 1,
+        "of": 3
+      }
+    }
+  },
+  "truncation": {
+    "events": []
+  },
+  "limits": [
+    ".gitignore is not consulted: the committed prune list is deterministic instead, so generated output outside that list is counted as ordinary files",
+    "commit subjects are discarded immediately after classification: only conventional-commit type counts and keyword hit counts against the committed vocabulary survive"
+  ]
+}

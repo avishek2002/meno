@@ -36,11 +36,18 @@ const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 const displayPath = (file: string): string => (file.startsWith(repoRoot) ? relative(repoRoot, file) : file);
 
 function walk(dir: string, out: string[] = []): string[] {
-  for (const entry of readdirSync(dir)) {
-    if (entry === 'node_modules' || entry === '.git') continue;
-    const p = join(dir, entry);
-    const st = statSync(p);
-    if (st.isDirectory()) walk(p, out);
+  // withFileTypes plus a symlink guard, rather than statSync on every entry:
+  // statSync follows the link and throws on a dangling one, so a single broken
+  // symlink anywhere under a target used to crash the whole validator instead of
+  // reporting. The scanner fixture deliberately ships a symlink, which made this
+  // reachable in the ordinary gate the moment its target moved. A symlink is
+  // recorded as a plain file and never traversed - the same never-follow rule the
+  // workspace scanner holds to.
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name === 'node_modules' || entry.name === '.git') continue;
+    const p = join(dir, entry.name);
+    if (entry.isSymbolicLink()) out.push(p);
+    else if (entry.isDirectory()) walk(p, out);
     else out.push(p);
   }
   return out;
@@ -598,12 +605,18 @@ export function checkMastery(_target: string, files: string[]): Finding[] {
   return findings;
 }
 
+// Five sections, not six: "## Topics you might want" moved out with the
+// candidate-ownership split - find-subjects owns topic candidates now, and a
+// required section whose only content is a pointer to another skill is dead
+// weight (docs/specs/subject-finder.md, Boundaries). The two ledger-only
+// signals that fed it stayed behind, redistributed into "Where you are stuck"
+// and "Suggestions", because find-subjects reads the workspace and cannot see
+// them.
 const INSIGHTS_SECTIONS = [
   '## What the numbers say',
   '## How you are using Meno',
   '## Where you are stuck',
   '## Suggestions',
-  '## Topics you might want',
   '## Limits of this report',
 ];
 
@@ -1120,6 +1133,180 @@ export function checkGroups(_target: string, files: string[]): Finding[] {
   return findings;
 }
 
+const SUBJECTS_SECTIONS = [
+  '## What your workspace shows',
+  '## Where you are not getting full value',
+  '## Worth a look',
+  '## Courses worth taking',
+  '## Limits of this report',
+];
+
+// A workspace scan is the only thing in Meno that reads outside the repository,
+// so its artifacts carry one guard nothing else needs: no absolute path, no home
+// directory prefix, no drive letter. The snapshot identifies roots by the label
+// the user chose and repositories by a hash, precisely so a report can be pasted
+// somewhere public without disclosing a directory layout (docs/specs/
+// subject-finder.md, invariant 2).
+//
+// Error-level on this subsystem's own artifacts and nowhere else. A lesson about
+// Linux or secure shell legitimately discusses /etc/hosts and ~/.ssh, and a check
+// that fires on those gets switched off within a week - so the rest of the vault
+// is left alone rather than trained to ignore this.
+//
+// Deliberately no required prefix character before the path shape: a leading
+// prefix class misses too much real text ("path=/Users/avishek/dev", markdown
+// bold "**/Users/avishek/dev**") for a guard whose whole job is catching what a
+// writer did not think to hide. The root list covers every top-level directory
+// this subsystem is likely to see a real path from (macOS, Linux, and common
+// mount points), plus a Windows UNC share and a file:// URL form.
+const ABSOLUTE_PATH_RE =
+  /\/(?:Users|home|var|opt|srv|mnt|private|etc|Volumes|tmp|data|usr|root|media)\/[^\s"'`)\]>]|[A-Za-z]:\\|~\/[A-Za-z0-9._-]|\$HOME\b|\\\\[A-Za-z0-9._-]+\\|file:\/\//;
+
+export function absolutePathHits(text: string): string[] {
+  const hits = new Set<string>();
+  for (const line of text.split('\n')) {
+    const m = ABSOLUTE_PATH_RE.exec(line);
+    if (m) hits.add(line.trim().slice(0, 120));
+  }
+  return [...hits];
+}
+
+export function checkSubjects(_target: string, files: string[]): Finding[] {
+  const findings: Finding[] = [];
+  // Every file directly under a subjects/ directory - the dated report, the
+  // evidence packet elicit-needs reads, and the hub note - carries the same
+  // no-raw-path invariant (docs/specs/subject-finder.md, invariant 2), so all
+  // of them get the path scan. This runs ahead of any parse-dependent logic
+  // below: a report whose embedded snapshot breaks the YAML parse must still
+  // be checked for leaks, not skipped.
+  const subjectsFiles = files.filter((f) => /\/subjects\/[^/]+$/.test(f));
+  if (subjectsFiles.length === 0) return findings;
+
+  for (const file of subjectsFiles) {
+    const rel = relative(repoRoot, file);
+    const raw = readFileSync(file, 'utf8');
+    for (const hit of absolutePathHits(raw)) {
+      findings.push({
+        level: 'error',
+        check: 'subjects',
+        path: rel,
+        message: `raw filesystem path in a subjects artifact (labels and repo ids only): "${hit}"`,
+      });
+    }
+  }
+
+  // The frontmatter schema and the five required body sections are the dated
+  // report note's own format (report-format.md); the evidence packet and the
+  // hub note are different shapes with no frontmatter contract here.
+  const validateSubjects = loadSchema('subjects.schema.json');
+  const reports = subjectsFiles.filter((f) => /\/subjects\/[^/]+-subjects\.md$/.test(f));
+  for (const file of reports) {
+    const rel = relative(repoRoot, file);
+    const { frontmatter, body, warnings } = parseFrontmatter(readFileSync(file, 'utf8'));
+    for (const w of warnings) findings.push({ level: 'error', check: 'subjects', path: rel, message: w });
+    if (!frontmatter) continue;
+
+    if (!validateSubjects(frontmatter)) {
+      for (const err of validateSubjects.errors ?? []) {
+        findings.push({ level: 'error', check: 'subjects', path: rel, message: `${err.instancePath || '/'} ${err.message}` });
+      }
+    }
+
+    for (const section of SUBJECTS_SECTIONS) {
+      if (!body.includes(`\n${section}`) && !body.startsWith(section)) {
+        findings.push({ level: 'error', check: 'subjects', path: rel, message: `missing required section "${section}"` });
+      }
+    }
+
+    // Trace-your-facts, the structural twin of insights' cite-your-numbers: a
+    // report may only restate what the scan observed, so every standalone number
+    // in the body must appear in the snapshot it embeds.
+    if (frontmatter.workspace_scan !== undefined) {
+      const scanJson = JSON.stringify(frontmatter.workspace_scan);
+      for (const tok of uncitedNumbers(body, scanJson)) {
+        findings.push({
+          level: 'warning',
+          check: 'subjects',
+          path: rel,
+          message: `number "${tok}" in the body does not appear in frontmatter workspace_scan (trace-your-facts)`,
+        });
+      }
+    }
+  }
+  return findings;
+}
+
+export function checkWorkspaceScan(_target: string, files: string[]): Finding[] {
+  const findings: Finding[] = [];
+  const matched = files.filter((f) => /\/workspace\/[^/]+-scan\.json$/.test(f));
+  if (matched.length === 0) return findings;
+  const validateScan = loadSchema('workspace-scan.schema.json');
+
+  for (const file of matched) {
+    const rel = relative(repoRoot, file);
+    const raw = readFileSync(file, 'utf8');
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      findings.push({ level: 'error', check: 'workspace-scan', path: rel, message: 'not valid JSON' });
+      continue;
+    }
+    if (!validateScan(parsed)) {
+      for (const err of validateScan.errors ?? []) {
+        findings.push({ level: 'error', check: 'workspace-scan', path: rel, message: `${err.instancePath || '/'} ${err.message}` });
+      }
+    }
+    for (const hit of absolutePathHits(raw)) {
+      findings.push({
+        level: 'error',
+        check: 'workspace-scan',
+        path: rel,
+        message: `raw filesystem path in a scan snapshot (root labels and repo ids only): "${hit}"`,
+      });
+    }
+  }
+  return findings;
+}
+
+// The committed fixture workspace is the one tree in the repository that looks
+// like user content but is not: it exists so the scanner can be verified in the
+// gate rather than by eye. These assertions keep it distinguishable from a real
+// tenant - a nested .git would make the scan machine-dependent, and a stray
+// course.yml would draw the tenancy and course checks onto a fixture that is not
+// course content at all.
+export function checkWorkspaceFixture(_target: string, files: string[]): Finding[] {
+  const findings: Finding[] = [];
+  const fixtureRoot = join(repoRoot, 'examples', 'workspace-fixture');
+  if (!existsSync(fixtureRoot)) return findings;
+
+  const inFixture = files.filter((f) => f.startsWith(fixtureRoot + '/'));
+  for (const file of inFixture) {
+    const rel = relative(repoRoot, file);
+    const within = relative(fixtureRoot, file);
+    const segments = within.split('/');
+
+    if (segments.includes('.git')) {
+      findings.push({ level: 'error', check: 'workspace-fixture', path: rel, message: 'fixture must contain no nested .git directory (git state is injected via FIXTURE-git.json)' });
+    }
+    if (/^(course\.yml|profile\.md|ledger\.jsonl|mastery\.yml)$/.test(segments[segments.length - 1] ?? '')) {
+      findings.push({ level: 'error', check: 'workspace-fixture', path: rel, message: 'fixture must contain no course content - it is a scanner fixture, not a tenant' });
+    }
+    if (segments.length > 1 && !segments[0].startsWith('fx-')) {
+      findings.push({ level: 'error', check: 'workspace-fixture', path: rel, message: `fixture top-level directory "${segments[0]}" must be prefixed fx- so it cannot be mistaken for a real project` });
+    }
+  }
+
+  for (const dir of readdirSync(fixtureRoot, { withFileTypes: true })) {
+    if (!dir.isDirectory()) continue;
+    if (!dir.name.startsWith('fx-')) continue;
+    if (!existsSync(join(fixtureRoot, dir.name, 'FIXTURE.md'))) {
+      findings.push({ level: 'error', check: 'workspace-fixture', path: relative(repoRoot, join(fixtureRoot, dir.name)), message: 'every fixture project needs a FIXTURE.md marker' });
+    }
+  }
+  return findings;
+}
+
 type Check = (target: string, files: string[]) => Finding[];
 const CHECKS: Record<string, Check> = {
   profiles: checkProfiles,
@@ -1128,6 +1315,9 @@ const CHECKS: Record<string, Check> = {
   ledger: checkLedgers,
   mastery: checkMastery,
   insights: checkInsights,
+  subjects: checkSubjects,
+  'workspace-scan': checkWorkspaceScan,
+  'workspace-fixture': checkWorkspaceFixture,
   cost: checkCost,
   packs: checkPacks,
   groups: checkGroups,
