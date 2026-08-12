@@ -38,3 +38,19 @@ Expected learning contract (the golden brief the interview should reach):
 
 A phase's acceptance criteria treat this directory as evidence: if the example learner's tree
 does not validate, the phase is not done.
+
+## The second course
+
+`software-engineering/git-fundamentals/` is a deliberately minimal second course: a
+`course.yml`, one skeleton `module.yml` with two planned lessons, no lesson bodies. It exists so
+the knowledge-graph view (`docs/specs/graph.md`) has something real to render:
+
+- A cross-course `## Connects to` edge - the hub carries a reciprocal `meno:connects` bullet with
+  `rust-for-backend`'s hub, and `rust-for-backend-hub.md` links back the same way.
+- Two ghost nodes - the module's two planned lessons have no files, so they render hollow,
+  attached to the hub only by a `membership` edge from the manifest.
+- A second course group (`version-control` in `groups.yml`), giving the graph's colour channel
+  a second value to show.
+
+It is intentionally too small to study from; its only job is to exercise these shapes for the
+gate and for the picture.

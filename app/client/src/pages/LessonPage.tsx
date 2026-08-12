@@ -44,7 +44,12 @@ export function LessonPage({ tenant, course, module, file }: LessonPageProps) {
 
   return (
     <article className="lesson">
-      <h1>{title}</h1>
+      <header className="lesson-header">
+        <h1>{title}</h1>
+        <a className="show-in-graph" href={`#/t/${encodeURIComponent(tenant)}/graph?focus=${encodeURIComponent(file)}`}>
+          Show in graph
+        </a>
+      </header>
       {data.warnings.length > 0 && (
         <div className="warnings-box">
           {data.warnings.map((w, i) => (

@@ -34,8 +34,9 @@ test('the committed example tenant ships a group, and it is read as written', as
     const got = await read(app);
     assert.deepEqual(got.groups, [
       { id: 'systems-programming', title: 'Systems Programming', courses: ['rust-for-backend'], source: 'explicit' },
+      { id: 'version-control', title: 'Version Control', courses: ['git-fundamentals'], source: 'explicit' },
     ]);
-    assert.deepEqual(got.ungrouped, [], 'the explicit group wins over the software-engineering domain');
+    assert.deepEqual(got.ungrouped, [], 'the explicit groups win over the software-engineering domain');
     assert.deepEqual(got.warnings, []);
   } finally {
     await app.close();
@@ -47,7 +48,12 @@ test('a tenant with no groups.yml still gets a grouped list, from the domain dir
   try {
     const got = await read(app);
     assert.deepEqual(got.groups, [
-      { id: 'domain:software-engineering', title: 'Software engineering', courses: ['rust-for-backend'], source: 'domain' },
+      {
+        id: 'domain:software-engineering',
+        title: 'Software engineering',
+        courses: ['git-fundamentals', 'rust-for-backend'],
+        source: 'domain',
+      },
     ]);
     assert.deepEqual(got.ungrouped, [], 'a course with a domain is never Ungrouped');
     assert.deepEqual(got.warnings, []);
@@ -65,7 +71,7 @@ test('malformed groups.yml reports a warning and still lists every course', asyn
     writeFileSync(join(app.tenantDir, 'groups.yml'), 'groups: [broken\n  : :\n');
     const got = await read(app);
     assert.deepEqual(got.groups.map((g) => g.source), ['domain'], 'the domain fallback still renders every course');
-    assert.deepEqual(got.groups[0].courses, ['rust-for-backend']);
+    assert.deepEqual(got.groups[0].courses, ['git-fundamentals', 'rust-for-backend']);
     assert.equal(got.warnings.length, 1);
   } finally {
     await app.close();
@@ -82,8 +88,17 @@ test('a course deleted on disk drops out of its group with a warning, never a 50
     rmSync(join(app.tenantDir, 'software-engineering', 'rust-for-backend'), { recursive: true, force: true });
     const got = await read(app);
     assert.deepEqual(got.groups[0].courses, []);
+    // the second fixture course, git-fundamentals, was never in the "ai" group,
+    // so deleting rust-for-backend leaves it to fall back to its domain rather
+    // than to nothing
+    assert.deepEqual(got.groups[1], {
+      id: 'domain:software-engineering',
+      title: 'Software engineering',
+      courses: ['git-fundamentals'],
+      source: 'domain',
+    });
     assert.deepEqual(got.ungrouped, []);
-    assert.equal(got.groups.length, 1, 'nothing is left to fall back to either');
+    assert.equal(got.groups.length, 2, 'git-fundamentals falls back to its domain');
     assert.equal(got.warnings.length, 1);
   } finally {
     await app.close();

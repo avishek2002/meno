@@ -46,6 +46,23 @@
   --kind-study-bg: #f5efe4;
   --kind-study-border: #8a6a34;
   --kind-study-text: #6b5226;
+  /* Graph course-group palette (fill-colour channel, docs/specs/graph.md) -
+     a plain categorical set, cycled by group index; --text-muted covers a
+     node in no group. Group is encoded by colour alone (state has fill /
+     outline / dash redundancy; this channel does not, by design budget), so
+     no two entries may be a red-green confusion pair: group-1 is a
+     blue-leaning cyan and group-4 a vermillion (blue-orange), not a
+     green/red pair, because deuteranopia and protanopia leave blue
+     perception intact - two hues that differ mainly in their blue channel
+     stay distinguishable even when red and green collapse together. */
+  --graph-group-0: #1d5fae;
+  --graph-group-1: #0f7a9c;
+  --graph-group-2: #c98a1f;
+  --graph-group-3: #7c5cbf;
+  --graph-group-4: #c1502b;
+  --graph-group-5: #12806f;
+  --graph-group-6: #a3348a;
+  --graph-group-7: #55677c;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -88,6 +105,14 @@
     --kind-study-bg: #3a2f18;
     --kind-study-border: #c9a15a;
     --kind-study-text: #e8cf9c;
+    --graph-group-0: #7bb2f0;
+    --graph-group-1: #6fc3e6;
+    --graph-group-2: #eccf8f;
+    --graph-group-3: #9d84e0;
+    --graph-group-4: #e0895f;
+    --graph-group-5: #4fd0bd;
+    --graph-group-6: #d97fc0;
+    --graph-group-7: #9aa7b5;
   }
 }
 
@@ -485,6 +510,23 @@ h3 {
   flex-wrap: wrap;
 }
 
+/* "Show in graph" link on CoursePage and LessonPage - a plain link styled
+   like a small pill so it reads as a secondary action next to the title. */
+.show-in-graph {
+  margin-left: auto;
+  font-size: 0.85rem;
+  padding: 0.25rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.show-in-graph:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .objectives ul {
   padding-left: 1.2rem;
 }
@@ -537,6 +579,17 @@ h3 {
 .lesson-status {
   color: var(--text-muted);
   font-size: 0.82rem;
+}
+
+.lesson-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.lesson-header h1 {
+  margin: 0;
 }
 
 /* ---------- prose (rendered lesson/hub/note HTML) ---------- */
@@ -1368,5 +1421,153 @@ th {
 @media (max-width: 34rem) {
   .guide-list-row {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- graph page ---------- */
+
+.graph-canvas-wrap {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-subtle);
+  overflow: hidden;
+}
+
+.graph-svg {
+  display: block;
+  width: 100%;
+  height: 70vh;
+  min-height: 24rem;
+  cursor: grab;
+  touch-action: none; /* the page owns pan/zoom/drag over this element */
+}
+
+.graph-svg:active {
+  cursor: grabbing;
+}
+
+.graph-node {
+  cursor: default;
+  transition: opacity 0.15s ease;
+}
+
+.graph-node-clickable {
+  cursor: pointer;
+}
+
+.graph-node:focus-visible circle {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.graph-edge {
+  transition: opacity 0.15s ease;
+}
+
+.graph-edge-thin {
+  stroke: var(--border);
+}
+
+.graph-edge-connection {
+  stroke: var(--accent);
+}
+
+.graph-tooltip {
+  position: fixed;
+  transform: translate(-50%, -100%) translateY(-8px);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 0.4rem 0.6rem;
+  font-size: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  pointer-events: none;
+  z-index: 20;
+  max-width: 16rem;
+}
+
+.graph-tooltip span {
+  color: var(--text-muted);
+}
+
+.graph-legend {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 0.75rem 0.9rem;
+  font-size: 0.82rem;
+  max-width: 15rem;
+  max-height: calc(70vh - 1.5rem);
+  overflow-y: auto;
+}
+
+.graph-legend h3 {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+  margin: 0.6rem 0 0.3rem;
+}
+
+.graph-legend-channel:first-child h3 {
+  margin-top: 0;
+}
+
+.graph-legend ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.graph-legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.graph-legend-swatch {
+  display: inline-block;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.graph-legend-note {
+  color: var(--text-muted);
+  margin: 0 0 0.3rem;
+}
+
+.graph-legend-channel input[type='checkbox'] {
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.graph-legend-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+}
+
+@media (max-width: 40rem) {
+  .graph-legend {
+    position: static;
+    max-width: none;
+    max-height: none;
+    margin-top: 0.75rem;
+    border-radius: 0;
+    border-width: 1px 0 0;
   }
 }

@@ -33,6 +33,9 @@ export function Header({
             <a href={`#/t/${t}`} aria-current={current('tenant')}>
               Courses
             </a>
+            <a href={`#/t/${t}/graph`} aria-current={current('graph')}>
+              Graph
+            </a>
             <a href={`#/t/${t}/todos`} aria-current={current('todos')}>
               Todos
             </a>

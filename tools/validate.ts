@@ -20,6 +20,8 @@ import { parseLesson, anatomyOf } from '../lib/lesson.ts';
 import { parseLedger, deriveMastery, serializeMastery, type LedgerEvent } from '../lib/mastery.ts';
 import { parseContributors, parseUnit } from '../lib/attribution.ts';
 import { parseGroups } from '../lib/groups.ts';
+import { parseConnects } from '../lib/connects.ts';
+import { loadVaultFiles, buildVaultGraph, type VaultGraph } from '../lib/vault.ts';
 
 export interface Finding {
   level: 'error' | 'warning';
@@ -356,6 +358,10 @@ export function checkCourses(_target: string, files: string[]): Finding[] {
           findings.push({ level: 'error', check: 'refs', path: relMod, message: `objective ${obj.id} bloom "${obj.bloom}" exceeds the profile ceiling "${ceiling}"` });
         }
       }
+      // a duplicate file within one module.yml silently overwrites in lib/graph.ts's
+      // lessonById map (keyed by computed id), so the second entry's lesson vanishes
+      // from the graph with no signal anywhere else - this is the only check for it
+      const seenLessonFiles = new Set<string>();
       for (const lesson of (mod.lessons as { file?: string; concept?: string; status?: string }[]) ?? []) {
         if (lesson.concept && !concepts.includes(lesson.concept)) {
           findings.push({ level: 'error', check: 'refs', path: relMod, message: `lesson ${lesson.file} concept "${lesson.concept}" not in the module's concepts list` });
@@ -363,6 +369,17 @@ export function checkCourses(_target: string, files: string[]): Finding[] {
         const lessonPath = join(courseDir, 'modules', dirSlug, lesson.file ?? '');
         if (lesson.status && lesson.status !== 'planned' && !existsSync(lessonPath)) {
           findings.push({ level: 'error', check: 'refs', path: relMod, message: `lesson ${lesson.file} has status "${lesson.status}" but the file does not exist` });
+        }
+        if (lesson.file) {
+          if (seenLessonFiles.has(lesson.file)) {
+            findings.push({
+              level: 'warning',
+              check: 'refs',
+              path: relMod,
+              message: `duplicate lesson file "${lesson.file}" in this module - the second entry silently overwrites the first in the graph`,
+            });
+          }
+          seenLessonFiles.add(lesson.file);
         }
       }
       checkSourceRecords((mod.sources as SourceRecord[]) ?? [], relMod, findings);
@@ -1307,6 +1324,109 @@ export function checkWorkspaceFixture(_target: string, files: string[]): Finding
   return findings;
 }
 
+// --- connects (tenant-tier, docs/specs/graph.md) --------------------------
+
+/**
+ * The `meno:connects` block in every course hub. `parseConnects` owns the
+ * grammar (lib/connects.ts); this only maps its diagnostics onto findings and
+ * checks the two rules the parser cannot see on its own: does a target
+ * resolve, and does a pair reciprocate.
+ *
+ * Vault roots are discovered the same way checkCourseLayout does - by the
+ * nearest ancestor directory holding a home.md, deepest first - because a hub
+ * in a bare course fixture (a pack under content/community/, a golden
+ * persona) has no vault above it and skips resolution entirely rather than
+ * being reported broken.
+ */
+export function checkConnects(_target: string, files: string[]): Finding[] {
+  const findings: Finding[] = [];
+  const vaultRoots = files
+    .filter((f) => f.endsWith('/home.md'))
+    .map((f) => f.slice(0, -'/home.md'.length))
+    .sort((a, b) => b.length - a.length); // deepest first, so nested fixtures win
+
+  const graphCache = new Map<string, VaultGraph>();
+  const graphFor = (root: string): VaultGraph => {
+    let g = graphCache.get(root);
+    if (!g) {
+      g = buildVaultGraph(loadVaultFiles(root));
+      graphCache.set(root, g);
+    }
+    return g;
+  };
+
+  // per vault root: hub id (vault-relative) -> its file and the set of
+  // resolved target ids it names, for the reciprocity pass below
+  const outgoingByRoot = new Map<string, Map<string, { file: string; targets: Set<string> }>>();
+
+  for (const file of files.filter((f) => f.endsWith('-hub.md'))) {
+    const rel = displayPath(file);
+    const block = parseConnects(readFileSync(file, 'utf8'));
+    for (const d of block.diagnostics) {
+      findings.push({
+        level: d.level,
+        check: 'connects',
+        path: rel,
+        message: d.line > 0 ? `line ${d.line}: ${d.message}` : d.message,
+      });
+    }
+    if (block.entries.length === 0) continue;
+
+    const root = vaultRoots.find((r) => file.startsWith(`${r}/`));
+    if (!root) continue; // a bare course fixture with no vault root above it skips resolution entirely
+
+    const graph = graphFor(root);
+    const hubId = relative(root, file).split('\\').join('/');
+    const resolvedTargets = new Set<string>();
+    for (const entry of block.entries) {
+      const resolved = graph.index.get(entry.target) ?? null;
+      if (!resolved) {
+        findings.push({
+          level: 'error',
+          check: 'connects',
+          path: rel,
+          message: `meno:connects target "${entry.target}" does not resolve to a note in this vault`,
+        });
+        continue;
+      }
+      if (resolved === hubId) {
+        // a self-targeting bullet parses and resolves; dedupeEdges drops the
+        // resulting self-loop from lib/graph.ts silently, so this is the
+        // reader's only signal that the bullet did nothing
+        findings.push({
+          level: 'warning',
+          check: 'connects',
+          path: rel,
+          message: `meno:connects target "${entry.target}" resolves to this hub itself (self-link) - the edge is dropped`,
+        });
+        continue; // not a real target: excluded from the reciprocity pass below
+      }
+      resolvedTargets.add(resolved);
+    }
+    const byHub = outgoingByRoot.get(root) ?? new Map();
+    byHub.set(hubId, { file, targets: resolvedTargets });
+    outgoingByRoot.set(root, byHub);
+  }
+
+  for (const byHub of outgoingByRoot.values()) {
+    for (const [hubId, { file, targets }] of byHub) {
+      for (const target of targets) {
+        const other = byHub.get(target);
+        const reciprocal = other ? other.targets.has(hubId) : false;
+        if (!reciprocal) {
+          findings.push({
+            level: 'warning',
+            check: 'connects',
+            path: displayPath(file),
+            message: `meno:connects: "${hubId}" names "${target}" but "${target}" does not name "${hubId}" back`,
+          });
+        }
+      }
+    }
+  }
+  return findings;
+}
+
 type Check = (target: string, files: string[]) => Finding[];
 const CHECKS: Record<string, Check> = {
   profiles: checkProfiles,
@@ -1323,6 +1443,7 @@ const CHECKS: Record<string, Check> = {
   groups: checkGroups,
   'course-layout': checkCourseLayout,
   tenancy: checkTenancy,
+  connects: checkConnects,
 };
 
 export function runValidation(targets: string[]): Finding[] {

@@ -1,0 +1,36 @@
+schema_version: 1
+module: 01-commits-and-history
+title: Commits and history
+status: skeleton
+serves: [O1]
+prerequisites: []
+est_hours: 3
+concepts:                      # siblings: the commit graph, branches and merges
+  - commit-graph
+  - branches-and-merges
+objectives:
+  - id: M1-1
+    text: Read a commit graph and predict what a merge will do to it
+    bloom: apply
+sources:                       # 2, user-supplied (Sam's own notes; no fetch to do for a fixture)
+  - title: "Sam's git notes from a previous team"
+    url: sources/git-notes-from-previous-team.md
+    archived_url: ""
+    accessed: 2026-08-12
+    source_type: user
+    why: the learner's own prior notes on commits and branching; this module builds on their framing
+  - title: "Sam's branching diagram from onboarding"
+    url: sources/branching-diagram-notes.md
+    archived_url: ""
+    accessed: 2026-08-12
+    source_type: user
+    why: a hand-drawn diagram the learner already made of a branch-and-merge; lesson 2 refers back to it
+lessons:                       # planned at skeleton time, one per concept
+  - file: 01-the-commit-graph.md
+    title: The commit graph
+    concept: commit-graph
+    status: planned
+  - file: 02-branches-and-merges.md
+    title: Branches and merges
+    concept: branches-and-merges
+    status: planned

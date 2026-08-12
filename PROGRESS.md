@@ -111,6 +111,84 @@ _Last updated: 2026-08-12_
   erased the dependency signal for an entire ecosystem to catch a case the host allowlist already
   handles.
 
+- 2026-08-12 - **Graph view: a course-group filter, reversing a v1 cut.** The knowledge graph
+  shipped without a group filter because it was sized to a 92-node estimate; the real tenant vault
+  renders 198 nodes (106 of them ghosts), which is exactly the hairball scale the v1 cut said would
+  be the trigger to add one back, so the maintainer asked for it. The filter lives with the legend
+  (same concern: the legend names what a fill colour means, the filter turns it on and off) - a
+  real `<input type="checkbox">` plus `<label>` per group, showing its swatch, title, and node
+  count, with a synthetic "Ungrouped" toggle only when a node has `group === null`. Two new pure
+  functions in `graphLayout.ts` carry the logic: `groupCounts` (one row per server-order group plus
+  the conditional Ungrouped row, counted over the full unfiltered node list) and
+  `filterGraphByGroups` (the visible nodes plus only the edges whose both endpoints survive),
+  covered by five new `app/test/graph-layout.test.ts` cases - identity, one group off, all off, the
+  ungrouped bucket, and a cross-group edge with only one side hidden. Hiding a group removes it from
+  the `d3-force` simulation input, not just the paint, and the simulation re-runs and re-fits to the
+  remaining subgraph on every toggle; turning every group off renders the same empty state an empty
+  vault renders, with the filter panel still visible so a group can be turned back on. The
+  "no cross-course connections authored yet" notice stayed wired to the FULL, unfiltered edge list
+  on purpose - it means a `second-brain` sweep hasn't run, not that the filter is hiding the one
+  `connection` edge that exists, and getting that backwards would tell the maintainer to author
+  edges that already exist. No URL state: deliberate, logged as a new open question in
+  `docs/specs/graph.md` (nothing links into a *filtered* graph the way `?focus=` links into a
+  focused one). Spec bumped to v1.9 with a new "How it behaves" item, two new invariants, and the
+  "not visually verified" caveat extended to the toggle/refit interaction - all four gate commands
+  green, but the checkbox interaction and refit-after-toggle behavior are reasoned about from source
+  only, unobserved in a browser.
+
+- 2026-08-12 - **`AGENTS.md` routes agents by intent.** A cold-started agent could learn what
+  Meno is and how tenancy works but not which of the two jobs it had been handed: the skill list
+  was flat and `CONTRIBUTING.md` went unmentioned, so an agent asked to fix a study-app bug had
+  to find the gate on its own, and one asked to add a lesson had to find `extend-meno` on its
+  own. A "Route by intent" section now sits above the skill list with the two tracks
+  (contributing to Meno itself, working on this user's learning content), the write boundary
+  between them, `publish-to-community` as the single crossing, and org deployment as neither.
+  Settled by grill before writing: no new instruction file (a second entry point is a ranked
+  risk, and the routing content is owned by files that already exist), the skill list stays
+  flat and canonical (splitting it would make "every skill is listed in `AGENTS.md`" ambiguous
+  for future skill authors and mis-home the two skills that live in both tracks), and the
+  "use two separate agent sessions" habit stays a maintainer preference rather than shipping as
+  advice. `docs/specs/repo-and-tenancy.md` gained routing as a derivable and extended the Phase
+  0 cold-start acceptance run to check it; deliberately not a validate check, since a validator
+  can only grep for the heading and would keep passing while the content rots. Smoke test run
+  on Claude Code (Sonnet) in a clean clone with user settings off: the study-app bug named the
+  contributing track, the `examples/` fixture boundary, and the gate; the add-a-lesson request
+  routed to the amend recipe and refused to treat the committed fixture as tenant content; the
+  what-is-this question still produced the interview chain and the user-guide link.
+
+- 2026-08-12 - **Knowledge graph view: `#/t/:tenant/graph`, one picture of the whole tenant
+  vault joined to the ledger.** Contract confirmed through a ten-question grill
+  (`docs/specs/graph.md`), then built in three parallel streams against a frozen contract.
+  Measured before design: every wikilink in the real tenant vault was course-local, so the
+  feature had to create a class of edge, not just render existing links - a course hub's
+  `## Connects to` section (`<!-- meno:connects:start -->`, owned by `second-brain`) is now the
+  authored source of cross-course edges, parsed once by `lib/connects.ts` and shared by
+  `lib/graph.ts` and `tools/validate.ts`'s new `connects` check. `GET /api/v1/:tenant/graph`
+  (read-only, no cache, joins `walkTenant`, `resolveGroups`, and `deriveMastery` - no fifth
+  walk) returns every vault note plus every planned-but-unwritten lesson as a node, with three
+  visual channels (fill = course group, style = ghost/generated/mastered, size = incoming
+  links) and three edge kinds deduplicated to one edge per pair (`connection` > `reference` >
+  `membership`). `GraphPage.tsx` renders it as React SVG with `d3-force` physics (dynamically
+  imported, following the `mermaid.tsx` precedent), deterministic hash-seeded layout so a
+  screenshot means something, pan/zoom/drag/click/hover, and `?focus=<value>` deep-linking
+  resolved exact-id-then-basename-then-suffix. The example tenant grew a second, deliberately
+  minimal course (`examples/example-learner/software-engineering/git-fundamentals/`) as the
+  living spec: a reciprocal `meno:connects` pair with `rust-for-backend`, a membership edge, and
+  two ghost lessons - the shapes the fixture exists to exercise, not a course to actually study.
+
+  Two risks knowingly accepted: cross-course edges refresh only on an explicit `second-brain`
+  sweep, so a newly added course is invisible in the graph until someone asks for one -
+  preferred over a writer that would clobber judgment (an honest cross-course reason) it cannot
+  reproduce from a manifest; and the picture itself - force convergence, whether the three
+  visual channels read apart at a glance, dark mode, hover dimming - is reasoned about rather
+  than observed, the same honest position the guidebook and the v1.6 course list shipped in.
+  Worth one manual pass in a browser before trusting it.
+
+  Step two, not in this change: a `second-brain` sweep writing real `meno:connects` blocks
+  across the eight hubs in `content/tenants/main`, so the real tenant's cross-course structure
+  actually shows up. That work needs to read real lesson bodies to write honest reasons, is
+  judgment rather than engineering, and is gitignored so no gate could verify it here.
+
 - 2026-08-12 - **Content-cost page: a localhost view of which courses cost the most to
   generate.** Contract (`docs/specs/cost.md`) confirmed across two grill rounds, then built and
   adversarially reviewed in the same day. Attributes coding-agent token spend and API-list-

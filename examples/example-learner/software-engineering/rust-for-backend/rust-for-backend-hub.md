@@ -26,5 +26,10 @@ graph TD
 **07 packaging and shipping** (planned)
 <!-- meno:derived:end -->
 
+## Connects to
+<!-- meno:connects:start -->
+- [[git-fundamentals-hub|Git fundamentals]] - merging to the default branch is what triggers a redeploy of the service you build in Rust
+<!-- meno:connects:end -->
+
 ## My notes
 (human territory; never regenerated)

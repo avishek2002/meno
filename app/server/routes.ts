@@ -19,7 +19,9 @@ import { deriveMastery } from '../../lib/mastery.ts';
 import { computeInsights } from '../../lib/insights.ts';
 import { loadInsightsInputs } from '../../lib/insights-io.ts';
 import { readCostSnapshot } from '../../lib/cost-io.ts';
-import type { LessonResponse, PublicCheck, SubmitRequest, SubmitResponse, InsightsResponse, GroupsResponse, CostResponse, TodoKind, TodoAudience } from '../shared/types.ts';
+import { loadVaultFiles, buildVaultGraph } from '../../lib/vault.ts';
+import { buildGraph } from '../../lib/graph.ts';
+import type { LessonResponse, PublicCheck, SubmitRequest, SubmitResponse, InsightsResponse, GroupsResponse, CostResponse, GraphResponse, TodoKind, TodoAudience } from '../shared/types.ts';
 import { writeFileAtomic } from './atomic.ts';
 
 interface Ctx {
@@ -340,6 +342,23 @@ const getGroups: Handler = (_req, res, p, ctx) => {
   json(res, 200, payload);
 };
 
+// --- knowledge graph (read-only; docs/specs/graph.md) ---
+
+const getGraph: Handler = (_req, res, p, ctx) => {
+  const tenantDir = safePath(ctx.root, p.tenant);
+  const files = loadVaultFiles(tenantDir);
+  const vault = buildVaultGraph(files);
+  const tree = walkTenant(tenantDir, p.tenant);
+  const { doc, warnings: groupsRawWarnings } = readGroups(tenantDir);
+  const groups = resolveGroups(doc, tree.courses.map((c) => ({ slug: c.slug, dir: c.dir })));
+  // readGroups's own warnings fold into groups.warnings here, before the call,
+  // so buildGraph stays the only place that assembles the response's warnings
+  groups.warnings = [...groupsRawWarnings, ...groups.warnings];
+  const mastery = deriveMastery(readLedgerEvents(tenantDir));
+  const payload: GraphResponse = buildGraph({ tenant: p.tenant, files, vault, tree, groups, mastery });
+  json(res, 200, payload);
+};
+
 const getHealth: Handler = (_req, res, _p, ctx) => {
   json(res, 200, { ok: true, version: ctx.version, root: ctx.root, node: process.version });
 };
@@ -359,6 +378,7 @@ const ROUTES: [string, RegExp, Handler][] = [
   ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/cost$/, getCost],
   ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/ledger$/, getLedger],
   ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/groups$/, getGroups],
+  ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/graph$/, getGraph],
   ['POST', /^\/api\/v1\/(?<tenant>[^/]+)\/check\/submit$/, postCheckSubmit],
   ['POST', /^\/api\/v1\/(?<tenant>[^/]+)\/lesson\/read$/, postLessonRead],
   ['POST', /^\/api\/v1\/(?<tenant>[^/]+)\/todos$/, postTodos],

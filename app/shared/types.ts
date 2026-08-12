@@ -170,6 +170,119 @@ export interface CostResponse {
   how_to_generate: string; // "npm run cost -- content/tenants/<tenant> --write"
 }
 
+// --- knowledge graph -------------------------------------------------------
+//
+// The one place the graph wire shapes are defined, and the one exception to the
+// re-export rule InsightsReport and CostSnapshot follow. Those each have a
+// single owning lib module; the graph does not. It is a join of four
+// independent producers - lib/vault.ts's resolved link graph, the tree walk's
+// manifests, lib/groups.ts's resolved sections, and lib/mastery.ts's derivation
+// - and none of them owns the result, so the transport shape is defined here
+// and lib/graph.ts imports it. Nothing imports back out of lib/graph.ts into
+// this file.
+//
+// The whole subsystem is read-only: there is no POST counterpart and no field
+// here is ever written back to a file (docs/specs/graph.md).
+
+/**
+ * What a node is in the vault. A file can look like more than one of these
+ * (a hub is also a note), so the precedence is fixed and total:
+ * `home` > `hub` > `lesson` > `note`.
+ */
+export type GraphNodeKind = 'home' | 'hub' | 'lesson' | 'note';
+
+/**
+ * The node-style channel (docs/specs/graph.md, "How it behaves"):
+ * - `ghost`     a lesson a module manifest plans, with no file on disk yet
+ * - `generated` the file exists and its concept is not mastered
+ * - `mastered`  a lesson whose concept `deriveMastery()` puts at level
+ *               `mastered` in that course
+ *
+ * Only a lesson node is ever `mastered`. Every node with a file on disk that is
+ * not a mastered lesson is `generated`.
+ */
+export type GraphNodeState = 'ghost' | 'generated' | 'mastered';
+
+export interface GraphNode {
+  /**
+   * Vault-relative posix path including the `.md` suffix, and the node's
+   * identity. A ghost lesson uses the path its file would occupy
+   * (`<course.dir>/modules/<module>/<lessons[].file>`), so a node keeps the
+   * same id when the body is finally generated.
+   */
+  id: string;
+  title: string;
+  kind: GraphNodeKind;
+  /**
+   * The fill-colour channel: the resolved group section id from
+   * `lib/groups.ts` (a `groups.yml` id, or `domain:<slug>` for a derived
+   * section), or null for a node that sits in no course - `home.md`,
+   * `todos.md`, anything under `insights/`.
+   */
+  group: string | null;
+  /** Course slug the node belongs to; null for the same nodes `group` is null for. */
+  course: string | null;
+  state: GraphNodeState;
+  /**
+   * The size channel: how many distinct other nodes point at this one, counted
+   * over the deduplicated edge list (docs/specs/graph.md, invariant 7).
+   */
+  in_degree: number;
+  /**
+   * The client hash route this node opens, server-constructed and already
+   * percent-encoded - `#/t/<tenant>/c/<course>/m/<module>/l/<file>` for a
+   * lesson, `#/t/<tenant>/n/<vault-path>` for everything else. Null for a ghost:
+   * there is no file to open.
+   */
+  route: string | null;
+}
+
+/**
+ * - `reference`  a resolved wikilink (`buildVaultGraph().resolved`)
+ * - `membership` a lesson to its course hub, from `module.yml lessons[]`,
+ *                planned or generated - what keeps ghost nodes attached
+ * - `connection` an authored cross-course edge from a hub's `meno:connects`
+ *                block, the only kind drawn with weight
+ *
+ * Module `prerequisites` are deliberately not an edge kind: they are already a
+ * mermaid DAG inside each hub, and a third semantics in one undifferentiated
+ * picture reads as noise.
+ */
+export type GraphEdgeKind = 'reference' | 'membership' | 'connection';
+
+export interface GraphEdge {
+  /** node id; for `membership` the lesson, for `connection` the declaring hub */
+  source: string;
+  /** node id; for `membership` the course hub, for `connection` the named hub */
+  target: string;
+  kind: GraphEdgeKind;
+  /**
+   * The authored one-line why. Present only on a `connection` edge, and only
+   * when the block supplied one - never set on the other two kinds.
+   */
+  reason?: string;
+}
+
+/** Legend entry for the fill-colour channel, in `resolveGroups` order. */
+export interface GraphGroup {
+  id: string;
+  title: string;
+}
+
+/**
+ * GET /api/v1/:tenant/graph. Read-only, walked fresh per request like every
+ * other GET. Deterministic: nodes sorted by `id`, edges by
+ * (`source`, `target`, `kind`).
+ */
+export interface GraphResponse {
+  tenant: string;
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  groups: GraphGroup[];
+  /** Degraded-path notes (malformed connects blocks, group warnings). Never an error. */
+  warnings: string[];
+}
+
 export interface HealthResponse {
   ok: boolean;
   version: number;
