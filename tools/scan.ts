@@ -10,8 +10,9 @@
 //   node tools/scan.ts <tenant-dir> --read [label-or-path...] [--as-of YYYY-MM-DD] [--json] [--no-write]
 //     scans the roots recorded in workspace/roots.yml (or just the given subset, each of which
 //     must already be approved), refusing outright - zero files opened - when a requested root
-//     is absent from roots.yml, and skipping (pending_approval, not scanned) any approved root
-//     whose immediate children drifted since approval. Writes
+//     is absent from roots.yml, and skipping (pending_approval, not scanned) any child directory
+//     that is new since approval or was never approved - one child at a time, never the whole
+//     root: every other, already-approved child is still scanned. Writes
 //     content/tenants/<tenant>/workspace/YYYY-MM-DD-scan.json by default - a scan whose result
 //     is never persisted has nothing for basis.scan_sha256 to hash and nothing for find-subjects
 //     to embed. Pass --no-write to inspect a scan without persisting it.
@@ -42,8 +43,10 @@ function localToday(): string {
 // who clones this public repo deserves to know what a command reads before it runs it.
 const ENUMERATE_NOTICE = 'enumerate lists directory names and file counts only. No file content is opened.';
 const READ_NOTICE =
-  'read scans only roots recorded in workspace/roots.yml. A root absent from that file, or ' +
-  'whose immediate children changed since approval, is refused rather than scanned.';
+  'read scans only roots recorded in workspace/roots.yml, one approved child directory at a ' +
+  'time. A root absent from that file is refused entirely; a child directory that is new since ' +
+  'approval, or was never approved, is skipped individually rather than scanned, while every ' +
+  'other, already-approved child is scanned normally.';
 
 function summarizeEnumerate(candidates: { name: string; file_count: number; truncated: boolean }[]): string {
   if (candidates.length === 0) return '(no candidate directories found)';
@@ -60,6 +63,7 @@ function summarizeSnapshot(s: WorkspaceScanSnapshot): string {
     const statusSuffix = root.status === 'ok' ? '' : `  [${root.status}]`;
     lines.push(`root ${root.label}: ${root.repos_found} repo(s)${statusSuffix}`);
     if (root.pending_approval.length) lines.push(`  pending approval: ${root.pending_approval.join(', ')}`);
+    if (root.missing_children.length) lines.push(`  approved but not found on disk: ${root.missing_children.join(', ')}`);
   }
   lines.push('');
   for (const repo of s.repos) {
@@ -175,6 +179,9 @@ console.log(wantJson ? JSON.stringify(snapshot, null, 2) : summarizeSnapshot(sna
 
 const drifted = targets.filter((r) => checkRootDrift(r).pending_approval.length > 0);
 if (drifted.length > 0) {
-  console.error(`${drifted.length} root(s) have children pending approval; re-approve them in workspace/roots.yml to scan the new directories.`);
+  console.error(
+    `${drifted.length} root(s) have children pending approval (their other, already-approved children were still scanned); ` +
+      're-approve the new directories in workspace/roots.yml to include them.',
+  );
   process.exit(1);
 }

@@ -597,6 +597,13 @@ export interface RootObservation {
   /** Immediate child directory names that appeared since approval - present but not scanned
    *  (spec invariant 5). Empty when the root matches its approval exactly. */
   pending_approval: string[];
+  /** Approved child directory names that no longer exist on disk this run - a renamed or deleted
+   *  approved path, distinct from pending_approval (which names a child that is present but was
+   *  never approved). Mirrors RootStatus's own reasoning at the per-child scale: without this, an
+   *  approved directory that vanished was indistinguishable from one that was simply never
+   *  present among the root's children. Always empty when the root itself is a repository, since
+   *  there are no children to check. */
+  missing_children: string[];
   /** True only when repo discovery actually found a repository beyond max_repos_per_root and
    *  stopped there - same false-disclosure fix as RepoObservation.files_truncated, applied to
    *  repo discovery under one root. */
@@ -631,6 +638,8 @@ export interface SnapshotRoot {
   label: string;
   repos_found: number;
   pending_approval: string[];
+  /** Same signal as RootObservation.missing_children, carried straight through. */
+  missing_children: string[];
   /** 'ok' unless the approved path itself was missing or not a directory this run - see
    *  RootStatus. Carried straight through from the observation: computeWorkspaceScan derives
    *  nothing further from it beyond the matching limits line below. */
@@ -730,6 +739,7 @@ export function computeWorkspaceScan(obs: WorkspaceObservation, meta: ScanMeta):
       label: root.label,
       repos_found: root.repos.length,
       pending_approval: root.pending_approval,
+      missing_children: root.missing_children,
       status: root.status,
     });
     // repos_truncated / depth_truncated are booleans the io layer only sets when it actually
@@ -862,6 +872,9 @@ export function computeWorkspaceScan(obs: WorkspaceObservation, meta: ScanMeta):
       limits.push(`root '${root.label}' could not be scanned: the approved path no longer exists`);
     } else if (root.status === 'not-a-directory') {
       limits.push(`root '${root.label}' could not be scanned: the approved path is not a directory`);
+    }
+    if (root.missing_children.length > 0) {
+      limits.push(`root '${root.label}': approved director${root.missing_children.length === 1 ? 'y' : 'ies'} not found on disk: ${root.missing_children.join(', ')}`);
     }
   }
   if (anyPrivateScopeCollapsed) {

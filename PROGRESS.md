@@ -15,6 +15,30 @@ _Last updated: 2026-08-12_
 
 ## Done
 
+- 2026-08-12 - **find-subjects: partial approval scanned nothing.** Found on the subsystem's
+  first real run, against a real workspace, hours after it shipped green. `collectWorkspace`
+  guarded discovery with `if (drift.pending_approval.length === 0)`, so any unapproved sibling
+  vetoed the entire root: approving a subset of a directory's children produced zero
+  repositories, no error, and no truncation event - a confident empty report. Partial approval
+  is not an edge case, it is the case that matters most: a workspace holding client or employer
+  repositories alongside your own is exactly when someone must approve part of a directory and
+  exclude the rest, which is what the consent design exists to allow. Discovery now descends per
+  approved child (`discoverApprovedChildren`, deterministic `Buffer.compare` order so the
+  user-authored `roots.yml` order cannot change a snapshot); `pending_approval` keeps its
+  meaning and is still never scanned. Added `missing_children` so an approved directory that was
+  renamed is surfaced rather than silently contributing nothing.
+
+  **Why 97 tests and three adversarial reviewers missed it:** every test built its `roots.yml`
+  with all children approved. The drift test approved everything and then added a directory
+  afterward, so it covered "a child appeared later" and never "the user deliberately approved a
+  subset". The suite tested the mechanism's edges and left its main path uncovered - and the
+  drift test turned out to be vacuous under the fix's own logic, because it never approved a
+  sibling the bug could have wrongly skipped. It is now strengthened to assert the approved
+  sibling is scanned while the drifted one stays pending. The new regression test seeds the
+  unapproved sibling with distinctive README and source bodies and asserts neither appears in
+  the snapshot or the doc bundle, so it proves the sibling was never opened rather than merely
+  absent from the results.
+
 - 2026-08-12 - **`find-subjects`: workspace-evidence course discovery.** Meno's front door
   assumed the learner already knows what they want to learn; `elicit-needs` opens with "what will
   you be able to DO", which is the wrong first question for someone who suspects they are

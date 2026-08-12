@@ -63,11 +63,18 @@ course, because a contract the learner confirmed is what every downstream skill 
    bearing guard: it is what makes "no source code bodies", "read depth capped", and "no
    raw paths in the report" deterministic rather than advisory. See Limits for the part of
    it that remains advisory.
-4. **Consent precedes reading.** `node tools/scan.ts <tenant-dir> --enumerate` lists
-   candidate roots with file counts and reads no file contents. `--read` refuses any root
-   absent from `workspace/roots.yml`, and refuses a root whose immediate child directories
-   have changed since approval, surfacing the new children as `pending_approval` instead of
-   scanning them. Approval binds what was approved, not the root forever. `--read` writes
+4. **Consent precedes reading, and binds per child, not per root.** `node tools/scan.ts
+   <tenant-dir> --enumerate` lists candidate roots with file counts and reads no file
+   contents. `--read` refuses any root absent from `workspace/roots.yml` outright. For a root
+   present in `workspace/roots.yml`, every approved child directory is scanned individually;
+   a child directory that is new since approval, or was never approved, is skipped on its own
+   and surfaced as `pending_approval`, never treated as a veto over the rest of the root.
+   Approving a subset of a root's children is expected, not an edge case: it is exactly what a
+   workspace holding client or employer repositories alongside the user's own requires. An
+   approved child directory that no longer exists on disk (renamed or deleted since approval)
+   is skipped without error and named separately, in `missing_children`, distinct from
+   `pending_approval` because it was approved and is simply gone rather than present-but-never-
+   approved. Approval binds what was approved, not the root forever. `--read` writes
    `workspace/YYYY-MM-DD-scan.json` by default (`--no-write` skips persisting it, for
    inspection only).
 
@@ -113,8 +120,9 @@ course, because a contract the learner confirmed is what every downstream skill 
     `collectWorkspace` resolves each approved root's path once per run and records a `status` of
     `ok`, `missing` (the path no longer exists), or `not-a-directory` (the path resolves to a
     file) on that root's entry in both the observation and the snapshot. A non-`ok` status always
-    carries `repos_found: 0` and `pending_approval: []`, since nothing was walked - before this
-    field existed, a renamed or replaced approved root produced exactly the same snapshot as a
+    carries `repos_found: 0`, `pending_approval: []`, and `missing_children: []`, since nothing
+    was walked - before this field existed, a renamed or replaced approved root produced exactly
+    the same snapshot as a
     genuinely empty one, silently confident. `tools/scan.ts`'s summary and the snapshot's own
     `limits` array both name a non-`ok` status by root label.
 11. **A workspace with too little evidence does not get a confident report.** Below a minimum
@@ -349,8 +357,10 @@ Three tiers, deliberately unequal in how much they are allowed to claim.
 4. Only allowlisted documentation files have their bodies read; no source file body is ever
    emitted.
 5. `--read` against a root absent from `workspace/roots.yml` exits non-zero having read
-   zero files, and a root whose immediate children changed since approval yields
-   `pending_approval` rather than a scan.
+   zero files. Within an approved root, a child directory that is new since approval, or was
+   never approved, yields `pending_approval` and is never scanned, while every other,
+   approved sibling is scanned normally - approving a subset of a root's children never
+   silently scans nothing.
 6. Symbolic links are never followed; a symlinked directory contributes zero files and
    increments `symlinks_skipped`.
 7. Every cap that binds appears in `truncation.events` and produces a `limits` line.
@@ -383,7 +393,10 @@ Three tiers, deliberately unequal in how much they are allowed to claim.
   now does as protocol step 9 (`.agents/skills/find-subjects/SKILL.md`). `npm run gate`
   alone does not cover it.
 - Invariant 5: `tools/test/workspace-scan.test.ts` (non-zero exit and a zero open count
-  against an unapproved root; a child-drift fixture).
+  against an unapproved root; a child-drift fixture; a partial-approval fixture asserting
+  that an unapproved sibling contributes zero repositories and leaks no file or documentation
+  content anywhere in the snapshot or the doc bundle, while its approved siblings are scanned
+  normally; a missing-approved-child fixture).
 - Invariant 10: by construction, plus the existing write-authority test.
 - Invariant 11: `tools/validate.ts`'s `subjects` check.
 - Invariant 12: `tools/test/workspace-scan.test.ts` (a root pointed at a nonexistent path yields
