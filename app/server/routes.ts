@@ -18,7 +18,8 @@ import { parseLesson } from '../../lib/lesson.ts';
 import { deriveMastery } from '../../lib/mastery.ts';
 import { computeInsights } from '../../lib/insights.ts';
 import { loadInsightsInputs } from '../../lib/insights-io.ts';
-import type { LessonResponse, PublicCheck, SubmitRequest, SubmitResponse, InsightsResponse, GroupsResponse, TodoKind, TodoAudience } from '../shared/types.ts';
+import { readCostSnapshot } from '../../lib/cost-io.ts';
+import type { LessonResponse, PublicCheck, SubmitRequest, SubmitResponse, InsightsResponse, GroupsResponse, CostResponse, TodoKind, TodoAudience } from '../shared/types.ts';
 import { writeFileAtomic } from './atomic.ts';
 
 interface Ctx {
@@ -176,6 +177,24 @@ const getInsights: Handler = (_req, res, p, ctx) => {
   // there is no second file-listing implementation
   const notes = vault.files.filter((f) => /^insights\/[^/]+-insights\.md$/.test(f)).sort();
   const payload: InsightsResponse = { ...report, notes };
+  json(res, 200, payload);
+};
+
+// Read-only, reads the written snapshot only - it never scans a coding
+// agent's transcripts (that is tools/cost.ts's job, seconds of I/O that a
+// page load must not pay). A missing, unreadable, corrupt, or unrecognised
+// snapshot is a normal state, not an error: they all collapse to reason:
+// 'no-snapshot' so the page can render an empty state naming the command to
+// run (docs/specs/cost.md, "HTTP surface"). No POST sibling.
+const getCost: Handler = (_req, res, p, ctx) => {
+  const tenantDir = safePath(ctx.root, p.tenant);
+  const snapshot = readCostSnapshot(tenantDir);
+  const payload: CostResponse = {
+    tenant: p.tenant,
+    snapshot,
+    reason: snapshot ? 'ok' : 'no-snapshot',
+    how_to_generate: `npm run cost -- content/tenants/${p.tenant} --write`,
+  };
   json(res, 200, payload);
 };
 
@@ -337,6 +356,7 @@ const ROUTES: [string, RegExp, Handler][] = [
   ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/todos$/, getTodos],
   ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/progress$/, getProgress],
   ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/insights$/, getInsights],
+  ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/cost$/, getCost],
   ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/ledger$/, getLedger],
   ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/groups$/, getGroups],
   ['POST', /^\/api\/v1\/(?<tenant>[^/]+)\/check\/submit$/, postCheckSubmit],

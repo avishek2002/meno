@@ -664,6 +664,76 @@ export function checkInsights(_target: string, files: string[]): Finding[] {
   return findings;
 }
 
+// cost is a machine-produced file (tools/cost.ts's whole body), so the check adds only the
+// cross-field rules the schema cannot express (docs/specs/cost.md).
+export function checkCost(_target: string, files: string[]): Finding[] {
+  const findings: Finding[] = [];
+  const validateCost = loadSchema('cost.schema.json');
+
+  for (const file of files.filter((f) => /\/cost\/snapshot\.json$/.test(f))) {
+    const rel = displayPath(file);
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(readFileSync(file, 'utf8'));
+    } catch (e) {
+      findings.push({ level: 'error', check: 'cost', path: rel, message: `invalid JSON: ${(e as Error).message}` });
+      continue;
+    }
+
+    if (!validateCost(parsed)) {
+      for (const err of validateCost.errors ?? []) {
+        findings.push({ level: 'error', check: 'cost', path: rel, message: `${err.instancePath || '/'} ${err.message}` });
+      }
+    }
+    if (!parsed || typeof parsed !== 'object') continue;
+
+    const snap = parsed as {
+      totals?: { attributed_usd?: number; courses_with_data?: number; courses_without_data?: number };
+      courses?: { course?: string; dir?: string; cost_usd?: number }[];
+      no_data?: { course?: string; dir?: string }[];
+    };
+    const courses = snap.courses ?? [];
+    const noData = snap.no_data ?? [];
+
+    const sumCourses = courses.reduce((acc, c) => acc + (c.cost_usd ?? 0), 0);
+    if (typeof snap.totals?.attributed_usd === 'number' && Math.abs(snap.totals.attributed_usd - sumCourses) > 0.005) {
+      findings.push({
+        level: 'error',
+        check: 'cost',
+        path: rel,
+        message: `totals.attributed_usd (${snap.totals.attributed_usd}) differs from the sum of courses[].cost_usd (${sumCourses}) by more than half a cent`,
+      });
+    }
+
+    // compared by dir, the unique identity - not by course (the bare basename), which two
+    // directories in different domains can legitimately share (docs/specs/cost.md, finding 3)
+    const courseDirs = new Set(courses.map((c) => c.dir));
+    for (const n of noData) {
+      if (n.dir !== undefined && courseDirs.has(n.dir)) {
+        findings.push({ level: 'error', check: 'cost', path: rel, message: `dir "${n.dir}" appears in both courses and no_data` });
+      }
+    }
+
+    if (typeof snap.totals?.courses_with_data === 'number' && snap.totals.courses_with_data !== courses.length) {
+      findings.push({
+        level: 'error',
+        check: 'cost',
+        path: rel,
+        message: `totals.courses_with_data (${snap.totals.courses_with_data}) does not equal courses.length (${courses.length})`,
+      });
+    }
+    if (typeof snap.totals?.courses_without_data === 'number' && snap.totals.courses_without_data !== noData.length) {
+      findings.push({
+        level: 'error',
+        check: 'cost',
+        path: rel,
+        message: `totals.courses_without_data (${snap.totals.courses_without_data}) does not equal no_data.length (${noData.length})`,
+      });
+    }
+  }
+  return findings;
+}
+
 // --- pack-tier checks (community and org content) --------------------------
 
 const SAFETY_ERROR_PATTERNS: [RegExp, string][] = [
@@ -1058,6 +1128,7 @@ const CHECKS: Record<string, Check> = {
   ledger: checkLedgers,
   mastery: checkMastery,
   insights: checkInsights,
+  cost: checkCost,
   packs: checkPacks,
   groups: checkGroups,
   'course-layout': checkCourseLayout,

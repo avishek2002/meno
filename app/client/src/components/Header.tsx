@@ -42,6 +42,9 @@ export function Header({
             <a href={`#/t/${t}/insights`} aria-current={current('insights')}>
               Insights
             </a>
+            <a href={`#/t/${t}/cost`} aria-current={current('cost')}>
+              Cost
+            </a>
           </>
         )}
         <a href="#/guide" className="nav-guide" aria-current={current('guide')}>

@@ -178,6 +178,7 @@ spec row is stale.
 | [specs/community.md](specs/community.md) | topic-pack layout, search-first, publish-to-community, amend-over-fork | v1.2 | - |
 | [org-deployment.md](org-deployment.md) + [integration-surface.md](integration-surface.md) | org deployment: private mirror-clone, `content/org/` knowledge base, RBAC mapped to host primitives, the stable integration surface | v1.3 | - |
 | [specs/supply-chain.md](specs/supply-chain.md) | the contribution trust boundary: CI enforcement, capability paths, what review executes | v1.4 | - |
+| [specs/cost.md](specs/cost.md) | content-cost attribution: cost-source adapter contract, `computeCost` (`lib/cost.ts`), snapshot format, read-only endpoint, CLI, page | v1.7 | - |
 
 Vault conventions (wikilinks, hub notes, todos) deliberately have no spec file: the
 `second-brain` skill and its references are the canonical owner, and a spec would duplicate

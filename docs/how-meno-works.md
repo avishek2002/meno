@@ -210,9 +210,18 @@ manual fallback is four commands: create a private repo by hand, then inside
 | `tools/meno-mirror push <you>` | after a session, so a lost laptop costs nothing |
 | `tools/meno-mirror status <you>` | "did my last backup actually happen?" |
 | `npm run insights` then ask your agent for an insights report | when you want to know how you are doing |
+| `npm run cost -- content/tenants/<you> --write` | to see which courses cost the most to generate |
 | `npm run gate` | after you change the instance yourself |
 
 Everything else is your agent's job, driven by conversation rather than commands.
+
+**`npm run cost` reads your whole coding-agent session history, not just this tenant.** It scans
+every session transcript your coding agent has kept on this machine, across every project, to
+find the ones that wrote into this tenant - nothing is uploaded, and only aggregate dollar
+figures and counts ever get written to the snapshot, but the scan itself sees everything your
+agent has kept. If that machine holds other clients' work or other private projects, that is the
+trade-off: attribution needs the same evidence your agent already has, and there is nowhere else
+to get it.
 
 ## Studying on more than one device
 
