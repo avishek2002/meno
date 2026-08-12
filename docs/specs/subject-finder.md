@@ -304,7 +304,43 @@ descendant escaped the root. The actual guard is that symbolic links are never f
 (counted as `symlinks_skipped`), so nothing the walker visits can lead it outside the root
 without a real, non-symlink boundary; the walker also prunes `.git/`, `node_modules/`,
 `.venv/`, `venv/`, `vendor/`, `.terraform/`, `dist/`, `build/`, `target/`, `__pycache__/`,
-`.next/`.
+`.next/`, `cache/`, `.cache/`, `caches/`. The last three were added after a real scan found four
+non-project repositories under a coding agent's plugin cache directory (see "Substantive
+repositories" below); matched exactly like every other entry in this list, case-sensitively, by
+literal directory name - see Limits for the honest cost of that.
+
+## Substantive repositories
+
+Found on a real `find-subjects` run, alongside the confirmed-contract defect above: 4 of 13
+discovered repositories were not projects at all, all four under a coding agent's plugin cache
+directory - three throwaway directories named like `temp_git_<digits>_<random>` with one commit
+and zero documentation files each, and one installed third-party plugin at a version-numbered
+path with its own readme and 55 files. Every ratio in the generated report was diluted by them:
+a marker coverage reading 6 of 13 was really 6 of 9 across repositories the person actually
+works in, and the third-party plugin's own documentation was read and interpreted as if it were
+the user's authored work. Two complementary fixes, because they catch different things:
+
+1. **The `cache`/`.cache`/`caches` prune additions** (above) stop the walker descending into a
+   tool's cache directory at all, which catches the observed case cleanly and generalises to
+   package and plugin caches from other tools.
+2. **A repository can still be a git repository without being a project** even when it never
+   sits under a pruned directory - a bare "scratch" folder outside any cache, for instance. Each
+   `SnapshotRepo` therefore carries `substantive: boolean`, computed purely from fields the same
+   repository entry already has: `substantive` is `false` only when the repository carries no
+   dependency manifest, no readme marker (`markers.readme`), **and** at most one commit in its
+   history (`commits_total`) - a directory accumulates at least one of those three signals the
+   moment it becomes a real, worked-on project. `aggregate.marker_coverage`,
+   `aggregate.dependency_frequency`, and `aggregate.manifest_coverage` are computed over
+   substantive repositories only, so a ratio like "6 of 9 repos carry a lockfile" describes real
+   projects rather than being diluted by a scratch clone.
+
+Nothing is hidden by this: `snapshot.repos` still lists every repository the scan found, whether
+substantive or not, and `aggregate.total_repos` keeps its exact original meaning (every
+repository found). `aggregate.substantive_repos` is a new, separate count rather than a
+redefinition of `total_repos` - a report can state both numbers rather than either one silently
+changing meaning underneath it. When at least one non-substantive repository was found, `limits`
+carries a line naming how many, so a report can never quietly imply its ratios covered every
+repository the scan discovered.
 
 ## Budgets
 
@@ -391,6 +427,11 @@ Three tiers, deliberately unequal in how much they are allowed to claim.
     under contract in the tenant (an existing course carrying `profile.md`). A candidate
     matching such a course is reported as a confirmed-contract finding instead, never as a
     proposed candidate.
+14. `aggregate.marker_coverage`, `aggregate.dependency_frequency`, and
+    `aggregate.manifest_coverage` are computed with `aggregate.substantive_repos` as their
+    denominator, never `aggregate.total_repos` - a non-substantive repository (see "Substantive
+    repositories") is still listed in `repos` and still counted in `total_repos`, but never
+    contributes to any of these three ratios.
 
 ## Verified by
 
@@ -430,6 +471,13 @@ Three tiers, deliberately unequal in how much they are allowed to claim.
   `lib/course-dirs.ts`'s `listCourses` (confirmed-versus-skeleton by `profile.md` presence) is
   unit-tested in `tools/test/course-dirs.test.ts`, including against the committed
   `examples/example-learner` tree's one confirmed course and one skeleton course.
+- Invariant 14: `tools/test/workspace-scan.test.ts` (a repository with no manifest, no readme,
+  and one commit is classified `substantive: false`, stays listed in `repos`, and
+  `marker_coverage`'s denominator is asserted directly rather than merely checking a rate object
+  exists; a `limits` line names the non-substantive count when one exists and is absent when
+  none does) and `tools/test/workspace-fixture.test.ts` against the committed fixture's
+  `fx-scratch-clone` (non-substantive, still listed) and `fx-agent-tool-cache` (a repository
+  nested under a pruned `cache/` directory that never appears in the scan at all).
 
 ## Limits
 
@@ -454,11 +502,19 @@ The chokepoint makes most of this deterministic, but not all of it:
    is the control.
 4. **Generated files outside the committed prune list are counted** as ordinary files,
    because `.gitignore` is deliberately not consulted.
-5. **A bind mount or filesystem firmlink inside an approved root is still walked.** The
+5. **A project legitimately containing a source directory named `cache` (not a tool's own cache
+   directory) is skipped too.** `PRUNE_DIRS` matches by literal directory name, the same
+   convention every other entry in that list already uses; it cannot tell a tool's cache
+   directory apart from a project's own directory that happens to share the name. This is the
+   honest cost of a name-based prune list, and is why the substantive/non-substantive split
+   ("Substantive repositories" above) exists as a second, complementary guard: a scratch
+   repository that evades the prune list some other way is still excluded from the coverage
+   ratios' denominator, even though it still appears in `repos`.
+6. **A bind mount or filesystem firmlink inside an approved root is still walked.** The
    confinement guard is never-follow-symlinks, not a per-candidate escape check (see
    Traversal confinement above); a bind mount or firmlink is not a symbolic link, so the
    walker treats it as ordinary directory content and reads whatever it points at.
-6. **The manifest parsers are deliberately shallow** - a bounded regex or a hand-rolled line
+7. **The manifest parsers are deliberately shallow** - a bounded regex or a hand-rolled line
    scanner, never a real TOML/PEP 508/go.mod grammar, matching this repo's
    zero-dependency-tooling preference. Each still knowingly misses cases that a full parser
    would not, disclosed here rather than silently: `pyproject.toml` does not read poetry
@@ -476,7 +532,7 @@ The chokepoint makes most of this deterministic, but not all of it:
    all. None of these throw or corrupt other results - each yields fewer names than a full
    parser would, which is the acceptable "miss" this section exists to distinguish from a
    parser reporting something wrong.
-7. **The ephemeral doc-body bundle can outlive an aborted run.** It is written into the system
+8. **The ephemeral doc-body bundle can outlive an aborted run.** It is written into the system
    temporary directory (`os.tmpdir()`, "Data touched" table above) and is deleted only by the
    `find-subjects` skill's own cleanup step ("How it behaves" item 3) once it finishes, or by the
    next `--read`'s self-heal (`tools/scan.ts` removes any bundle a previous run left behind before

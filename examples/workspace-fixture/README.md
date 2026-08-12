@@ -24,6 +24,16 @@ carrying a `FIXTURE.md` marker that explains what it exercises:
 - `fx-untracked-scripts/` - loose files with no manifest and no git state at all, so the
   scanner's non-repository path is exercised: this directory is walked looking for nested
   repositories, finds none, and contributes nothing to the scan.
+- `fx-scratch-clone/` - a real fixture repository with no manifest, no readme, and one commit,
+  exercising the substantive/non-substantive split (`docs/specs/subject-finder.md`): it is
+  still discovered and still listed in `snapshot.repos`, but `substantive: false` and it is
+  excluded from `aggregate.marker_coverage`, `aggregate.dependency_frequency`, and
+  `aggregate.manifest_coverage`'s denominators.
+- `fx-agent-tool-cache/` - not itself a repository; stands in for a coding agent's plugin cache
+  directory, the exact shape a real scan found diluting a report. A real fixture repository sits
+  nested at `cache/plugins/temp_git_9421_a1b2/`, and `cache` is now in `PRUNE_DIRS`
+  (`lib/workspace-scan.ts`), so the walker never descends past it: that nested repository never
+  appears anywhere in the scan.
 
 Each project directory carries a `FIXTURE-git.json` sidecar instead of a real nested `.git`
 directory - git would treat a committed `.git` as a submodule boundary and break checkout of

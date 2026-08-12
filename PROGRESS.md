@@ -15,6 +15,49 @@ _Last updated: 2026-08-12_
 
 ## Done
 
+- 2026-08-12 - **The scanner counted scratch git repositories inside agent tool caches as real
+  projects.** Found on a real `find-subjects` run: 4 of 13 discovered repositories were not
+  projects at all, all four under a coding agent's plugin cache directory - three throwaway
+  directories named like `temp_git_<digits>_<random>` with one commit and zero documentation
+  files each, and one installed third-party plugin at a version-numbered path with its own
+  readme and 55 files. Every ratio in the generated report was diluted by them: a marker
+  coverage reading 6 of 13 was really 6 of 9 across repositories the person actually works in,
+  and the third-party plugin's own documentation was read and interpreted as if it were the
+  user's authored work. The report had already been disclosing the dilution in its Limits
+  section, which was honest but not a fix.
+
+  Two complementary fixes, since they catch different things. (1) `PRUNE_DIRS`
+  (`lib/workspace-scan.ts`) gained `cache`, `.cache`, and `caches`, matched exactly like every
+  other entry there - case-sensitively, by literal name - so the walker never descends into a
+  tool's cache directory at all; this catches the observed case cleanly and generalises to
+  package/plugin caches from other tools. The honest cost, disclosed in the spec's Limits and
+  in a code comment: a project legitimately containing a source directory named `cache` is
+  skipped too. (2) Every `SnapshotRepo` now carries `substantive: boolean`, a pure derivation
+  from fields the repository entry already has - `false` only when the repository carries no
+  dependency manifest, no readme marker, and at most one commit in its history.
+  `aggregate.marker_coverage`, `aggregate.dependency_frequency`, and
+  `aggregate.manifest_coverage` are now computed over substantive repositories only, so a ratio
+  like "6 of 9 repos carry a lockfile" describes real projects rather than being diluted by a
+  scratch clone that evades the prune list some other way. Nothing is hidden by this:
+  `snapshot.repos` still lists every repository found, `aggregate.total_repos` keeps its exact
+  original meaning, and a new `aggregate.substantive_repos` count sits alongside it rather than
+  redefining it. A `limits` line names how many non-substantive repositories were found whenever
+  at least one was.
+
+  `schemas/workspace-scan.schema.json` gained `repos[].substantive` and
+  `aggregate.substantive_repos`, both optional at the schema level (same legacy-snapshot
+  reasoning as `roots[].status`) so an older snapshot still validates. `docs/specs/
+  subject-finder.md` gained a new "Substantive repositories" section, a Limits entry for the
+  `cache` prune's honest cost, invariant 14, and a matching "Verified by" entry. The committed
+  fixture (`examples/workspace-fixture/`) gained two new projects exercising each fix:
+  `fx-scratch-clone` (a real repository with no manifest, no readme, and one commit -
+  `substantive: false`, still listed) and `fx-agent-tool-cache` (not itself a repository; a real
+  repository sits nested at `cache/plugins/temp_git_9421_a1b2/` and is never discovered, proving
+  the prune). Golden regenerated and reviewed. New tests in `tools/test/workspace-scan.test.ts`
+  pin the exact rule (a readme alone already makes a repository substantive, asserted rather than
+  assumed) and assert the `marker_coverage` denominator number directly, since that number was
+  the actual bug. Gate green: 369 tests, `npm run validate` clean.
+
 - 2026-08-12 - **find-subjects: candidates duplicated courses the tenant already held.** Found
   on the subsystem's first real run against a real workspace: two of three proposed candidates
   (`ai-and-agents/llm-evals-and-judges` and `infrastructure/hosting-and-deployment`) were
@@ -815,13 +858,6 @@ _Last updated: 2026-08-12_
 
 ## On the agenda (backlog, not started)
 
-- **The scanner counts scratch git repositories inside agent tool caches as real projects** - on
-  a `find-subjects` run, 4 of 13 discovered repositories were throwaway directories under a tool
-  cache (one at depth 6, three temporary ones at depth 4, each with 1 commit and 0 documentation
-  files), which diluted every marker ratio in the report (6 of 13 was really 6 of 9). Candidate
-  fixes: extend the prune list, or ignore a repository with no manifest, no readme, and a single
-  commit. The report currently discloses the dilution in its Limits section, which is honest but
-  not a fix.
 - **Decision 19 program** (plan: `docs/plans/content-accuracy-and-community.md`): (1) blocking
   self-audit in `generate-module` + seeded-fault fixtures + eval scorers that drill the
   auditor; (2) the five-pack community slate (git-and-github and agent-harness-craft first);
