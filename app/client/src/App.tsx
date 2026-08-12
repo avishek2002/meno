@@ -11,6 +11,7 @@ import { LessonPage } from './pages/LessonPage';
 import { TodosPage } from './pages/TodosPage';
 import { ProgressPage } from './pages/ProgressPage';
 import { InsightsPage } from './pages/InsightsPage';
+import { CostPage } from './pages/CostPage';
 import { NotePage } from './pages/NotePage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { GuidePage } from './pages/GuidePage';
@@ -54,6 +55,9 @@ export default function App() {
       break;
     case 'insights':
       page = <InsightsPage tenant={route.params.tenant} />;
+      break;
+    case 'cost':
+      page = <CostPage tenant={route.params.tenant} />;
       break;
     case 'note':
       page = <NotePage tenant={route.params.tenant} path={route.params.path} />;

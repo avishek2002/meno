@@ -1133,6 +1133,85 @@ th {
   gap: 0.4rem;
 }
 
+/* ---------- cost ----------
+   Same neutral-palette rule as insights: a course being expensive is not a
+   verdict, so the scope badge below is a plain categorical marker (labelled
+   with text, never colour alone), not a pass/fail colour. The two figures on
+   this page - the courses total and shared orchestration - are kept visually
+   and structurally separate so a reader cannot read them as one number. */
+
+.cost-section {
+  margin-bottom: 2rem;
+}
+
+.cost-section h2 {
+  font-size: 1.05rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.4rem;
+}
+
+.cost-scope-badge {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+.cost-scope-full {
+  border-color: var(--link);
+  color: var(--link);
+}
+
+.cost-scope-generation-only {
+  border-style: dashed;
+  border-color: var(--violet-border);
+  color: var(--violet-text);
+}
+
+.cost-total-row td {
+  font-weight: 700;
+  border-top: 2px solid var(--border);
+  border-bottom: none;
+}
+
+.cost-no-data-list {
+  margin: 0.5rem 0 0;
+  padding-left: 1.2rem;
+  color: var(--text-muted);
+}
+
+/* Shown only for a course basename that collides with another one elsewhere
+   on the page (two domains, same course slug) - dir is the disambiguator. */
+.cost-dir-hint {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.cost-shared {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.85rem 1.1rem;
+  background: var(--bg-subtle);
+  margin: 0.75rem 0;
+}
+
+.cost-shared-figure {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+}
+
+.cost-disclosure-primary {
+  font-weight: 600;
+  margin-top: 0;
+}
+
 /* ---------- infotips ----------
    A disclosure, not a hover-only tooltip: reachable by keyboard and touch.
    The bubble is position: fixed because tables here are `display: block;

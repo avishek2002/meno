@@ -2,6 +2,7 @@
 // these; the client consumes them. Content formats stay owned by the skill
 // references - these are transport shapes only.
 import type { InsightsReport, Rate } from '../../lib/insights.ts';
+import type { CostSnapshot, CourseCost, CostNoDataEntry, SharedOrchestration, CostTotals } from '../../lib/cost.ts';
 
 // Re-exported (not duplicated) so the client can import it like every other
 // response type below, via a plain `import type { InsightsReport } from
@@ -10,6 +11,11 @@ import type { InsightsReport, Rate } from '../../lib/insights.ts';
 // since mastery.yml is also read from disk elsewhere), InsightsReport has no
 // second producer to reconcile against, so a direct type import is safe.
 export type { InsightsReport, Rate };
+
+// Same rule for the cost snapshot: lib/cost.ts is the one place the shape is
+// defined, and this file re-exports rather than duplicates (docs/specs/cost.md,
+// "Types").
+export type { CostSnapshot, CourseCost, CostNoDataEntry, SharedOrchestration, CostTotals };
 
 export interface TenantInfo {
   id: string;
@@ -150,6 +156,18 @@ export interface ProgressResponse {
 // adds that lib/insights.ts's pure computeInsights does not know about.
 export interface InsightsResponse extends InsightsReport {
   notes: string[];
+}
+
+/**
+ * GET /api/v1/:tenant/cost. A missing or unreadable snapshot is a normal state, not an error,
+ * so the endpoint answers 200 with snapshot: null and a reason the page can render.
+ */
+export interface CostResponse {
+  tenant: string;
+  snapshot: CostSnapshot | null;
+  reason: 'ok' | 'no-snapshot';
+  /** The command that produces one, so the empty state can tell the learner what to run. */
+  how_to_generate: string; // "npm run cost -- content/tenants/<tenant> --write"
 }
 
 export interface HealthResponse {

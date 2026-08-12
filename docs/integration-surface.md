@@ -56,8 +56,9 @@ Read it three ways, all safe: a batch export via [`tools/export.ts`](../tools/ex
 Every read route under the `/api/v1` prefix is stable surface:
 `health`, `tenants`, `:tenant/tree`, `:tenant/course/:course`,
 `:tenant/lesson/:course/:module/:file`, `:tenant/note`, `:tenant/todos`, `:tenant/progress`,
-`:tenant/insights`, `:tenant/groups`, `:tenant/ledger` ([specs/app.md](specs/app.md) owns the shapes;
-response types are `app/shared/types.ts`).
+`:tenant/insights`, `:tenant/groups`, `:tenant/ledger`, `:tenant/cost` ([specs/app.md](specs/app.md)
+and [specs/cost.md](specs/cost.md) own the shapes; response types are `app/shared/types.ts`).
+`:tenant/cost` reads a snapshot `tools/cost.ts --write` produced; it never scans on request.
 
 **Write routes are not surface.** `POST :tenant/check/submit`, `POST :tenant/lesson/read`,
 `POST`/`PATCH :tenant/todos*` exist for the app's own client and may change shape between

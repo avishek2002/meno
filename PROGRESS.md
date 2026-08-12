@@ -4,7 +4,7 @@ Living status file - the done / backlog tracker for this project. **Update it wh
 finish a thing -> move it to Done; pick up or think of a new thing -> add it to the agenda; make a call
 that isn't captured in the code -> log it. Keep entries dated, newest near the top of each section.
 
-_Last updated: 2026-08-06_
+_Last updated: 2026-08-12_
 
 > Maintenance: keep this file current whenever work changes. Tooling can't see conversation-only
 > decisions, so logging those is on whoever made them.
@@ -14,6 +14,92 @@ _Last updated: 2026-08-06_
 - None currently open.
 
 ## Done
+
+- 2026-08-12 - **Content-cost page: a localhost view of which courses cost the most to
+  generate.** Contract (`docs/specs/cost.md`) confirmed across two grill rounds, then built and
+  adversarially reviewed in the same day. Attributes coding-agent token spend and API-list-
+  equivalent dollars to each course in a tenant vault, at **transcript** granularity (crediting
+  only the `Write` call priced a real course at $0.15 against a whole-transcript figure of
+  $11.50 - the wrong number by 77x). Building Meno itself and authoring community packs are both
+  out of scope by construction: attribution only fires on writes under `content/tenants/<tenant>/`.
+  A cost source is an adapter (`CostSource` in `lib/cost.ts`); Claude Code is the one
+  implementation (`lib/cost-source-claude-code.ts`), so an instance on another coding agent
+  renders an empty page, never a crash. `computeCost` (pure, no clock/filesystem/environment) is
+  ported from a validated reference implementation. `npm run cost -- content/tenants/<tenant>
+  --write` is the only writer of `content/tenants/<tenant>/cost/snapshot.json`;
+  `GET /api/v1/:tenant/cost` only reads it. Reference-machine figures: $49.34 attributed across 7
+  courses (6 generation-only, 1 full), $104.53 shared orchestration covering 6 courses,
+  `git-fundamentals`/`contributing-to-meno` as no-data.
+
+  An adversarial review the same day found four real correctness defects in the first build, all
+  fixed with a failing test written first: (1) a transcript that was both a course writer and the
+  structural parent of another credited transcript could be credited to a course AND land on the
+  shared line, double-counting its money - resolved by having the shared line always win, so that
+  transcript is never credited and the course it would have credited reports as no-data instead;
+  (2) a sub-cent course cost rounded to a literal `$0.00`, which the snapshot's own schema then
+  rejected - course costs now floor to $0.01 when real but tiny, never $0.00; (3) two course
+  directories sharing a basename across different domains could collapse into one row or lose the
+  other's evidence entirely - attribution is now keyed by the full disambiguating directory, not
+  the bare basename; (4) `totals.transcripts_scanned`/`requests` reported the whole machine's
+  session history (~1,379 transcripts on the reference machine) under a "cost for `<tenant>`"
+  heading instead of this tenant's ~8 - now scoped to the transcripts that actually carry evidence
+  for the tenant being reported on. The same review also added a disclosure to `npm run cost`'s
+  own output (it scans every project's session history on the machine, not just this tenant's -
+  previously stated only in the internal spec) and a matching row in `docs/how-meno-works.md`;
+  corrected a spec sentence that claimed a 404 the read route never produces; hardened the
+  transcript walk against a partial permissions failure reading as a whole-machine zero; and moved
+  the written-path matching logic (`COURSE_PATH`, `NON_GROUP`) into `lib/cost.ts` so a second
+  adapter can share it. `docs/specs/cost.md` and `docs/integration-surface.md` amended in the same
+  change.
+
+  A second adversarial review pass the same day, run against the already-fixed build, found six
+  more real defects, again each fixed guard-first: **NEW-1** the round-one dir-keying fix for (3)
+  above was only half done - `tools/validate.ts`'s cross-field check still compared by basename,
+  so the exact valid same-basename snapshot the first fix was written for got rejected by the
+  gate; `no_data` changed shape from `string[]` to `{ course, dir }[]` so `dir` is the comparable
+  key everywhere, a wire-format change taken now while the page is unreleased. **NEW-5** the
+  demotion fix for (1) above used all credit candidates to decide who gets demoted, so a 3-deep
+  orchestration chain (A orchestrates B orchestrates C) demoted every ancestor indiscriminately;
+  replaced with a bottom-up fixpoint over the credit-candidate forest that demotes only a
+  candidate with a child that stays credited. **NEW-3** a course demoted into `no_data` sat under
+  page copy claiming "no evidence on this machine", which is false for exactly that course - a
+  new conditional `limits` line names the count. **NEW-6** an unreadable transcript or directory
+  was silently swallowed rather than counted, making a partial scan indistinguishable from a
+  complete one; `CostSource.collect()` now returns a `skipped` count alongside `transcripts`,
+  surfaced in `limits` when nonzero. **NEW-4** documented (not code-changed): the sub-cent floor
+  that fixed (2) above can in principle overstate spend, which the spec now names as a limitation
+  rather than leaving implicit. Also: `totals.transcripts_scanned`/`requests` are now printed in
+  the CLI summary rather than left an unread field. Oracle figures unchanged by any of this:
+  $49.34 / 7 rows, $104.53 shared / 6 courses, the same two no-data courses.
+
+  The `no_data` shape change (`string[]` to `{ course, dir }[]`) was a breaking wire-format change
+  to `CostSnapshot`, landed while CLIENT's page update was still pending - CLIENT has since
+  updated `app/client/src/pages/CostPage.tsx` to the new shape, and `npm run gate` is fully green
+  (typecheck including the client project, tests, validate).
+
+  A third adversarial pass found five smaller defects, all fixed: an unparseable transcript
+  (binary garbage, a truncated write) was silently returned as a legitimate zero-cost transcript
+  instead of counting toward `skipped`, now detected and thrown so `collect()` counts it; the
+  `skipped` disclosure said "N transcript(s)" when an unreadable directory is counted as one skip
+  event regardless of how many transcripts it held (which can never be known - the directory
+  cannot be listed to count them), reworded to "N location(s)" rather than overclaiming precision;
+  a demoted candidate's own course never joined `shared_orchestration.courses`, so the demotion
+  disclosure pointed at a shared line that did not list the course it was talking about; and
+  `CostNoDataEntry` was added to `app/shared/types.ts`'s re-export block to match the rest of the
+  wire-type sub-shapes. The parent-cycle edge case in the demotion resolver (unreachable from the
+  shipped adapter, since `parentIdOf` always yields a strictly shorter id) is now a documented
+  constraint on future cost sources rather than code, since money still conserves under it and it
+  cannot occur today.
+
+  **Limitations that remain, by design, not oversight:** every figure is a floor (only records
+  still on this machine are counted, and a nonzero skipped count now says how much of the machine
+  was unreadable); a transcript's whole cost credits to its course even when it did unrelated work
+  too, and the shared orchestration line has the same overcount at a coarser grain (it bills the
+  whole parent transcript, including any unrelated work in that session); the sub-cent floor can
+  in principle overstate a very small real cost; an ungrouped course at `<tenant>/<slug>/` (no
+  domain segment) is invisible to the write-path pattern and reports as no-data; renaming a course
+  directory orphans its old evidence; deleting or rotating agent records deletes the evidence this
+  subsystem reconstructs from.
 
 - 2026-08-06 - **Todo tags split into two orthogonal axes: seven kinds, two audiences.**
   The old three-tag namespace (`#gen`/`#repo`/`#note`) cut at the wrong angle - one tag cannot
