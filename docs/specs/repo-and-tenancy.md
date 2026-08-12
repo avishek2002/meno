@@ -17,8 +17,13 @@ forks; without the tenancy boundary, one bad commit publishes someone's learning
    arrives at the same file. No agent guidance lives anywhere else.
 2. From `AGENTS.md` alone, an agent learns: what Meno is, that the interview
    (`elicit-needs`) is the entry point for a new learner, the tenant-privacy rules, where
-   the user guide is, and the session-start rule (check for due reviews and actionable
-   todos once a tenant exists; propose, never auto-act).
+   the user guide is, the session-start rule (check for due reviews and actionable
+   todos once a tenant exists; propose, never auto-act), and which of the two tracks a
+   request belongs to - contributing to Meno itself, or working on this user's learning
+   content - together with the write boundary between them: repository work never reads
+   or writes under `content/tenants/`, and learning-content work reaches base files only
+   through `extend-meno`. Publishing (`publish-to-community`) is the one crossing, from
+   learning to contributing; org deployment is neither track.
 3. Skills resolve from `.agents/skills/<name>/SKILL.md`. Claude Code discovers them through
    `.claude/skills/` relative symlinks; any other CLI reads the SKILL.md files directly -
    each is written to work without native skill support.
@@ -93,7 +98,11 @@ Entry-point chain: `CLAUDE.md` (shim) -> `AGENTS.md` (canonical) -> skills, guid
 - Cold-start acceptance run (PLAN.md Phase 0): a fresh `claude -p` session in a clean clone
   answers entry-point, privacy, and guide questions from AGENTS.md alone. Recorded in the
   Phase 0 pull request. Only Claude Code exists on the maintainer machine; other CLIs are
-  designed-for but unverified.
+  designed-for but unverified. The same run also covers routing: asked one request of each
+  kind ("fix a bug in the study app", "add a lesson on X to my course"), the session names
+  the track and the write boundary without being told either. Routing is checked here
+  rather than in validate because a validator can only grep for the heading, which keeps
+  passing while the content rots.
 - Dummy-tenant `git status` check and fresh-clone symlink check (PLAN.md Phase 0),
   re-runnable by hand; Linux symlink behavior holds by construction (git stores symlinks as
   symlinks) but has not been machine-verified here.
