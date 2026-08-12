@@ -25,7 +25,7 @@ Deploying Meno for an organization is neither track - it is not a change to this
 
 ## Current status: v1 built
 
-All eight phases of the plan are complete: seven skills, JSON schemas with a validate
+All eight phases of the plan are complete: ten skills, JSON schemas with a validate
 gate (`npm run gate`), the localhost study app (`npm start`), the tutor loop with mastery
 gates, citation auditing, mirror tooling, and the eval gate (`npm run eval`). The example
 learner under `examples/` carries a real generated course through a real review session -
@@ -49,9 +49,10 @@ All skills live in `.agents/skills/<name>/SKILL.md` (Claude Code discovers them 
 - `generate-module` - write one module's lesson bodies (nine-part anatomy, tiered checks, verified citations).
 - `tutor-session` - run a spaced review session: due computation, Socratic grading, mastery gates with logged overrides, generate-ahead.
 - `audit-citations` - adversarially re-check cited sources against the live web (existence, claim support, archive liveness and match) and route findings into citation-refresh or content-refresh.
-- `study-insights` - user-invoked only: turn a study-insights snapshot (`npm run insights`, `lib/insights.ts`) into a dated narrative report - observations, stuck points, up to three suggestions and three topic candidates, every number quoted from the snapshot, never computed.
+- `study-insights` - user-invoked only: turn a study-insights snapshot (`npm run insights`, `lib/insights.ts`) into a dated narrative report - observations, stuck points, and up to three suggestions, every number quoted from the snapshot, never computed. What to learn next belongs to `find-subjects`.
 - `publish-to-community` - turn a finished tenant course into a topic-pack pull request: search first for overlapping coverage, transcribe the structure onto a fresh pack tree (never copy the tenant directory), sanitize what must never leave `content/tenants/`, then the quality gate.
 - `extend-meno` - change or add to this Meno instance without breaking its invariants.
+- `find-subjects` - user-invoked only: survey approved workspace roots through the deterministic scanner and write a dated narrative report of observations, up to five cited tool alternatives, and course candidates routed to a pack or a fresh `elicit-needs` interview.
 - `second-brain` - vault conventions (wikilinks, hub notes), graph operations, and the `todos.md` shared queue.
 
 **Session start, once a tenant exists:** check `content/tenants/<tenant>/progress/` for due reviews and scan `content/tenants/<tenant>/todos.md` for actionable items; mention what you find and propose, never auto-act.

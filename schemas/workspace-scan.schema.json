@@ -1,0 +1,216 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/avishek2002/meno/schemas/workspace-scan.schema.json",
+  "title": "Meno workspace-scan snapshot",
+  "description": "The structural, paste-safe snapshot written by tools/scan.ts to content/tenants/<tenant>/workspace/YYYY-MM-DD-scan.json. No absolute path, home-directory prefix, or approved-root path ever appears here (docs/specs/subject-finder.md, invariant 2); doc bodies never appear here either (invariant 4) - they travel only through the ephemeral doc-body bundle. Shape owned by lib/workspace-scan.ts; behavior owned by docs/specs/subject-finder.md.",
+  "type": "object",
+  "required": ["schema_version", "type", "generated_at", "as_of", "scanner_version", "budgets", "roots", "repos", "aggregate", "truncation", "limits"],
+  "properties": {
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "type": { "const": "workspace-scan" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "as_of": { "type": "string", "format": "date" },
+    "scanner_version": { "type": "integer", "minimum": 1 },
+    "budgets": {
+      "type": "object",
+      "required": ["max_roots", "max_repos_per_root", "max_depth", "max_dir_entries", "max_files", "max_commits_per_repo", "max_doc_files", "max_doc_files_per_repo", "max_dependency_names"],
+      "properties": {
+        "max_roots": { "type": "integer", "minimum": 1 },
+        "max_repos_per_root": { "type": "integer", "minimum": 1 },
+        "max_depth": { "type": "integer", "minimum": 1 },
+        "max_dir_entries": { "type": "integer", "minimum": 1 },
+        "max_files": { "type": "integer", "minimum": 1 },
+        "max_commits_per_repo": { "type": "integer", "minimum": 1 },
+        "max_doc_files": { "type": "integer", "minimum": 1 },
+        "max_doc_files_per_repo": { "type": "integer", "minimum": 1 },
+        "max_dependency_names": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "roots": {
+      "type": "array",
+      "description": "One entry per approved root, in scan order.",
+      "items": {
+        "type": "object",
+        "required": ["root_id", "label", "repos_found", "pending_approval"],
+        "properties": {
+          "root_id": { "type": "string", "pattern": "^[0-9a-f]{12}$" },
+          "label": { "type": "string", "minLength": 1 },
+          "repos_found": { "type": "integer", "minimum": 0 },
+          "pending_approval": {
+            "type": "array",
+            "description": "Directory names present since approval that were not scanned. Non-empty means this root was skipped, not scanned.",
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "status": {
+            "enum": ["ok", "missing", "not-a-directory"],
+            "description": "'ok' unless the approved path itself could not be scanned this run. A non-'ok' status always carries repos_found: 0 and pending_approval: [], since nothing was walked - this field is what tells that apart from a genuinely empty, fully-scanned root. Not required at the schema level, only because tools/test/validate.test.ts carries a hand-written VALID_SCAN fixture predating this field that this subsystem does not own; every snapshot lib/workspace-scan.ts actually produces always carries it (lib/workspace-scan.ts's SnapshotRoot type requires it)."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "repos": {
+      "type": "array",
+      "description": "Every repository found across every scanned root, flattened - root_label ties an entry back to roots[].",
+      "items": {
+        "type": "object",
+        "required": [
+          "repo_id",
+          "name",
+          "depth",
+          "root_label",
+          "remote_host",
+          "commits_total",
+          "commits_90d",
+          "commit_types",
+          "keyword_hits",
+          "authors",
+          "extensions",
+          "language_shares",
+          "manifests",
+          "markers",
+          "docs",
+          "files_walked",
+          "symlinks_skipped",
+          "secrets_skipped",
+          "unreadable_dirs"
+        ],
+        "properties": {
+          "repo_id": { "type": "string", "pattern": "^[0-9a-f]{12}$" },
+          "name": { "type": "string", "minLength": 1 },
+          "depth": { "type": "integer", "minimum": 0 },
+          "root_label": { "type": "string", "minLength": 1 },
+          "remote_host": { "enum": ["github.com", "gitlab.com", "bitbucket.org", "codeberg.org", "self-hosted", null] },
+          "commits_total": { "type": "integer", "minimum": 0 },
+          "commits_90d": { "type": "integer", "minimum": 0 },
+          "commit_types": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } },
+          "keyword_hits": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } },
+          "authors": { "type": "integer", "minimum": 0 },
+          "extensions": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } },
+          "language_shares": { "type": "object", "additionalProperties": { "type": "number", "minimum": 0, "maximum": 1 } },
+          "manifests": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["kind", "deps", "dev_deps", "parse_failed"],
+              "properties": {
+                "kind": { "type": "string", "minLength": 1 },
+                "deps": {
+                  "type": "array",
+                  "description": "Dependency names only, never version strings. A scoped npm name outside the public-scope allowlist is recorded as the literal '@private-scope' instead of by name; a module-path name (e.g. Go) whose host is outside the public-module-host allowlist is recorded as the literal 'private-module' instead of by name.",
+                  "items": { "type": "string", "minLength": 1 }
+                },
+                "dev_deps": {
+                  "type": "array",
+                  "description": "Same guard as deps, applied to development-only dependencies.",
+                  "items": { "type": "string", "minLength": 1 }
+                },
+                "parse_failed": { "type": "boolean" }
+              },
+              "additionalProperties": false
+            }
+          },
+          "markers": {
+            "type": "object",
+            "required": ["tests", "ci", "dockerfile", "iac", "readme", "docs_dir", "lockfile", "license"],
+            "properties": {
+              "tests": { "type": "boolean" },
+              "ci": { "type": "boolean" },
+              "dockerfile": { "type": "boolean" },
+              "iac": { "type": "boolean" },
+              "readme": { "type": "boolean" },
+              "docs_dir": { "type": "boolean" },
+              "lockfile": { "type": "boolean" },
+              "license": { "type": "boolean" }
+            },
+            "additionalProperties": false
+          },
+          "docs": {
+            "type": "array",
+            "description": "Repository-relative path and byte size only. No body: doc bodies travel exclusively through the ephemeral doc-body bundle, never through this snapshot.",
+            "items": {
+              "type": "object",
+              "required": ["path", "bytes"],
+              "properties": {
+                "path": { "type": "string", "minLength": 1 },
+                "bytes": { "type": "integer", "minimum": 0 }
+              },
+              "additionalProperties": false
+            }
+          },
+          "files_walked": { "type": "integer", "minimum": 0 },
+          "symlinks_skipped": { "type": "integer", "minimum": 0 },
+          "secrets_skipped": { "type": "integer", "minimum": 0 },
+          "unreadable_dirs": { "type": "integer", "minimum": 0 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "aggregate": {
+      "type": "object",
+      "required": ["total_roots", "total_repos", "dependency_frequency", "manifest_coverage", "marker_coverage"],
+      "properties": {
+        "total_roots": { "type": "integer", "minimum": 0 },
+        "total_repos": { "type": "integer", "minimum": 0 },
+        "dependency_frequency": {
+          "type": "object",
+          "description": "Dependency name -> count of repositories carrying it (deps and dev_deps combined, deduped per repo), sorted by descending count then ascending name and capped at max_dependency_names. A scoped npm name outside the public-scope allowlist is recorded as '@private-scope' instead of by name; a module-path name whose host is outside the public-module-host allowlist is recorded as 'private-module' instead of by name.",
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        },
+        "manifest_coverage": {
+          "type": "object",
+          "description": "Manifest kind (e.g. 'npm') -> count of repos carrying at least one manifest of that kind.",
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        },
+        "marker_coverage": {
+          "type": "object",
+          "description": "Marker name -> a Rate ({value, n, of, reason?}) over total_repos, same shape as lib/insights.ts's Rate.",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["value", "n", "of"],
+            "properties": {
+              "value": { "type": ["number", "null"] },
+              "n": { "type": "integer", "minimum": 0 },
+              "of": { "type": "integer", "minimum": 0 },
+              "reason": { "const": "insufficient_data" }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "truncation": {
+      "type": "object",
+      "required": ["events"],
+      "properties": {
+        "events": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["cap", "limit", "observed", "at_least", "scope"],
+            "properties": {
+              "cap": {
+                "enum": ["max_roots", "max_repos_per_root", "max_depth", "max_dir_entries", "max_files", "max_commits_per_repo", "max_doc_files", "max_doc_files_per_repo", "max_dependency_names"]
+              },
+              "limit": { "type": "integer", "minimum": 1 },
+              "observed": { "type": ["integer", "null"], "minimum": 0 },
+              "at_least": { "type": "integer", "minimum": 1 },
+              "scope": { "type": "string", "minLength": 1 }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "limits": {
+      "type": "array",
+      "description": "Plain-language disclosures the report renders verbatim. Never empty: the standing disclosures are unconditional.",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "additionalProperties": false
+}

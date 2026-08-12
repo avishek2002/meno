@@ -1,0 +1,1 @@
+Loose notes, no manifest, no git state - this directory is not a repository.

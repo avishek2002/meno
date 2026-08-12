@@ -44,7 +44,12 @@
     "budget_hours": { "type": "number", "exclusiveMinimum": 0 },
     "format_prefs": { "type": "string", "minLength": 1 },
     "user_sources": { "type": "boolean" },
-    "questions_asked": { "type": "integer", "minimum": 1 }
+    "questions_asked": { "type": "integer", "minimum": 1 },
+    "evidence_packet": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Path to the find-subjects evidence packet consumed by this interview, relative to the tenant directory (e.g. subjects/evidence-packet.json). Absent when the contract was self-reported with no packet."
+    }
   },
   "additionalProperties": true
 }

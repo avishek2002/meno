@@ -1,0 +1,14 @@
+[project]
+name = "notes-cli"
+version = "0.1.0"
+dependencies = [
+    "click>=8.1",
+    "rich",
+]
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+requests = "^2.31"

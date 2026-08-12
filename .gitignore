@@ -21,6 +21,9 @@ content/tenants/
 # parent clone and can be committed by accident.
 .claude/worktrees/
 
-# Node
-node_modules/
+# Node. No trailing slash: an agent worktree links node_modules rather than
+# creating a directory, and `node_modules/` matches only the directory form, so
+# the link showed up as untracked and one `git add -A` away from being committed
+# as an absolute-path symlink.
+node_modules
 app/client/dist/

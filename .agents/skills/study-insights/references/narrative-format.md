@@ -45,10 +45,6 @@ metrics_snapshot:
 
 ...
 
-## Topics you might want
-
-...
-
 ## Limits of this report
 
 ...
@@ -68,19 +64,20 @@ metrics_snapshot:
 | `basis.ledger_sha256` | sha256 of `progress/ledger.jsonl`'s bytes at write time - pins which ledger state this report describes, since `ledger_lines` alone cannot distinguish "12 lines, then 3 more got appended and 3 removed" (impossible for an append-only file, but the hash is the honest proof rather than an assumption) |
 | `metrics_snapshot` | the full `InsightsReport` JSON, embedded verbatim - not summarized, not re-keyed. This is what the cite-your-numbers validate rule checks every body number against |
 
-## Body: six required sections, in this order
+## Body: five required sections, in this order
 
 1. **What the numbers say** - headline facts, every rate as `value (n/of)`.
 2. **How you are using Meno** - behavior as observed, not as prescribed.
 3. **Where you are stuck** - overdue reviews, unrepaid overrides (called out prominently),
-   weak concepts, stale mastery; every claim cites its item id or concept.
-4. **Suggestions** - at most 3; a repeat of an earlier report's suggestion is marked
-   `(repeated - first suggested YYYY-MM-DD)`; anything the learner declines in the same
-   conversation becomes an unchecked `todos.md` line instead of being dropped.
-5. **Topics you might want** - at most 3, each with the evidence that surfaced it
-   (`referenced_but_untaught`, a `#admin #for-me` todo, an uncovered `sources/` file, or the
-   profile goal read against current coverage) - never a topic outside that pool.
-6. **Limits of this report** - required. Starts from the snapshot's own `limits` array.
+   weak concepts, stale mastery, and `vault.referenced_but_untaught` (phrased as a fact
+   about a hole in what is taught, not a new-topic pitch - it carries no routing
+   instruction); every claim cites its item id or concept.
+4. **Suggestions** - at most 3; includes `usage.planned_debt` as a concrete item phrased as
+   unfinished structure on an existing course ("module X still has N lessons planned but
+   not generated"), never as a new subject; a repeat of an earlier report's suggestion is
+   marked `(repeated - first suggested YYYY-MM-DD)`; anything the learner declines in the
+   same conversation becomes an unchecked `todos.md` line instead of being dropped.
+5. **Limits of this report** - required. Starts from the snapshot's own `limits` array.
 
 ## The cite-your-numbers rule
 

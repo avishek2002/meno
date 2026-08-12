@@ -23,6 +23,7 @@ budget_hours: 40                # hours_per_week x total_weeks
 format_prefs: text-first        # text-first unless the user chose otherwise
 user_sources: false             # true when content/tenants/<tenant>/sources/ has material
 questions_asked: 6
+evidence_packet: subjects/evidence-packet.json  # optional; path to the find-subjects packet consumed, relative to the tenant dir. Absent when self-reported.
 ---
 ```
 
@@ -40,7 +41,10 @@ One short paragraph in the learner's own words: the outcome, why now, what
 ## Starting point
 What the interview established: the claimed level, what the live probe was,
 what it showed, and the verified starting level. Name specific known and
-missing prerequisites discovered.
+missing prerequisites discovered. State whether the claimed level originated
+from workspace evidence (an anchor from `evidence_packet`), an unprompted
+user statement, or the interview menu - in the same place the probe is
+narrated.
 
 ## Scope contract
 What is IN (bounded by depth and budget) and what is explicitly OUT with a

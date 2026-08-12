@@ -1,0 +1,7 @@
+name: ci
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "placeholder ci config for the workspace-scan fixture"

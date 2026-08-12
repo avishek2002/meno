@@ -28,6 +28,15 @@ Self-report menu:
 
 Map to `prior_level`: a->none, b->vocabulary, c->built-small-things, d->comfortable.
 
+Anchored confirm (used instead of the self-report menu above, only when the evidence packet at
+`content/tenants/<tenant>/subjects/evidence-packet.json` carries a `prior_level` anchor):
+
+> "Your workspace shows <anchor> - does that match where you're starting from? (yes / not quite -
+> here's where I'd put it instead)"
+
+The live probe below still runs regardless of the answer; its result still outranks both the
+anchor and the self-report (precedence: live probe result > workspace evidence > self-report).
+
 Live probe - one pattern per claimed level (no judgment call needed):
 
 - Level a -> **Explain-back**: "In one or two sentences, what do you think <core term> means?" Pick the topic's most load-bearing term. (At level a this mostly confirms rather than filters; keep it light.)
@@ -69,6 +78,13 @@ If one level down still does not clear its own floor, offer the nearest depth th
 ## Phase 4 - Format and own materials
 
 > "Default is text-first lessons with worked examples and practice, rendered in your Meno app and Obsidian. Fine? And do you have your own materials - notes, a textbook, docs from work - that the course should build on? If yes, drop them in `content/tenants/<tenant>/sources/` and I'll anchor lessons on them."
+
+Anchored confirm (used instead of the blind materials question above, only when the evidence
+packet carries a `user_sources` anchor):
+
+> "Default is text-first lessons with worked examples and practice, rendered in your Meno app and
+> Obsidian. Fine? And your workspace shows <anchor> - should I anchor lessons on that material? If
+> yes, drop it in `content/tenants/<tenant>/sources/`."
 
 Skippable: if the interview is at its question cap, apply the default and mention it at confirmation.
 
