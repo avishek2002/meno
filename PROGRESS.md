@@ -4,7 +4,7 @@ Living status file - the done / backlog tracker for this project. **Update it wh
 finish a thing -> move it to Done; pick up or think of a new thing -> add it to the agenda; make a call
 that isn't captured in the code -> log it. Keep entries dated, newest near the top of each section.
 
-_Last updated: 2026-08-12_
+_Last updated: 2026-08-13_
 
 > Maintenance: keep this file current whenever work changes. Tooling can't see conversation-only
 > decisions, so logging those is on whoever made them.
@@ -16,827 +16,269 @@ _Last updated: 2026-08-12_
 ## Done
 
 - 2026-08-12 - **The scanner counted scratch git repositories inside agent tool caches as real
-  projects.** Found on a real `find-subjects` run: 4 of 13 discovered repositories were not
-  projects at all, all four under a coding agent's plugin cache directory - three throwaway
-  directories named like `temp_git_<digits>_<random>` with one commit and zero documentation
-  files each, and one installed third-party plugin at a version-numbered path with its own
-  readme and 55 files. Every ratio in the generated report was diluted by them: a marker
-  coverage reading 6 of 13 was really 6 of 9 across repositories the person actually works in,
-  and the third-party plugin's own documentation was read and interpreted as if it were the
-  user's authored work. The report had already been disclosing the dilution in its Limits
-  section, which was honest but not a fix.
+  projects.** A real `find-subjects` run found 4 of 13 repositories were not projects, all under a
+  coding agent's plugin cache, diluting every ratio in the report and reading a third-party
+  plugin's docs as the user's own work. Two complementary fixes: `PRUNE_DIRS` gained
+  `cache`/`.cache`/`caches` (honest cost: a project with a real source directory named `cache` is
+  skipped too), and `SnapshotRepo.substantive` now scopes the coverage ratios to real projects
+  while `total_repos` keeps its original meaning. Detail: `docs/specs/subject-finder.md`,
+  "Substantive repositories" + invariant 14.
 
-  Two complementary fixes, since they catch different things. (1) `PRUNE_DIRS`
-  (`lib/workspace-scan.ts`) gained `cache`, `.cache`, and `caches`, matched exactly like every
-  other entry there - case-sensitively, by literal name - so the walker never descends into a
-  tool's cache directory at all; this catches the observed case cleanly and generalises to
-  package/plugin caches from other tools. The honest cost, disclosed in the spec's Limits and
-  in a code comment: a project legitimately containing a source directory named `cache` is
-  skipped too. (2) Every `SnapshotRepo` now carries `substantive: boolean`, a pure derivation
-  from fields the repository entry already has - `false` only when the repository carries no
-  dependency manifest, no readme marker, and at most one commit in its history.
-  `aggregate.marker_coverage`, `aggregate.dependency_frequency`, and
-  `aggregate.manifest_coverage` are now computed over substantive repositories only, so a ratio
-  like "6 of 9 repos carry a lockfile" describes real projects rather than being diluted by a
-  scratch clone that evades the prune list some other way. Nothing is hidden by this:
-  `snapshot.repos` still lists every repository found, `aggregate.total_repos` keeps its exact
-  original meaning, and a new `aggregate.substantive_repos` count sits alongside it rather than
-  redefining it. A `limits` line names how many non-substantive repositories were found whenever
-  at least one was.
+- 2026-08-12 - **find-subjects: candidates duplicated courses the tenant already held.** Two of
+  three proposed candidates were courses already under contract. Protocol step 10 matched against
+  `content/community/INDEX.md` but never against the tenant's own courses; a human reading
+  `home.md` caught it, not the gate. `lib/course-dirs.ts`'s `listCourses` (plus `npm run courses`)
+  now drives three routing outcomes: under contract, unstarted skeleton, or no match. Scope
+  boundary held - it reads manifests and `profile.md`'s presence, never the ledger. Invariant 13
+  says plainly that nothing re-checks a generated report's routing, rather than claiming a gate
+  check that was not built.
 
-  `schemas/workspace-scan.schema.json` gained `repos[].substantive` and
-  `aggregate.substantive_repos`, both optional at the schema level (same legacy-snapshot
-  reasoning as `roots[].status`) so an older snapshot still validates. `docs/specs/
-  subject-finder.md` gained a new "Substantive repositories" section, a Limits entry for the
-  `cache` prune's honest cost, invariant 14, and a matching "Verified by" entry. The committed
-  fixture (`examples/workspace-fixture/`) gained two new projects exercising each fix:
-  `fx-scratch-clone` (a real repository with no manifest, no readme, and one commit -
-  `substantive: false`, still listed) and `fx-agent-tool-cache` (not itself a repository; a real
-  repository sits nested at `cache/plugins/temp_git_9421_a1b2/` and is never discovered, proving
-  the prune). Golden regenerated and reviewed. New tests in `tools/test/workspace-scan.test.ts`
-  pin the exact rule (a readme alone already makes a repository substantive, asserted rather than
-  assumed) and assert the `marker_coverage` denominator number directly, since that number was
-  the actual bug. Gate green: 369 tests, `npm run validate` clean.
+- 2026-08-12 - **find-subjects: partial approval scanned nothing.** `collectWorkspace` vetoed an
+  entire root if any sibling was unapproved, so approving a subset produced a confident empty
+  report. Partial approval is the case that matters most - it is what the consent design exists to
+  allow. Discovery now descends per approved child. **Why 97 tests and three reviewers missed it:**
+  every test approved all children, so the suite covered the mechanism's edges and left its main
+  path uncovered, and the drift test was vacuous under the fix's own logic.
 
-- 2026-08-12 - **find-subjects: candidates duplicated courses the tenant already held.** Found
-  on the subsystem's first real run against a real workspace: two of three proposed candidates
-  (`ai-and-agents/llm-evals-and-judges` and `infrastructure/hosting-and-deployment`) were
-  courses already under contract in the learner's vault. The defect: protocol step 10 routed
-  every candidate by grepping `content/community/INDEX.md` for a matching pack, but never
-  checked which courses the tenant already had, so the same evidence that should have surfaced
-  "you're already covered here" instead produced a fresh proposal. Nothing in the gate or the
-  three-reviewer process caught it - it surfaced only because a human read `home.md` by hand
-  during the vault-weaving step. Proposing a course someone is already enrolled in is exactly
-  the kind of error that costs the whole report its credibility.
+- 2026-08-12 - **`find-subjects`: workspace-evidence course discovery.** Meno's front door assumed
+  the learner already knows what they want; this surveys approved workspace roots instead. Spec:
+  `docs/specs/subject-finder.md`. **The load-bearing decision is that the scanner is the only
+  reader** - the skill never opens a workspace file, which converts the read caps and redaction
+  rules from advisory prose into deterministic behaviour. No app endpoint, deliberately: a handler
+  walking arbitrary user directories would be a new traversal surface on a long-running daemon.
+  Topic candidates moved out of `study-insights` (one owner per format); `elicit-needs` now
+  consumes an evidence packet, with precedence fixed as live probe > workspace evidence >
+  self-report so the shorter interview cannot erode why that skill exists.
 
-  Fix: added `lib/course-dirs.ts`'s `listCourses` (and its CLI, `node tools/list-courses.ts
-  <tenant-dir> --json` / `npm run courses`), reusing the existing `findCourseDirs` walk rather
-  than inventing a parallel one. It returns, per course, domain, slug, title, and whether
-  `profile.md` exists - the line between "under contract" and "unstarted skeleton", the
-  distinction protocol step 10 now routes on. `SKILL.md` step 10 and
-  `references/report-format.md`'s "Courses worth taking" section now specify three routing
-  outcomes: already under contract (report it as a confirmed-contract finding, never propose
-  it), an unstarted skeleton (propose starting the existing one, not fresh generation), or no
-  match (the existing community-index or fresh-interview routing, unchanged). `docs/specs/
-  subject-finder.md` gained "How it behaves" item 12 and invariant 13.
+  **A three-lens adversarial review found more than the build did, and most of it no gate could
+  catch. The pattern is the lesson:** the documented protocol could not complete a single run (the
+  skill said `--read`, persistence was under an undocumented `--write`) while every test passed;
+  the redaction guard barely fired and **its test had been calibrated to pass**, which is worse
+  than no test because it manufactured confidence; two budgets were reported but never enforced,
+  and the resulting false disclosure was already baked into the committed golden; four manifest
+  parsers lied rather than missed; and the two validate checks enforcing the no-raw-paths invariant
+  were dead code. Entropy at 4.0 was also specified as a redaction threshold it can never exceed on
+  a hex alphabet - a guard that reads as present and does nothing.
 
-  Scope boundary held: this reads only course manifests and `profile.md`'s presence, never
-  `progress/ledger.jsonl` or `progress/mastery.yml` - holding a contract is not the same as
-  having studied it, and the settled decision that find-subjects does not consume study
-  insights or the ledger stands unchanged.
+- 2026-08-12 - **Graph view: a course-group filter, reversing a v1 cut.** The v1 cut was sized to a
+  92-node estimate; the real vault renders 198, which was the stated trigger to add one back. Logic
+  sits in two pure functions in `graphLayout.ts`; hiding a group removes it from the `d3-force`
+  input, not just the paint. The "no cross-course connections authored yet" notice stays wired to
+  the unfiltered edge list on purpose - it means no `second-brain` sweep has run, and getting that
+  backwards would tell the maintainer to author edges that already exist. Spec v1.9; the checkbox
+  interaction and refit are reasoned about from source, not observed in a browser.
 
-  What is machine-checked versus prose-only: `listCourses` itself is unit-tested
-  (`tools/test/course-dirs.test.ts`), including against the committed `examples/example-
-  learner` tree's one confirmed course (`rust-for-backend`) and one skeleton course
-  (`git-fundamentals`). Nothing yet re-checks that a generated narrative report's routing
-  decision actually matches what `listCourses` returned that run - invariant 13's "Verified by"
-  entry says so plainly rather than claiming a gate check that was not built.
+- 2026-08-12 - **`AGENTS.md` routes agents by intent.** A cold-started agent could learn what Meno
+  is but not which of the two jobs it had. A "Route by intent" section now names both tracks, the
+  write boundary, and `publish-to-community` as the single crossing. Settled by grill: no new
+  instruction file (a second entry point is a ranked risk) and the skill list stays flat and
+  canonical. Deliberately not a validate check - a validator can only grep for the heading and
+  would keep passing while the content rots. Smoke-tested in a clean clone.
 
-- 2026-08-12 - **find-subjects: partial approval scanned nothing.** Found on the subsystem's
-  first real run, against a real workspace, hours after it shipped green. `collectWorkspace`
-  guarded discovery with `if (drift.pending_approval.length === 0)`, so any unapproved sibling
-  vetoed the entire root: approving a subset of a directory's children produced zero
-  repositories, no error, and no truncation event - a confident empty report. Partial approval
-  is not an edge case, it is the case that matters most: a workspace holding client or employer
-  repositories alongside your own is exactly when someone must approve part of a directory and
-  exclude the rest, which is what the consent design exists to allow. Discovery now descends per
-  approved child (`discoverApprovedChildren`, deterministic `Buffer.compare` order so the
-  user-authored `roots.yml` order cannot change a snapshot); `pending_approval` keeps its
-  meaning and is still never scanned. Added `missing_children` so an approved directory that was
-  renamed is surfaced rather than silently contributing nothing.
+- 2026-08-12 - **Knowledge graph view (`#/t/:tenant/graph`).** Spec `docs/specs/graph.md`, built in
+  three parallel streams against a frozen contract. Measured before design: every wikilink in the
+  real vault was course-local, so the feature had to *create* a class of edge - a hub's
+  `## Connects to` block, owned by `second-brain`, is the authored source of cross-course edges.
+  Two risks knowingly accepted: those edges refresh only on an explicit sweep (preferred over a
+  writer that would clobber judgment it cannot reproduce from a manifest), and the picture itself
+  is reasoned about rather than observed.
 
-  **Why 97 tests and three adversarial reviewers missed it:** every test built its `roots.yml`
-  with all children approved. The drift test approved everything and then added a directory
-  afterward, so it covered "a child appeared later" and never "the user deliberately approved a
-  subset". The suite tested the mechanism's edges and left its main path uncovered - and the
-  drift test turned out to be vacuous under the fix's own logic, because it never approved a
-  sibling the bug could have wrongly skipped. It is now strengthened to assert the approved
-  sibling is scanned while the drifted one stays pending. The new regression test seeds the
-  unapproved sibling with distinctive README and source bodies and asserts neither appears in
-  the snapshot or the doc bundle, so it proves the sibling was never opened rather than merely
-  absent from the results.
+- 2026-08-12 - **Content-cost page: which courses cost the most to generate.** Spec
+  `docs/specs/cost.md`, confirmed across two grill rounds. Attribution is at **transcript**
+  granularity - crediting only the `Write` call priced a course at $0.15 against a whole-transcript
+  $11.50, wrong by 77x. A cost source is an adapter, so an instance on another coding agent renders
+  an empty page rather than crashing. Three adversarial passes found fifteen real defects, each
+  fixed guard-first; the recurring shape was a half-applied fix (round one keyed attribution by
+  directory but left validate comparing basenames, so the exact valid snapshot the fix was written
+  for got rejected by the gate) and silence standing in for a signal (unreadable transcripts
+  swallowed, making a partial scan indistinguishable from a complete one). Limitations by design,
+  listed in the spec: every figure is a floor, a transcript's whole cost credits to its course, the
+  sub-cent floor can overstate, and renaming a course orphans its evidence.
 
-- 2026-08-12 - **`find-subjects`: workspace-evidence course discovery.** Meno's front door
-  assumed the learner already knows what they want to learn; `elicit-needs` opens with "what will
-  you be able to DO", which is the wrong first question for someone who suspects they are
-  under-using their tools but cannot name the gap - exactly the person the namesake paradox
-  describes. This subsystem surveys the user's approved workspace roots and turns what it finds
-  into observations, a small set of cited alternatives, and ranked course candidates routed either
-  to a community pack or to a fresh interview.
+- 2026-08-06 - **Todo tags split into two orthogonal axes: seven kinds, two audiences.** The old
+  three-tag namespace cut at the wrong angle - one tag cannot carry both what the work is and who
+  can do it. Retagging every skill was judgment, not substitution (`generate-curriculum`'s
+  empty-`sources/` reminder became `#vault #for-me`, not a mechanical swap). Canonical owner:
+  `todo-format.md`. Breaking change to `GET :tenant/todos`'s `type` values, accepted because no
+  in-house tooling consumes it yet.
 
-  Spec: `docs/specs/subject-finder.md`. Architecture follows the cost subsystem rather than
-  insights, because cost is the one existing subsystem that already reads outside the repository:
-  `lib/workspace-scan-io.ts` observes and derives nothing, `lib/workspace-scan.ts`
-  (`computeWorkspaceScan`) is pure with `as_of` as a parameter, `tools/scan.ts` (`npm run scan`)
-  is the only caller that reads the clock. No app endpoint by deliberate choice - the localhost
-  server's routes are all confined to the content root today, and a handler that walks arbitrary
-  user directories would be a new traversal surface on a long-running daemon for a snapshot
-  consulted once.
+- 2026-08-06 - **v1.6: course-list collapse and filter, and the group write surface removed.** The
+  fold, match, and section assembly live in `app/client/src/courseList.ts` - no React, no DOM - the
+  one piece of client logic unit-tested rather than smoke-tested. Assembling the view there fixed a
+  latent bug: the page printed a section's raw `courses.length` while separately skipping unknown
+  slugs, so the header count could exceed the rows rendered. The decision-20 explicit-group write
+  surface was removed in the same change: the explicit layer competes with the domain layer rather
+  than complementing it, so a write surface was never load-bearing. Not visually verified.
 
-  **The load-bearing decision is that the scanner is the only reader.** The skill never opens a
-  workspace file itself; redacted doc bodies arrive in an ephemeral bundle outside `content/` that
-  the skill deletes when it finishes. That single chokepoint is what converts "no source code
-  bodies", "read depth capped", and "no raw paths in the report" from advisory prose into
-  deterministic behaviour. The spec's Limits section states plainly what remains advisory:
-  paraphrase leakage is not machine-catchable, user-invoked-only is instructed rather than
-  enforced, and a private repository on a public host is indistinguishable offline so
-  `github.com/acme-corp/billing` is recorded verbatim.
-
-  Guards, all with tests: secret-file denylist checked before any open (skipped files are counted,
-  never named, because "there is a `credentials.json` under `clients/acme`" is itself a location
-  fact); doc bodies as an allowlist, not merely a denylist; redaction at emit for credential
-  prefixes, high-diversity runs, and internal hosts; `realpath` traversal confinement with symlinks
-  never followed; consent required before any read, with new child directories surfaced as
-  `pending_approval` rather than scanned. `tools/validate.ts` gained `subjects`, `workspace-scan`,
-  and `workspace-fixture` checks; the absolute-path ban is error-level on this subsystem's own
-  artifacts only, because a lesson about Linux legitimately discusses `/etc/hosts` and a check that
-  fires on those gets switched off within a week.
-
-  Three defects were caught and fixed during the build rather than after. (1) The first
-  implementation dropped dependency NAMES entirely, keeping only manifest-kind counts - which would
-  have made the report signal-free, since `terraform` versus `next` versus `langchain` is precisely
-  how the tool tells infrastructure from frontend from AI work. Names restored across five manifest
-  ecosystems, with private npm scopes collapsed to `@private-scope` and non-allowlisted module hosts
-  to `private-module`, rather than the blanket suppression that caused the loss. (2) The golden
-  snapshot was path-dependent (`root_id = sha256(realpath)`), so it passed locally and would have
-  failed in continuous integration and for every contributor; ids now derive from the user-authored
-  root label, which is also a mild privacy improvement, and label uniqueness is now enforced.
-  (3) The spec specified redaction at "Shannon entropy at or above 4.0", which cannot fire on a
-  hexadecimal alphabet whose maximum is exactly 4.0 - a guard that reads as present and does
-  nothing. Corrected to distinct-character diversity, with the reasoning recorded in the spec.
-
-  Ownership: topic candidates moved out of `study-insights` (AGENTS.md requires one owner per
-  canonical format), taking `## Topics you might want` out of `INSIGHTS_SECTIONS` and the committed
-  example note. The two signals `find-subjects` structurally cannot see - `vault.referenced_but_untaught`
-  and `usage.planned_debt` - stayed behind, redistributed into "Where you are stuck" and
-  "Suggestions" rather than dropped. `elicit-needs` now consumes an evidence packet to pre-answer
-  `prior_level` and `user_sources`, shrinking the interview to 2-3 questions, with precedence
-  stated explicitly as **live probe result > workspace evidence > self-report** so the shrink cannot
-  erode the reason that skill exists.
-
-  Also fixed two staging hazards found before commit: `.gitignore`'s `node_modules/` (trailing
-  slash) did not match the symlink an agent worktree creates, leaving it one `git add -A` from being
-  committed as an absolute-path symlink; and the fixture's deliberate inert `.env` was gitignored,
-  which would have shipped the fixture incomplete and failed its own golden on a fresh checkout.
-
-  **A three-lens adversarial review then found more than the build did, and most of it the gate
-  could never have caught.** Recorded here because the pattern is the lesson, not the individual
-  bugs. (1) The documented protocol could not complete a single end-to-end run: the skill told the
-  agent to run `--read`, but the snapshot was only persisted under an undocumented `--write`, and
-  the consent-record instructions omitted two fields `loadApprovedRoots` requires. Every test passed
-  and the feature was unusable. There is now a test that invokes the real command line exactly as
-  the skill documents it, so prose and behaviour are bound together. (2) The redaction guard barely
-  fired: the distinct-character rule needed 16 distinct characters and a hexadecimal token has at
-  most 16, typically 14 - measured, 1829 of 2000 random 32-character hex tokens were not redacted.
-  **The test that covered it had been calibrated to pass**, using a token containing all sixteen hex
-  digits. That is worse than having no test, because it manufactured confidence. Replaced with a
-  seeded statistical test over 400 tokens plus explicit patterns for connection strings, `Basic` and
-  `Bearer` headers, and generic assignments. (3) Two budgets were reported but never enforced, and
-  `max_depth` capped silently, so a repository buried deep enough produced "you have no
-  repositories" with nothing disclosed. The root cause was subtler than an off-by-one: counts like
-  `docs.length` are capped by construction, so truncation cannot be inferred from them at all.
-  Replaced with explicit walker-set flags proven by looking one item past each cap. The false
-  disclosure this produced had already been baked into the committed golden. (4) Four manifest
-  parsers lied rather than missed - a commented-out pyproject dependency was reported as real, a
-  Poetry inline table yielded `version` and `optional` as dependency names, a Cargo section header
-  with a trailing comment dropped its whole table while reporting success. (5) The two validate
-  checks enforcing the no-raw-paths invariant were dead code: `npm run gate` never walks
-  `content/tenants/`, and no test called them. The skill now runs
-  `node tools/validate.ts content/tenants/<tenant>` as an explicit protocol step, and the spec's
-  "Verified by" section was corrected to stop claiming coverage the gate does not have.
-
-  Two corrections went the other way, against briefs written during this work: the `%an` git format
-  is not mailmap-aware, so a proposed regression test would have passed against unfixed code (a real
-  mechanism, `i18n.logOutputEncoding` mangling a non-ASCII author name, was used instead); and the
-  private-scope guard was nearly extended to blanket-collapse every Go module path, which would have
-  erased the dependency signal for an entire ecosystem to catch a case the host allowlist already
-  handles.
-
-- 2026-08-12 - **Graph view: a course-group filter, reversing a v1 cut.** The knowledge graph
-  shipped without a group filter because it was sized to a 92-node estimate; the real tenant vault
-  renders 198 nodes (106 of them ghosts), which is exactly the hairball scale the v1 cut said would
-  be the trigger to add one back, so the maintainer asked for it. The filter lives with the legend
-  (same concern: the legend names what a fill colour means, the filter turns it on and off) - a
-  real `<input type="checkbox">` plus `<label>` per group, showing its swatch, title, and node
-  count, with a synthetic "Ungrouped" toggle only when a node has `group === null`. Two new pure
-  functions in `graphLayout.ts` carry the logic: `groupCounts` (one row per server-order group plus
-  the conditional Ungrouped row, counted over the full unfiltered node list) and
-  `filterGraphByGroups` (the visible nodes plus only the edges whose both endpoints survive),
-  covered by five new `app/test/graph-layout.test.ts` cases - identity, one group off, all off, the
-  ungrouped bucket, and a cross-group edge with only one side hidden. Hiding a group removes it from
-  the `d3-force` simulation input, not just the paint, and the simulation re-runs and re-fits to the
-  remaining subgraph on every toggle; turning every group off renders the same empty state an empty
-  vault renders, with the filter panel still visible so a group can be turned back on. The
-  "no cross-course connections authored yet" notice stayed wired to the FULL, unfiltered edge list
-  on purpose - it means a `second-brain` sweep hasn't run, not that the filter is hiding the one
-  `connection` edge that exists, and getting that backwards would tell the maintainer to author
-  edges that already exist. No URL state: deliberate, logged as a new open question in
-  `docs/specs/graph.md` (nothing links into a *filtered* graph the way `?focus=` links into a
-  focused one). Spec bumped to v1.9 with a new "How it behaves" item, two new invariants, and the
-  "not visually verified" caveat extended to the toggle/refit interaction - all four gate commands
-  green, but the checkbox interaction and refit-after-toggle behavior are reasoned about from source
-  only, unobserved in a browser.
-
-- 2026-08-12 - **`AGENTS.md` routes agents by intent.** A cold-started agent could learn what
-  Meno is and how tenancy works but not which of the two jobs it had been handed: the skill list
-  was flat and `CONTRIBUTING.md` went unmentioned, so an agent asked to fix a study-app bug had
-  to find the gate on its own, and one asked to add a lesson had to find `extend-meno` on its
-  own. A "Route by intent" section now sits above the skill list with the two tracks
-  (contributing to Meno itself, working on this user's learning content), the write boundary
-  between them, `publish-to-community` as the single crossing, and org deployment as neither.
-  Settled by grill before writing: no new instruction file (a second entry point is a ranked
-  risk, and the routing content is owned by files that already exist), the skill list stays
-  flat and canonical (splitting it would make "every skill is listed in `AGENTS.md`" ambiguous
-  for future skill authors and mis-home the two skills that live in both tracks), and the
-  "use two separate agent sessions" habit stays a maintainer preference rather than shipping as
-  advice. `docs/specs/repo-and-tenancy.md` gained routing as a derivable and extended the Phase
-  0 cold-start acceptance run to check it; deliberately not a validate check, since a validator
-  can only grep for the heading and would keep passing while the content rots. Smoke test run
-  on Claude Code (Sonnet) in a clean clone with user settings off: the study-app bug named the
-  contributing track, the `examples/` fixture boundary, and the gate; the add-a-lesson request
-  routed to the amend recipe and refused to treat the committed fixture as tenant content; the
-  what-is-this question still produced the interview chain and the user-guide link.
-
-- 2026-08-12 - **Knowledge graph view: `#/t/:tenant/graph`, one picture of the whole tenant
-  vault joined to the ledger.** Contract confirmed through a ten-question grill
-  (`docs/specs/graph.md`), then built in three parallel streams against a frozen contract.
-  Measured before design: every wikilink in the real tenant vault was course-local, so the
-  feature had to create a class of edge, not just render existing links - a course hub's
-  `## Connects to` section (`<!-- meno:connects:start -->`, owned by `second-brain`) is now the
-  authored source of cross-course edges, parsed once by `lib/connects.ts` and shared by
-  `lib/graph.ts` and `tools/validate.ts`'s new `connects` check. `GET /api/v1/:tenant/graph`
-  (read-only, no cache, joins `walkTenant`, `resolveGroups`, and `deriveMastery` - no fifth
-  walk) returns every vault note plus every planned-but-unwritten lesson as a node, with three
-  visual channels (fill = course group, style = ghost/generated/mastered, size = incoming
-  links) and three edge kinds deduplicated to one edge per pair (`connection` > `reference` >
-  `membership`). `GraphPage.tsx` renders it as React SVG with `d3-force` physics (dynamically
-  imported, following the `mermaid.tsx` precedent), deterministic hash-seeded layout so a
-  screenshot means something, pan/zoom/drag/click/hover, and `?focus=<value>` deep-linking
-  resolved exact-id-then-basename-then-suffix. The example tenant grew a second, deliberately
-  minimal course (`examples/example-learner/software-engineering/git-fundamentals/`) as the
-  living spec: a reciprocal `meno:connects` pair with `rust-for-backend`, a membership edge, and
-  two ghost lessons - the shapes the fixture exists to exercise, not a course to actually study.
-
-  Two risks knowingly accepted: cross-course edges refresh only on an explicit `second-brain`
-  sweep, so a newly added course is invisible in the graph until someone asks for one -
-  preferred over a writer that would clobber judgment (an honest cross-course reason) it cannot
-  reproduce from a manifest; and the picture itself - force convergence, whether the three
-  visual channels read apart at a glance, dark mode, hover dimming - is reasoned about rather
-  than observed, the same honest position the guidebook and the v1.6 course list shipped in.
-  Worth one manual pass in a browser before trusting it.
-
-  Step two, not in this change: a `second-brain` sweep writing real `meno:connects` blocks
-  across the eight hubs in `content/tenants/main`, so the real tenant's cross-course structure
-  actually shows up. That work needs to read real lesson bodies to write honest reasons, is
-  judgment rather than engineering, and is gitignored so no gate could verify it here.
-
-- 2026-08-12 - **Content-cost page: a localhost view of which courses cost the most to
-  generate.** Contract (`docs/specs/cost.md`) confirmed across two grill rounds, then built and
-  adversarially reviewed in the same day. Attributes coding-agent token spend and API-list-
-  equivalent dollars to each course in a tenant vault, at **transcript** granularity (crediting
-  only the `Write` call priced a real course at $0.15 against a whole-transcript figure of
-  $11.50 - the wrong number by 77x). Building Meno itself and authoring community packs are both
-  out of scope by construction: attribution only fires on writes under `content/tenants/<tenant>/`.
-  A cost source is an adapter (`CostSource` in `lib/cost.ts`); Claude Code is the one
-  implementation (`lib/cost-source-claude-code.ts`), so an instance on another coding agent
-  renders an empty page, never a crash. `computeCost` (pure, no clock/filesystem/environment) is
-  ported from a validated reference implementation. `npm run cost -- content/tenants/<tenant>
-  --write` is the only writer of `content/tenants/<tenant>/cost/snapshot.json`;
-  `GET /api/v1/:tenant/cost` only reads it. Reference-machine figures: $49.34 attributed across 7
-  courses (6 generation-only, 1 full), $104.53 shared orchestration covering 6 courses,
-  `git-fundamentals`/`contributing-to-meno` as no-data.
-
-  An adversarial review the same day found four real correctness defects in the first build, all
-  fixed with a failing test written first: (1) a transcript that was both a course writer and the
-  structural parent of another credited transcript could be credited to a course AND land on the
-  shared line, double-counting its money - resolved by having the shared line always win, so that
-  transcript is never credited and the course it would have credited reports as no-data instead;
-  (2) a sub-cent course cost rounded to a literal `$0.00`, which the snapshot's own schema then
-  rejected - course costs now floor to $0.01 when real but tiny, never $0.00; (3) two course
-  directories sharing a basename across different domains could collapse into one row or lose the
-  other's evidence entirely - attribution is now keyed by the full disambiguating directory, not
-  the bare basename; (4) `totals.transcripts_scanned`/`requests` reported the whole machine's
-  session history (~1,379 transcripts on the reference machine) under a "cost for `<tenant>`"
-  heading instead of this tenant's ~8 - now scoped to the transcripts that actually carry evidence
-  for the tenant being reported on. The same review also added a disclosure to `npm run cost`'s
-  own output (it scans every project's session history on the machine, not just this tenant's -
-  previously stated only in the internal spec) and a matching row in `docs/how-meno-works.md`;
-  corrected a spec sentence that claimed a 404 the read route never produces; hardened the
-  transcript walk against a partial permissions failure reading as a whole-machine zero; and moved
-  the written-path matching logic (`COURSE_PATH`, `NON_GROUP`) into `lib/cost.ts` so a second
-  adapter can share it. `docs/specs/cost.md` and `docs/integration-surface.md` amended in the same
-  change.
-
-  A second adversarial review pass the same day, run against the already-fixed build, found six
-  more real defects, again each fixed guard-first: **NEW-1** the round-one dir-keying fix for (3)
-  above was only half done - `tools/validate.ts`'s cross-field check still compared by basename,
-  so the exact valid same-basename snapshot the first fix was written for got rejected by the
-  gate; `no_data` changed shape from `string[]` to `{ course, dir }[]` so `dir` is the comparable
-  key everywhere, a wire-format change taken now while the page is unreleased. **NEW-5** the
-  demotion fix for (1) above used all credit candidates to decide who gets demoted, so a 3-deep
-  orchestration chain (A orchestrates B orchestrates C) demoted every ancestor indiscriminately;
-  replaced with a bottom-up fixpoint over the credit-candidate forest that demotes only a
-  candidate with a child that stays credited. **NEW-3** a course demoted into `no_data` sat under
-  page copy claiming "no evidence on this machine", which is false for exactly that course - a
-  new conditional `limits` line names the count. **NEW-6** an unreadable transcript or directory
-  was silently swallowed rather than counted, making a partial scan indistinguishable from a
-  complete one; `CostSource.collect()` now returns a `skipped` count alongside `transcripts`,
-  surfaced in `limits` when nonzero. **NEW-4** documented (not code-changed): the sub-cent floor
-  that fixed (2) above can in principle overstate spend, which the spec now names as a limitation
-  rather than leaving implicit. Also: `totals.transcripts_scanned`/`requests` are now printed in
-  the CLI summary rather than left an unread field. Oracle figures unchanged by any of this:
-  $49.34 / 7 rows, $104.53 shared / 6 courses, the same two no-data courses.
-
-  The `no_data` shape change (`string[]` to `{ course, dir }[]`) was a breaking wire-format change
-  to `CostSnapshot`, landed while CLIENT's page update was still pending - CLIENT has since
-  updated `app/client/src/pages/CostPage.tsx` to the new shape, and `npm run gate` is fully green
-  (typecheck including the client project, tests, validate).
-
-  A third adversarial pass found five smaller defects, all fixed: an unparseable transcript
-  (binary garbage, a truncated write) was silently returned as a legitimate zero-cost transcript
-  instead of counting toward `skipped`, now detected and thrown so `collect()` counts it; the
-  `skipped` disclosure said "N transcript(s)" when an unreadable directory is counted as one skip
-  event regardless of how many transcripts it held (which can never be known - the directory
-  cannot be listed to count them), reworded to "N location(s)" rather than overclaiming precision;
-  a demoted candidate's own course never joined `shared_orchestration.courses`, so the demotion
-  disclosure pointed at a shared line that did not list the course it was talking about; and
-  `CostNoDataEntry` was added to `app/shared/types.ts`'s re-export block to match the rest of the
-  wire-type sub-shapes. The parent-cycle edge case in the demotion resolver (unreachable from the
-  shipped adapter, since `parentIdOf` always yields a strictly shorter id) is now a documented
-  constraint on future cost sources rather than code, since money still conserves under it and it
-  cannot occur today.
-
-  **Limitations that remain, by design, not oversight:** every figure is a floor (only records
-  still on this machine are counted, and a nonzero skipped count now says how much of the machine
-  was unreadable); a transcript's whole cost credits to its course even when it did unrelated work
-  too, and the shared orchestration line has the same overcount at a coarser grain (it bills the
-  whole parent transcript, including any unrelated work in that session); the sub-cent floor can
-  in principle overstate a very small real cost; an ungrouped course at `<tenant>/<slug>/` (no
-  domain segment) is invisible to the write-path pattern and reports as no-data; renaming a course
-  directory orphans its old evidence; deleting or rotating agent records deletes the evidence this
-  subsystem reconstructs from.
-
-- 2026-08-06 - **Todo tags split into two orthogonal axes: seven kinds, two audiences.**
-  The old three-tag namespace (`#gen`/`#repo`/`#note`) cut at the wrong angle - one tag cannot
-  carry both what the work is and who can do it. Replaced with kind (`#course`,
-  `#content-fix`, `#vault`, `#feature`, `#bug`, `#study`, `#admin`, exactly one per line) and
-  audience (`#for-agent`, `#for-me`, exactly one per line), independent of each other.
-  `todo-format.md` rewritten as the canonical owner (both axis tables, the line format, the
-  read-only back-compat aliases mapping the three old tags onto the new pair, the
-  `addTodo` default-section table, and a lifecycle section that keys "scanned"/"acted" off
-  `#for-agent` rather than a kind). `vault-conventions.md`'s closed-namespace paragraph
-  updated to list all nine tags. Every skill's inline reference to the old tags
-  (second-brain, extend-meno, elicit-needs, generate-curriculum, study-insights,
-  narrative-format.md) retagged to the pair that actually fits each sentence - not a blind
-  substitution: generate-curriculum's empty-`sources/` reminder became `#vault #for-me`
-  (vault work the user must do), study-insights' topic-candidate pool became
-  `#admin #for-me` (a latent personal note, not an already-actionable request). Both
-  committed fixtures (`examples/example-learner/todos.md`,
-  `examples/seeded-faults/publish-fixture/todos.md`) retagged; the example-learner one
-  extended to show the axis range (`#course #for-agent`, `#study #for-me`,
-  `#vault #for-me`). `docs/specs/insights.md`'s `usage.todos` metric updated to the new
-  `{ byKind, byAudience, done, open }` shape. `docs/specs/app.md` notes that this is a
-  breaking change to `GET :tenant/todos`'s `type` value set, which
-  `docs/integration-surface.md` declares stable - accepted because no in-house tooling
-  consumes it yet. Types (`app/shared/types.ts`), the parser/writer (`app/server/todos.ts`),
-  API validation (`app/server/routes.ts`), `lib/insights.ts`'s `TodoCounts`, and the client
-  UI (kind/audience selects, glossary, guidebook, pills, InsightsPage tiles) landed in the
-  same change - see the concurrent TypeScript-side entry (if separately logged) for that
-  half; this entry covers the documentation and fixture half.
-
-- 2026-08-06 - **v1.6: course-list collapse and filter, and the group write surface removed.**
-  The course list is now native `<details>`/`<summary>` sections with a `Collapse all` /
-  `Expand all` control and a filter input that substring-matches course titles and slugs,
-  case- and diacritic-insensitively; a section with no match hides entirely, a matching one
-  forces open without touching stored state, and Escape clears the filter. Open/closed state
-  persists per tenant in the browser's `localStorage` under one versioned key,
-  `meno.courseList.open.v1:<url-encoded tenant>`, holding only the sections that differ from
-  the default (open) - the app's only browser-persisted state, a view preference and never
-  evidence. All of this - the fold, the substring match, the section assembly, the default-open
-  rule, and the key scheme - lives in new `app/client/src/courseList.ts`, a module with no React
-  and no DOM references (the root tsconfig compiles `app/**/*.ts` without the DOM lib, so naming
-  one there fails typecheck), covered by new `app/test/course-list.test.ts` with `node --test` -
-  the one piece of client logic in this repo unit-tested rather than smoke-tested. Assembling the
-  view in that module fixes a real latent bug: the page used to print a section's raw
-  `courses.length` while separately skipping slugs `/tree` no longer knew about, so the header
-  count could exceed the rows actually rendered when the two fetches disagreed for one render;
-  the join now happens once, in the module, so the count is always the row count.
-  In the same change, the explicit-group write surface from decision 20 is removed: the four
-  write routes (`POST`/`PATCH`/`DELETE :tenant/groups*`, `PATCH :tenant/course/:course/group`)
-  and their handlers are gone from `app/server/routes.ts`, along with the inline manage panel,
-  `deleteJson` (its only caller), and the `addGroup`/`renameGroup`/`removeGroup`/
-  `setCourseGroup`/`serializeGroups` mutations and their private helpers from `lib/groups.ts` -
-  the explicit layer competes with the domain layer rather than complementing it, so a write
-  surface for it was never load-bearing, and the panel was never visually verified to begin with.
-  `GET :tenant/groups` survives byte-identical, `raw_sha256` included, and is now the entire
-  group surface; `groups.yml` is agent-edited and hand-edited only. Specs amended: app (behavior
-  8 rewritten, new behavior 9, invariants 8-10 rewritten, invariant 13 appended, data-touched and
-  verified-by updated), architecture's write-authority table, migrations (one sentence corrected
-  in the existing 2026-08-06 entry, no new entry), integration-surface (`:tenant/groups` named
-  stable), how-meno-works, `second-brain` and `generate-curriculum` skill copy, PLAN decision 20
-  amended. Gate green: typecheck, 163 tests (up from 153; `app/test/groups.test.ts` reduced from
-  16 to 6 route/structural tests with the parse- and resolve-level coverage re-homed to
-  `tools/test/groups.test.ts`), validate.
-  **The v1.6 collapse and filter behaviour is unit-tested but not yet visually verified in a
-  browser** - keyboard operation of the `<details>` summaries, focus-visible rings, and both
-  colour schemes are reasoned about rather than observed. Worth one manual pass.
-
-- 2026-08-06 - **Course groups (decision 20) and pack attribution (decision 21).** Two features,
-  one change. *Groups*: two layers. A course's **domain directory** is the default grouping, so
-  the course list is grouped from the moment a vault exists with no setup at all; a
-  `content/tenants/<tenant>/groups.yml` registry holds the learner's own named groups for what a
-  domain cannot say ("Version Control", "Software Fundamentals"), and an explicit group always
-  wins over the domain a course falls back to. Only a course with no domain - one still at the
-  vault root, pre-migration - is Ungrouped. Both layers resolve server-side into one ordered
-  section list tagged `source: explicit | domain`. An inline manage mode does create / rename /
-  delete / move, and lists only the explicit groups, because a domain section is the tree
-  showing through and has nothing to rename. This shape was **reconciled with #24** (which
-  landed the domain directories mid-build) rather than competing with it: one is where a course
-  *sits*, the other is what the learner *calls* it. Deliberately
-  a registry, not a field on `course.yml` (regenerated wholesale, so a hand-set field would be
-  lost) and not a directory move (wikilinks bind to slugs). Five new write routes, guarded by the
-  same atomic + `If-Match` discipline as todos and asserted not to touch the ledger or any course
-  file - the todos class of write, which is why this extends decision 16 rather than amending the
-  write-authority seam. `generate-curriculum` files new courses; the `extend-meno` recipes file
-  hand-made and adopted ones. *Attribution*: every pack carries `CONTRIBUTORS.yml` naming who made
-  what at pack / objective / module / planned-lesson / anchor-source / reference-note granularity,
-  resolved by nearest ancestor so a single-author pack needs one record. Source units key on the
-  url (survives reordering and re-archiving); lesson units resolve against the module manifest,
-  since packs ship no bodies. All five existing packs backfilled; `INDEX.md` now rolls contributors
-  up. New: `lib/groups.ts`, `lib/attribution.ts`, `app/server/groups.ts`,
-  `schemas/groups.schema.json`, `schemas/contributors.schema.json`, validate's `groups` and
-  `pack-attribution` checks, 77 new tests (164 total). Specs amended: app, curriculum, community,
-  validation, architecture's write-authority table, PLAN decisions 20-21, migrations.
-  **Verified live** - the two-layer grouping driven in a browser against a five-course,
-  four-domain vault (zero-setup domain sections with no groups.yml at all, then a "Version
-  Control" group overriding one of them), and the routes exercised over HTTP against a real
-  vault. **Not verified**: the manage-mode panel's
-  rendering (browser automation could not reach a loopback page to click into it) - one manual
-  pass wanted, noted in `docs/specs/app.md`.
+- 2026-08-06 - **Course groups (decision 20) and pack attribution (decision 21).** Groups are two
+  layers: the domain directory is the default (so grouping works with zero setup) and `groups.yml`
+  holds the learner's own names, explicit winning over domain. Reconciled with #24 rather than
+  competing: one is where a course *sits*, the other is what the learner *calls* it. Deliberately a
+  registry, not a field on `course.yml` (regenerated wholesale, so a hand-set field would be lost)
+  and not a directory move (wikilinks bind to slugs). Attribution: `CONTRIBUTORS.yml` per pack,
+  resolved by nearest ancestor, source units keyed on url so they survive re-archiving. Verified
+  live in a browser except the manage panel.
 
 - 2026-08-06 - **A real tenant vault failed `validate`, and the skill that caused it is fixed.**
-  Pointing `node tools/validate.ts` at a real `content/tenants/<tenant>` (rather than its default
-  target, `examples/`) produced three errors: two `generated` events sharing a whole-second `ts`,
-  and a `mastery.yml` stale against the ledger. Root cause was a documentation defect, not a code
-  one - `generate-module/references/lesson-format.md` describes the seed event as appended *per
-  lesson*, so a three-lesson module writes three lines in one pass, but its only worked example
-  showed a whole-second timestamp and the collision rule ("bump 1 millisecond", owned by
-  `docs/specs/progress.md`) appeared in **no skill anywhere**, only in the spec and validate's
-  error string. An agent following the example naturally stamped all three identically. Fixed by
-  making the example self-demonstrating (three lines at `.000`/`.001`/`.002`) plus a note that
-  validate rejects the batch after the lessons are written, and by adding the rebuild-mastery step
-  the skill also never mentioned. `tutor-session`'s append rule already said "strictly later than
-  the last line" but not how to resolve a tie; extended with the same one-millisecond bump for its
-  own same-second batches. Data repaired in place: the two timestamps bumped with a byte-level
-  edit asserted to touch no other field and no other line, then `rebuild-mastery.ts`; tenant now
-  validates 0/0. Gate green (153 tests).
-- 2026-08-06 - **The real-GitHub mirror drill, finally run - `docs/specs/durability.md`'s one
-  standing "Not yet verified" gap.** Everything the gate exercises runs against a `file://` bare
-  remote, which has no visibility concept, so two things had never been executed once: `gh repo
-  create --private` against real GitHub, and `verify`'s PRIVATE-visibility assertion against a real
-  repository. Both were run end to end against a freshly created private repository - `verify`
-  correctly read `PRIVATE` and allowed the push - followed by a full restore drill: a fresh clone of
-  the pushed mirror diffed **byte-identical** against the live tenant tree (151 files), with every
-  restored `ledger.jsonl` line re-parsed as JSON. Invariant 4 now holds against real GitHub, not just
-  a local path. The spec's Verified-by section still carries the old caveat and should be amended to
-  match on the next durability change (deliberately not edited from an unrelated branch).
-- 2026-08-05 - **In-app self-explanation: tooltips + a guidebook (`#/guide`).** New `InfoTip`
-  disclosure (hover, focus, or click-to-pin; Escape closes and restores focus; 24px hit area;
-  `position: fixed` from the trigger rect because the mastery tables are `display: block;
-  overflow-x: auto` and would clip an absolute child) placed on the terms that actually confuse:
-  Re-read files, the mastery table's four columns, Due for review, Todos, Insights. New
-  `GuidePage` covering what the app is, the four-step loop, what each screen does, what the app
-  deliberately will not do (write-authority seam in plain language), why re-reading is manual,
-  and a glossary. Header gained a Guide link visible even with no tenant (help matters most on the
-  empty state) plus `aria-current="page"` on real anchors. Two design calls worth keeping: help
-  copy ships as client-side data in `app/client/src/guide/` rather than markdown read off disk,
-  because rendering repository files would need a route outside the content root that invariant 6
-  exists to forbid; and the guidebook is scoped to the app, linking out to `docs/how-meno-works.md`
-  for the journey rather than duplicating a doc that would drift. `glossary.ts` is the single owner
-  of every definition, read by both the tooltips and the guidebook glossary. Spec amended
-  (`docs/specs/app.md`: behavior 9, architecture, invariants 9-10, verified-by). Typecheck, build,
-  86 tests, validate all green. **Not visually verified** - no browser automation was available, so
-  the both-colour-schemes pass is still owed.
-- 2026-08-05 - **Fork-vs-privacy framing corrected across the guide and README.** The old
-  "clone, do not fork - a public fork can never be made private, and your learning content
-  deserves privacy" implied content lives in the clone, so a reader solving multi-device sync
-  was nudged toward the one irreversible mistake (un-ignoring `content/tenants/`, whose commits
-  stay reachable from upstream via the pull-request refs even after the PR closes). Replaced with
-  the two-repository mental model stated up front - the code clone is public and forkable, the
-  tenant vault is a separate private repo nested inside the gitignored path, and they never learn
-  about each other - so forking and privacy are not in tension. New
-  "Contributing to Meno from a machine that holds your content" subsection gives the fork-and-PR
-  flow and names the three fail-closed mechanisms that make it safe without care. `Owning your
-  content` and the README quickstart comment updated to match. `npm run validate` clean.
+  Three errors against a real vault. Root cause was a documentation defect, not a code one: the
+  timestamp-collision rule appeared in **no skill anywhere**, only in the spec and validate's error
+  string, and `lesson-format.md`'s only worked example showed a whole-second timestamp, so an agent
+  following it naturally stamped a three-lesson batch identically. Fixed by making the example
+  self-demonstrating and adding the rebuild step the skill never mentioned. Data repaired in place.
+
+- 2026-08-06 - **The real-GitHub mirror drill, finally run** - `docs/specs/durability.md`'s one
+  standing "Not yet verified" gap. The gate exercises a `file://` remote, which has no visibility
+  concept, so `gh repo create --private` and `verify`'s PRIVATE assertion had never run once. Both
+  executed end to end, then a full restore drill diffed byte-identical (151 files). Invariant 4 now
+  holds against real GitHub. The spec's Verified-by still carries the old caveat and should be
+  amended on the next durability change.
+
+- 2026-08-05 - **In-app self-explanation: tooltips + a guidebook (`#/guide`).** `InfoTip` uses
+  `position: fixed` from the trigger rect because the mastery tables are `overflow-x: auto` and
+  would clip an absolute child. Two design calls worth keeping: help copy ships as client-side data
+  rather than markdown read off disk, because rendering repository files would need a route outside
+  the content root that invariant 6 exists to forbid; and the guidebook links out to
+  `docs/how-meno-works.md` rather than duplicating a doc that would drift. `glossary.ts` is the
+  single owner of every definition. Not visually verified.
+
+- 2026-08-05 - **Fork-vs-privacy framing corrected across the guide and README.** The old "clone,
+  do not fork" line implied content lives in the clone, so a reader solving multi-device sync was
+  nudged toward the one irreversible mistake - un-ignoring `content/tenants/`, whose commits stay
+  reachable from upstream via pull-request refs even after the PR closes. Replaced with the
+  two-repository model stated up front, so forking and privacy are not in tension.
+
 - 2026-08-05 - **User-guide gaps closed: environment setup, multi-device study, the content-tier
-  model.** `docs/how-meno-works.md` gained a full "Setting up" section (prereqs with the reasons,
-  clone-not-fork, what each setup command actually does, a check-it-worked list, and the
-  `core.hooksPath` warning with its trade-off named), a commands-you-will-actually-use table, a
-  "Where your content lives" section explaining the three tiers and both directions of travel
-  (downstream = base + pack skeletons with no bodies; upstream = only via `publish-to-community`,
-  human-confirmed twice, skeleton only), and a new **"Studying on more than one device"** section -
-  previously undocumented anywhere. That section states the honest limitation that `meno-mirror push`
-  is backup, not sync (it never pulls, so a diverged second machine fails non-fast-forward), gives the
-  ledger-conflict resolution (union merge, then `node tools/rebuild-mastery.ts <tenant-dir>`, never
-  hand-merge the derived `mastery.yml`), and covers file-sync options for Obsidian mobile with their
-  three real costs (unencrypted consumer sync changes the privacy posture; consumer sync corrupts a
-  nested `.git`; no consistent snapshots can truncate a mid-append ledger line). `docs/specs/durability.md`
-  amended in the same change per the spec-with-behavior rule: new behavior item 6 (multi-device is a
-  documented manual procedure, not tooling) and a new open question on whether `meno-mirror` should
-  gain a `sync` verb - deliberately unbuilt, because a verb that auto-resolves ledger conflicts is a
-  writer of learner history and deserves write-authority-seam scrutiny. README quickstart points at
-  the new section. `npm run validate` clean.
-- 2026-08-06 - **Community tier trimmed to eight packs.** The seven packs whose subjects did
-  not fit the maintainer's actual direction were removed from both the community tier and the
-  tenant vault: `data/sql-joins-and-grain`, `data/analytics-engineering-with-dbt`,
-  `data/semantic-layers-and-metric-governance`, `infrastructure/observability-foundations`,
-  `product-and-design/web-accessibility-audits`,
-  `software-engineering/browser-e2e-testing-with-playwright`, and
-  `working-skills/evidence-based-bug-reporting`. What remains is the six `ai-and-agents`
-  courses now under contract plus `software-engineering/git-fundamentals` and
-  `meta/contributing-to-meno`. `INDEX.md` regenerated; no ledger event referenced a removed
-  course, so no study history was orphaned. The wave-2 entry below is left as written - it
-  records what happened at the time, and the four now-unused domain slugs stay in
+  model.** New "Studying on more than one device" section, previously undocumented anywhere, states
+  the honest limitation that `meno-mirror push` is backup and not sync, gives the ledger-conflict
+  resolution (union merge then `rebuild-mastery.ts`, never hand-merge the derived `mastery.yml`),
+  and names the three real costs of consumer file-sync for Obsidian mobile. A `sync` verb was
+  deliberately left unbuilt: one that auto-resolves ledger conflicts is a writer of learner history
+  and deserves write-authority-seam scrutiny.
+
+- 2026-08-06 - **Community tier trimmed to eight packs.** Seven packs whose subjects did not fit the
+  maintainer's direction were removed from both the community tier and the tenant vault. No ledger
+  event referenced a removed course, so no study history was orphaned. The wave-2 entry below is
+  left as written - it records what happened at the time - and the now-unused domain slugs stay in
   `DOMAINS.md`, which is a vocabulary for future packs rather than an index of current ones.
 
 - 2026-08-06 - **Tenant courses group by domain: one grouping across all three tiers.**
-  `content/tenants/<t>/<course-slug>/` became `content/tenants/<t>/<domain>/<course-slug>/`,
-  matching `content/community/<domain>/<slug>/` exactly. The tiers had drifted: packs were
-  domain-grouped, tenant courses were a flat list, and adopt-a-pack *discarded* the domain
-  on the way in; adoption is now a straight mirror copy. `content/community/DOMAINS.md` is
-  promoted from a pack file to the shared vocabulary governing community, org, and tenant
-  trees. New `course-layout` validate check enforces shape and vocabulary, finding vault
-  roots by their `home.md` so bare course fixtures stay exempt. Both committed vaults moved
-  (`examples/example-learner`, `examples/seeded-faults/publish-fixture`) under
-  `software-engineering/`. Spec owner: `vault-conventions.md` (per `repo-and-tenancy.md`'s
-  delegation); `docs/migrations.md` carries the Was/Now table and the per-instance `mv`.
-  `elicit-needs` now classifies a course into a domain during the interview - nothing
-  computed a domain before, it was derived at publish time long after the directory existed.
-- 2026-08-06 - **The silent regression this nearly shipped.** `wikilinks.tsx` matched lesson
-  links with exactly one path segment before `/modules/`. A domain level would have made
-  every lesson wikilink fall through to the plain note route: link still resolves, page
-  still renders, checks silently gone - a correctness bug wearing a styling bug's clothes,
-  and no test covered it. The regex now takes an optional domain segment (it backtracks
-  correctly on ungrouped paths, since "modules" cannot satisfy the literal `/modules/`
-  that follows). Two deliberate asymmetries came out of the same review: the app reads a
-  course at either depth so an unmigrated vault renders instead of showing an empty list,
-  and the walk never consults DOMAINS.md - validate owns "is this a legal place for a
-  course", the runtime only answers "where are the course.yml files". The walk itself moved
-  to `lib/course-dirs.ts` rather than being patched into `tree.ts` and `insights-io.ts`
-  separately, per the repo's no-parallel-walks rule.
+  `content/tenants/<t>/<domain>/<course-slug>/`, matching the community layout exactly. The tiers
+  had drifted - packs were domain-grouped, tenant courses flat, and adopt-a-pack *discarded* the
+  domain on the way in. `DOMAINS.md` is promoted to shared vocabulary. `elicit-needs` now
+  classifies a domain during the interview; nothing computed one before, it was derived at publish
+  time long after the directory existed. Migration table in `docs/migrations.md`.
 
-- 2026-08-06 - **Community pack wave 2 (decision 19, workstream 4): ten packs, and the archive-match
-  gate that wave 1 needed.** The tier goes from 5 packs to 15. New: `data/sql-joins-and-grain`,
-  `data/analytics-engineering-with-dbt`, `data/semantic-layers-and-metric-governance`,
-  `ai-and-agents/llm-cost-and-token-engineering`, `ai-and-agents/rag-grounding-and-faithfulness`,
-  `ai-and-agents/llm-evals-and-judges`, `software-engineering/browser-e2e-testing-with-playwright`,
-  `infrastructure/observability-foundations`, `product-and-design/web-accessibility-audits`,
-  `working-skills/evidence-based-bug-reporting`. The maintainer's private vault nominated the
-  *topics* only: each authoring agent worked from a self-contained public-source brief with no
-  access to the vault, so the inspiration-only boundary is structural here, not a review promise.
-  Scope fences held - `pack-overlap` reports zero findings across all 15.
+- 2026-08-06 - **The silent regression this nearly shipped.** `wikilinks.tsx` matched lesson links
+  with exactly one path segment before `/modules/`, so a domain level would have made every lesson
+  wikilink fall through to the plain note route: link still resolves, page still renders, checks
+  silently gone - a correctness bug wearing a styling bug's clothes, and no test covered it. Two
+  deliberate asymmetries came out of the same review: the app reads a course at either depth so an
+  unmigrated vault renders, and the walk never consults `DOMAINS.md` - validate owns "is this a
+  legal place for a course", the runtime only answers "where are the course.yml files". The walk
+  moved to `lib/course-dirs.ts` per the no-parallel-walks rule.
+
+- 2026-08-06 - **Community pack wave 2 (decision 19, workstream 4): ten packs.** The tier goes from
+  5 to 15. The maintainer's private vault nominated the *topics* only - each authoring agent worked
+  from a self-contained public-source brief with no vault access, so the inspiration-only boundary
+  is structural here, not a review promise. `pack-overlap` reported zero findings across all 15.
+
 - 2026-08-06 - **`citations` gains an offline archive-match check, and it caught a merged defect.**
-  Validate now compares the URL embedded in `archived_url` against `url` (canonically: scheme and
-  trailing slash ignored). The failure it catches is systematic, not clerical - archiving follows
-  redirects and records where it landed while `url` keeps what was typed, so *any* source that has
-  moved silently yields a well-formed pair pointing at two different pages. It found six: three
-  Grafana docs paths and two anthropic.com paths in wave 2, plus one in already-merged
-  `limits-of-agent-generated-content` whose snapshot was a `?error=cookies_not_supported` variant.
-  That last one could not be fixed by re-archiving - nature.com is bot-protected, so every Wayback
-  capture of it is a Cloudflare "Client Challenge" page - so the citation moved to the open-access
-  PMC mirror of the same paper, whose snapshot contains all four cited figures verbatim. Spec:
-  `docs/specs/validation.md`; two new cases in `tools/test/courses.test.ts` (mismatch caught,
-  scheme/slash-only difference tolerated).
+  Validate compares the URL embedded in `archived_url` against `url`. The failure is systematic,
+  not clerical: archiving follows redirects and records where it landed while `url` keeps what was
+  typed, so any moved source yields a well-formed pair pointing at two different pages. Found six,
+  including one already merged. One could not be fixed by re-archiving - nature.com is
+  bot-protected, so every Wayback capture is a challenge page - and moved to the open-access PMC
+  mirror instead.
+
 - 2026-08-06 - **`audit-citations` told agents to do something their tools cannot do.** The skill
-  said "fetch `archived_url`"; Claude Code's WebFetch refuses `web.archive.org` outright, and the
-  refusal is indistinguishable from a dead snapshot. Two independent verifiers duly reported healthy
-  archives as unverifiable, and a third called a live snapshot DEAD after the availability API
-  returned empty under throttling - its proposed replacement timestamp did not exist. The skill now
-  mandates `curl -I`, makes the archive's own `link: rel="original"` header the match test (the
-  Wayback Machine stating what it captured beats eyeballing rendered content), and states that
-  concurrent failures mean rate limiting and never a dead archive.
+  said "fetch `archived_url`"; Claude Code's WebFetch refuses `web.archive.org`, and the refusal is
+  indistinguishable from a dead snapshot. Two verifiers reported healthy archives as unverifiable
+  and a third called a live snapshot DEAD. The skill now mandates `curl -I`, makes the archive's own
+  `link: rel="original"` header the match test, and states that concurrent failures mean rate
+  limiting and never a dead archive.
 
-- 2026-08-05 - **Community pack slate (decision 19, workstream 3): five packs live.** The tier goes
-  from one pack to a full intern-onboarding slate, every source fetched live and Wayback-archived
-  this session, each pack independently citation-audited and sanitization-swept (zero hits for
-  workplace identifiers), INDEX regenerated, gate green. `git-fundamentals` was AMENDED (modules
-  03-05: remotes/forks, pull-request flow, repo hygiene) rather than forked into a competing pack -
-  the search-first rule applied to ourselves. New: `ai-and-agents/intro-to-ai-and-agents`,
-  `ai-and-agents/agent-harness-craft` (the maintainer's craft re-derived from public sources only),
-  `ai-and-agents/limits-of-agent-generated-content` (hallucination, sycophancy, cognitive
-  offloading, Dunning-Kruger, the compounding loop - every empirical claim cites the actual paper),
-  `meta/contributing-to-meno` (exercise-driven, links to canonical owners, never restates).
+- 2026-08-05 - **Community pack slate (decision 19, workstream 3): five packs live.** Every source
+  fetched live and Wayback-archived, each pack independently citation-audited and
+  sanitization-swept. `git-fundamentals` was AMENDED rather than forked into a competing pack - the
+  search-first rule applied to ourselves.
+
 - 2026-08-05 - **Accuracy guardrail + drill pair (decision 19, workstream 1; PR #21).**
-  `generate-module` gains a blocking per-lesson self-audit: claim audit (trace to a cited source,
-  level-appropriate common knowledge - never anything surprising, quantitative, version-specific,
-  or safety-relevant - or fix/cite/remove) and check re-solve (fresh answer before reading the
-  authored key; disagreement blocks). Kept honest by the auditor drill:
-  `examples/seeded-faults/accuracy-fixture/` (4 planted uncited falsehoods, 3 wrong keys, 1 clean
-  control) scored by `tools/eval.ts` via the pinned claude CLI under judged-half discipline.
-  Baseline established: recall 1.0 observed, `recall_min` 0.9. Adversarial review hardened the
-  quote matcher (three-token containment minimum). Specs: `lessons.md` invariant 7, `quality.md`
-  drill contract stated honestly (measures the audit prompt, not a live run).
+  `generate-module` gained a blocking per-lesson self-audit: every claim traces to a cited source or
+  to level-appropriate common knowledge, and every check is re-solved fresh before the authored key
+  is read. Kept honest by `examples/seeded-faults/accuracy-fixture/` scored under judged-half
+  discipline; baseline recall 1.0 observed, `recall_min` 0.9. `quality.md` states the drill contract
+  honestly - it measures the audit prompt, not a live run.
 
-- 2026-08-05 - **Post-consolidation reconcile: the one constraint decision 18 narrowed.** Follow-up
-  to the v1.4 security review. Two of its three items had already been absorbed by #18 (the stale
-  `topic-packs/`/`org/` paths in `docs/specs/supply-chain.md`, and `SECURITY.md`, which was written
-  against the post-consolidation layout and became correct when that layout landed) - only the third
-  was real. `course.schema.json`'s `derived_from.pack` pattern moved from
-  `^topic-packs/…|^org/packs/…` to `^content/community/…|^content/org/…`, which silently turns a
-  pre-consolidation adopted `course.yml` invalid, under a migrations heading reading "layout, not
-  schema" and with no migration step covering it. Amended the heading to "layout, plus one narrowed
-  pattern", added the one-line rewrite users need, and recorded *why* no `schema_version` bump:
-  `derived_from` is optional, shipped the same day, and the fix is a one-line edit with a validate
-  error that names the field - whereas bumping would make every existing `course.yml` stale and
-  oblige validate to keep blessing a path form that exists nowhere in the layout. Pinned the pattern
-  with a test in `tools/test/courses.test.ts` (both consolidated roots accepted, both
-  pre-consolidation forms rejected), since nothing under `examples/` carries a `derived_from` block -
-  which is exactly why the change went unnoticed.
+- 2026-08-05 - **Post-consolidation reconcile: the one constraint decision 18 narrowed.** Two of the
+  v1.4 security review's three items had already been absorbed by #18; the third was real.
+  `course.schema.json`'s `derived_from.pack` pattern silently invalidated pre-consolidation adopted
+  manifests under a migrations heading reading "layout, not schema". Recorded *why* no
+  `schema_version` bump: the field is optional, shipped the same day, and the fix is a one-line edit
+  with a validate error that names it - bumping would make every existing `course.yml` stale and
+  oblige validate to keep blessing a path form that exists nowhere. Pinned with a test, since
+  nothing under `examples/` carries a `derived_from` block, which is exactly why it went unnoticed.
+
 - 2026-08-05 - **Content tier consolidation (decision 18): one root for all learning material.**
-  `topic-packs/` -> `content/community/`, `org/packs/` -> `content/org/`, tenant vaults
-  `content/<tenant>/` -> `content/tenants/<tenant>/`; the directory tree now mirrors the tier
-  model. The privacy boundary moved from `content/` to `content/tenants/` but stays a single
-  absolute gitignore prefix (never a negation pattern); the leakage-guard hook flipped to
-  default-deny under `content/` with an explicit `community|org` allowlist, so an unexpected
-  subdir like `content/alice/` is refused at commit time; the tenancy validate check errors on
-  unknown top-level entries under `content/`; `tools/org-sync.sh` now refuses only
-  `content/tenants/` + `content/org/` while legitimate upstream `content/community/` changes
-  merge normally (new positive test). Adversarial review found and fixed a `core.quotePath`
-  bypass (non-ASCII filenames were C-quoted and evaded the `^content/` greps in both the hook
-  and org-sync; both now read null-delimited raw bytes, with unicode drills in the tests).
-  `examples/` deliberately stays outside `content/`. 58 tracked files updated across tools,
-  app, skills, specs, and docs; migration steps for existing instances in `docs/migrations.md`.
-- 2026-08-05 - **Security policy and the repository-level checks (follow-on to v1.4).** The
-  settings half of supply-chain hardening, which no file in the tree can show: secret scanning
-  with push protection (a credential is blocked at `git push` rather than reported once it is
-  already public - worth having in a repository whose design has agents writing files that get
-  committed), Dependabot alerts and security updates, private vulnerability reporting. All four
-  are free on public repositories and none were on. Added `SECURITY.md`: the draft-advisory
-  channel instead of a public issue (everything here is cloned and run locally, so a public
-  report is a working exploit against every instance before anyone can update), the three
-  things worth attacking (the learner's vault, the machine running the agent, everyone
-  downstream of `main` via `tools/org-sync.sh`), and explicit scope - including an
-  "already known, and tracked" section that links `docs/specs/supply-chain.md`'s Verified-by
-  gaps rather than restating them, so a reporter can tell a known gap from a new one and the
-  two documents cannot drift. Out-of-scope names the loopback-and-unauthenticated design
-  assumption as an assumption, with breaking the assumption itself explicitly back in scope.
-  Spec amended: two new behaviors, invariants 7-8, and an honest Verified-by entry saying
-  invariant 7 is unverifiable from the tree (settings are not files; a fork inherits none of
-  them) with the `gh api` commands to check it by hand.
+  `topic-packs/` -> `content/community/`, `org/packs/` -> `content/org/`, tenant vaults ->
+  `content/tenants/<tenant>/`. The privacy boundary moved but stays a single absolute gitignore
+  prefix, never a negation pattern; the leakage guard flipped to default-deny under `content/` with
+  a `community|org` allowlist. Adversarial review found a `core.quotePath` bypass - non-ASCII
+  filenames were C-quoted and evaded the `^content/` greps in both the hook and org-sync - now read
+  null-delimited with unicode drills. Migration steps in `docs/migrations.md`.
+
+- 2026-08-05 - **Security policy and the repository-level checks (follow-on to v1.4).** The settings
+  half of supply-chain hardening, which no file in the tree can show: secret scanning with push
+  protection, Dependabot alerts, private vulnerability reporting - all free on public repos, none
+  were on. `SECURITY.md` uses the draft-advisory channel because everything here is cloned and run
+  locally, so a public report is a working exploit against every instance before anyone can update.
+  Its "already known, and tracked" section links the spec's Verified-by gaps rather than restating
+  them, so the two documents cannot drift. Invariant 7 is honestly recorded as unverifiable from the
+  tree - settings are not files, and a fork inherits none of them.
+
 - 2026-08-05 - **v1.4: supply-chain hardening - CI enforcement, capability paths, the rebinding
-  guard.** Prompted by a security review of v1.3 whose finding was structural: every gate this
-  repository documents ran on the contributor's own machine and reached the maintainer as a ticked
-  checkbox, because `.github/` held nothing but a pull request template. Landed
-  `.github/workflows/gate.yml` - `npm ci` + `npm run gate` + `npm run build` +
-  `node tools/packs.ts --check` on every pull request and every push to `main`; `pull_request`
-  and never `pull_request_target` (which would hand an untrusted branch the base repo's secrets
-  and a write token), `permissions: contents: read`, `persist-credentials: false`, actions pinned
-  to commit shas rather than mutable tags, Node 24 as the floor CONTRIBUTING documents, and
-  deliberately the *same* `npm run gate` a contributor runs, so CI and the local gate cannot
-  drift. `npm run eval` stays manual and CI says so - it shells out to the `claude` CLI, which no
-  runner has. `.github/CODEOWNERS` names the capability-bearing paths (`.github/`, `tools/`
-  including the `tools/test/**` that `npm test` globs and executes, `.agents/skills/`, `.claude/`,
-  the lockfile, `app/client/vite.config.ts`, the entry-point markdown, `schemas/`); advisory today
-  and the file says why - GitHub forbids self-approval, so required code-owner review would make
-  `main` unmergeable for a solo maintainer. App: the `Origin` check turned out not to cover DNS
-  rebinding at all (once the attacker's name resolves to 127.0.0.1 their page is same-origin, so
-  no `Origin` header is sent and the check never fires) - added a loopback `Host` allowlist ahead
-  of routing, which is the header a browser will not let a page forge; 4 new tests in
-  write-authority.test.ts, needing a new `rawRequest` helper because `fetch`/undici silently
-  replaces a caller-supplied `Host`. New spec `docs/specs/supply-chain.md` states the trust
-  boundary and, in "Verified by", names the holes rather than implying coverage: `.agents/skills/**`
-  is scanned by nothing (`pack-safety` is scoped to `topic-packs/` and `org/`), its
-  instruction-shaped-phrase patterns are non-blocking warnings, and a cited URL is reviewed at one
-  time and fetched by an agent at another. `.gitignore` gained `.claude/worktrees/`.
-- 2026-08-05 - **v1.3: org deployment as a git-native pattern (docs/org-deployment.md +
-  docs/integration-surface.md).** The third maintainer ask ("managed shared content at
-  organizational level, RBAC, incorporated into in-house systems") read as a hosted-platform
-  request, which PLAN.md's locked out-of-scope list rules out (no accounts, no server, no
-  database) - delivered instead as a documented pattern plus a stable integration surface, no
-  new runtime. `docs/org-deployment.md`: (a) the private mirror-clone (bare-clone + push to a
-  new private repo, `upstream` remote kept for pulls - distinct from `tools/meno-mirror`'s
-  per-tenant backup, disambiguated explicitly); (b) `org/` as a reserved downstream-owned root
-  using the pack format verbatim (`org/README.md`, `org/packs/<domain>/<slug>/`) - this was
-  already-landed plumbing (`checkPacks`'s dual-root walk, `pack.schema.json` and
-  `course.schema.json`'s `org/packs/` patterns, org domains already exempt from
-  `topic-packs/DOMAINS.md`'s closed vocabulary), now finally documented; one format, three
-  distributions (upstream community / org-private / tenant-local), contributing upstream is a
-  directory move; (c) RBAC mapped honestly onto GitHub/GitLab primitives (a table: KB admin =
-  Maintain + CODEOWNERS on `org/` / GitLab Maintainer, contributor = Write + required-review
-  branch protection, learner = Read / Reporter), stating plainly that a domain-scoped team is
-  not expressible in one repository, and that server-side branch protection on a private repo
-  is a paid GitHub tier but free on GitLab - headlined by "git permissions are write control
-  and distribution control, not read control after a clone exists"; (d) the org never sees a
-  learner's progress, structurally (content/ stays gitignored in every clone including the
-  org's); (e) upstream updates via `tools/org-sync.sh`; (f) "What Meno will not do, and why" -
-  no accounts, no read enforcement after distribution, no progress telemetry to the org (the
-  load-bearing refusal - a gradebook and an honest mastery signal cannot coexist, full
-  argument given, learner-run redacted export as the alternative), no SCORM/LTI/seat
-  management. `docs/integration-surface.md`: schemas (additive within `schema_version`),
-  the ledger read format (8 event types, unknown-type-tolerant, external systems never write
-  it - two writers with disjoint authority is the correctness argument, not a convention), the
-  stable `GET /api/v1/*` read routes (write routes are explicitly not surface; server binds
-  `127.0.0.1` only, so integration means same-machine or exports), and exports via
-  `tools/export.ts`; a "not committed surface" list (`lib/*` signatures, the client bundle,
-  `mastery.yml` as a file, CLI stdout). `tools/export.ts` (new): `<tenant-dir>
-  [--format jsonl|csv] [--redact] [--out <dir>]`, emits `ledger.jsonl`/`ledger.csv` (flat,
-  documented columns), `mastery.csv` (derived live via `deriveMastery`, never read from disk),
-  `insights.json` (`computeInsights` via `lib/insights-io.ts`); `--redact` strips only
-  `rubric` and `reason`; `npm run export` wired. `tools/org-sync.sh` (new, POSIX shell,
-  meno-mirror's voice): fetches `upstream`, refuses any merge whose diff touches `content/` or
-  `org/` (`MENO_SYNC_SKIP_GATE=1` test-only escape hatch, documented in the script), else
-  merges and runs `npm run gate`. Tests: `tools/test/export.test.ts` (5 tests - redact is a
-  byte-diff of events minus exactly those two fields, determinism across two runs, CSV column
-  shape, mastery.csv matches `deriveMastery` directly, `examples/` never mutated, all against a
-  throwaway tenant copy) and `tools/test/org-sync.test.ts` (4 tests - refuses on `org/` touch,
-  refuses on `content/` touch, merges a clean change, reports up-to-date; a tiny
-  upstream+downstream repo pair per test, `GIT_CONFIG_GLOBAL=/dev/null` isolation following
-  `mirror.test.ts`'s `makeFreshMeno` pattern). Amended:
-  `docs/specs/repo-and-tenancy.md` (`org/` named alongside `content/` as a reserved
-  downstream-owned root - behavior line + invariant 3 extended), `docs/architecture.md`
-  (`org/` in the repository layout block, one line in the three-content-tiers prose, a
-  phase-to-spec row for v1.3), `docs/how-meno-works.md` ("Using Meno in an organization"
-  pointer section), `CONTRIBUTING.md` (one line routing org deployments to the new doc),
-  `README.md` ("For the curious" gains the org doc), `AGENTS.md` (docs list gains
-  org-deployment.md + integration-surface.md), `docs/specs/community.md` (open question 2
-  resolved - `org/` documented in `docs/org-deployment.md`, not here, same as `content/`).
-  Gate green: `npm run typecheck`, `node --test tools/test/*.test.ts app/test/*.test.ts`
-  (81/81), `npm run validate` (0 errors, 0 warnings).
+  guard.** The prompting finding was structural: every gate this repo documents ran on the
+  contributor's machine and reached the maintainer as a ticked checkbox.
+  `.github/workflows/gate.yml` runs the *same* `npm run gate` a contributor runs, so CI and the
+  local gate cannot drift; `pull_request` and never `pull_request_target`, actions pinned to shas.
+  `CODEOWNERS` is advisory and says why - GitHub forbids self-approval, so required review would
+  make `main` unmergeable for a solo maintainer. The app's `Origin` check turned out not to cover
+  DNS rebinding at all: once the attacker's name resolves to 127.0.0.1 their page is same-origin, no
+  `Origin` header is sent, and the check never fires - replaced with a loopback `Host` allowlist,
+  the header a browser will not let a page forge. `docs/specs/supply-chain.md` names the remaining
+  holes rather than implying coverage.
+
+- 2026-08-05 - **v1.3: org deployment as a git-native pattern.** The maintainer ask (shared content,
+  RBAC, in-house integration) read as a hosted-platform request, which PLAN.md's out-of-scope list
+  rules out - delivered instead as a documented pattern plus a stable integration surface, no new
+  runtime. `docs/org-deployment.md` covers the private mirror-clone, `org/` as a reserved
+  downstream-owned root using the pack format verbatim, and RBAC mapped honestly onto host
+  primitives, headlined by "git permissions are write control and distribution control, not read
+  control after a clone exists". The load-bearing refusal is no progress telemetry to the org: a
+  gradebook and an honest mastery signal cannot coexist, with a learner-run redacted export as the
+  alternative. New `tools/export.ts` and `tools/org-sync.sh`; `docs/integration-surface.md` declares
+  what is stable and what is not.
 
 - 2026-08-05 - **v1.2: publish-to-community skill and the read/write closure of the community
-  tier.** Built on top of the coordinator-landed contract (domain-scoped `topic-packs/<domain>/<slug>/`,
-  `DOMAINS.md`, `PACK.md`, generated `INDEX.md` via `tools/packs.ts`, `pack.schema.json` +
-  `reference-note.schema.json`, `course.yml`'s `derived_from`, and validate's `pack-layout` /
-  `pack-notes` / `pack-overlap` / `pack-safety` checks). Landed the write side:
-  `.agents/skills/publish-to-community/SKILL.md` (search-first mandatory step 1, transcribe-never-copy,
-  sanitize, four-part quality gate, amend-over-fork) plus `references/sanitization.md` (the
-  never-leaves-`content/` catalog, naming worked-examples-from-real-work as the one class no
-  regex catches) and `references/amendment.md` (amendment-log mechanics, `derived_from`
-  provenance lookup); symlinked and listed in `AGENTS.md`. Read side amended into three existing
-  skills: `generate-curriculum` gained a step-0 preflight search (backstop for direct invocation)
-  and the untrusted-reference-data rule; `elicit-needs` gained the same search between
-  confirmation and handoff; `generate-module` gained the rule for reading a pack's `notes/` at
-  adoption. `extend-meno/references/recipes.md` gained a full "Adopt a pack" recipe
-  (domain-scoped path, `derived_from` capture including the `PACK.md`-version-or-commit-sha
-  rule) and cross-linked its existing "Draft a topic pack" recipe against the new skill.
-  `topic-packs/README.md` rewritten for the landed reality (domains, `PACK.md`, `notes/`,
-  `INDEX.md` search-first, the publish path, `derived_from`, a security-posture section). PR
-  template gained a "Publishing to the community tier" block (search-first result line, eight
-  sanitization attestations with the real-work-example one marked human-review-only, audit
-  verdicts, validate + INDEX freshness). `examples/seeded-faults/publish-fixture/` - a second
-  red-team fixture alongside `audit-fixture/` (parent README now introduces both): an ordinary,
-  fully `npm run validate`-clean tenant course (profile, one module, one 9/9-anatomy lesson,
-  a 4-event ledger with a rubric string and an override reason, `mastery.yml` rebuilt via
-  `tools/rebuild-mastery.ts`) seeded with six leak classes - personal name+email, employer name,
-  a machine path, a `source_type: user` record citing `sources/`, a real-work worked example,
-  and a credential-shaped string that would trip `pack-safety` if it were ever transcribed.
-  `ANSWER-KEY.md` scores blind publish drills (answer key off-limits to the publisher, same
-  discipline as the audit fixture). Specs: new `docs/specs/community.md` (the three-tier model,
-  amend-over-fork, search-first, the publish/adopt/amend mermaid flow); amended
-  `docs/specs/validation.md` (four pack-check rows), `docs/specs/curriculum.md` (step-0 preflight
-  in behavior, an untrusted-data invariant), `docs/specs/interview.md` (the pre-handoff search
-  step), `docs/architecture.md` (a "three content tiers" section, phase-to-spec row v1.2),
-  `CONTRIBUTING.md` (packs section points at the skill and template block; the eval-gate section
-  now names the blind publish drill requirement alongside the existing blind audit one). Found
-  and fixed one unrelated pre-existing bug while getting the gate green: a coordinator-added test
-  in `tools/test/courses.test.ts` used `new URL(...).pathname` directly (breaks on paths with
-  spaces), tripping the repo's own no-`URL.pathname` hygiene test - fixed to use `fileURLToPath`
-  like every other source file. Gate green: `npm run typecheck`, `node --test
-  tools/test/*.test.ts app/test/*.test.ts` (72/72), `npm run validate` (0 errors, 0 warnings on
-  `examples/` + `topic-packs/`), `node tools/packs.ts --check` (fresh).
+  tier.** The write side (`publish-to-community` with search-first, transcribe-never-copy, sanitize,
+  four-part gate, amend-over-fork) plus `references/sanitization.md`, which names
+  worked-examples-from-real-work as the one leak class no regex catches. Read side amended into
+  `generate-curriculum`, `elicit-needs`, and `generate-module`. New
+  `examples/seeded-faults/publish-fixture/`: a clean tenant course seeded with six leak classes,
+  scored blind against an answer key the publisher may not read. Spec: `docs/specs/community.md`.
 
-- 2026-08-05 - **v1.1 study-insights acceptance loop**: the skill's acceptance run (committed as the 2026-08-08 fixture note under examples/example-learner/insights/) caught two real bugs before ship - lib/vault.ts and the app resolver only matched bare basenames so every path-style wikilink read broken (both now resolve path targets like Obsidian; regression test added), and the course hub's five lesson links were folder-relative (fixed to unique basenames). The ledger fixture's item ids were also corrected to the spec's fully-qualified form (check_usage now honestly 1/21). The narrative note refused to fabricate on both intermediate states - it reported the traced cause instead of fake topic candidates - which is the cite-your-numbers design working.
-- 2026-08-05 - **v1.1: study-insights feature complete.**
-  `lib/insights.ts` (`computeInsights`, pure) and `lib/vault.ts` (graph walk) already existed as the
-  contract; this pass built everything around them. `lib/insights-io.ts`: the shared loader (ledger via
-  a minimal `lib/mastery.ts`-based reimplementation, not `app/server/ledger.ts`, to avoid pulling the UI
-  write path into `lib/`; vault via `loadVaultFiles`+`buildVaultGraph`; todos via a value import of
-  `app/server/todos.ts`'s `parseTodos` - safe one-way edge, confirmed no cycle since `todos.ts` has zero
-  runtime imports of its own; manifests via a `course.yml`/`module.yml` walk that also parses each
-  non-planned lesson for fully-qualified authored check ids). `GET /api/v1/:tenant/insights` (read-only,
-  no POST sibling, adds a `notes: string[]` field for narrative reports under `insights/`).
-  `tools/insights.ts` CLI (`npm run insights --`) sharing the same loader. `InsightsPage.tsx`
-  (`#/t/:tenant/insights`, one neutral palette, no pass/fail coloring, every rate shown as `n/of`) +
-  router + header nav. `schemas/insights.schema.json` for narrative-note frontmatter. `study-insights`
-  skill (user-invoked only, quotes the snapshot, never computes a number, writes dated
-  `content/<tenant>/insights/YYYY-MM-DD-insights.md` notes + an `insights-hub.md`) with
-  `references/narrative-format.md`, symlinked into `.claude/skills/`, listed in AGENTS.md. validate
-  gained an `insights` check (frontmatter schema, six required body sections, cite-your-numbers as a
-  literal-substring match against the note's own embedded `metrics_snapshot` - a warning by default,
-  escalating under `--strict`). 12 new tests in `tools/test/insights.test.ts` (determinism, min_n on the
-  example tenant's one session, `insufficient_data` Rate, the example tenant's real unrepaid ownership
-  override at `gate_ts: 2026-08-07T09:35:00+10:00`, a clock-purity source grep, the vanity denylist, a
-  mastery-never-imports-insights grep, and the validate check's schema/sections/citation paths) plus 4 in
-  `app/test/insights.test.ts` (GET 200 with ledger/mastery bytes unchanged, POST 404). `docs/specs/insights.md`
-  written per the template, owning the metric-definitions table; `docs/specs/validation.md`,
-  `docs/specs/app.md`, `docs/architecture.md`'s phase-to-spec table, and `docs/specs/progress.md`'s open
-  question 1 (read events stay counts-only, resolved) all amended. `npm run typecheck && node --test
-  tools/test/*.test.ts app/test/*.test.ts && npm run validate && npm run build` all green (70 tests
-  passing). Known pre-existing quirk, not touched: the committed example tenant's hand-authored ledger
-  fixture uses short-form `item` ids (`03-ownership#string-move-invalidates`) rather than the
-  fully-qualified `<course>/<module>/<lesson>#<check>` form the live app's `postCheckSubmit` route
-  actually writes, so `usage.check_usage` reports `0/21` for that fixture specifically - an honest
-  reflection of the fixture, not a bug in the new code.
+- 2026-08-05 - **v1.1 study-insights acceptance loop**: the acceptance run caught two real bugs
+  before ship - `lib/vault.ts` and the app resolver matched bare basenames only, so every path-style
+  wikilink read broken, and the course hub's lesson links were folder-relative. The narrative note
+  refused to fabricate on both intermediate states, reporting the traced cause instead of fake topic
+  candidates, which is the cite-your-numbers design working.
+
+- 2026-08-05 - **v1.1: study-insights feature complete.** `lib/insights-io.ts` as the shared loader
+  (reimplementing ledger reads over `lib/mastery.ts` rather than importing `app/server/ledger.ts`,
+  to keep the UI write path out of `lib/`), `GET /api/v1/:tenant/insights`, the CLI, `InsightsPage`
+  (one neutral palette, no pass/fail coloring, every rate shown as `n/of`), and the user-invoked
+  `study-insights` skill that quotes the snapshot and never computes a number. Validate's `insights`
+  check enforces cite-your-numbers as a literal-substring match against the note's own embedded
+  snapshot. Spec `docs/specs/insights.md` owns the metric-definitions table.
 - 2026-08-05 - **Phase 8 complete (collaboration and evals) - v1 done.** CONTRIBUTING.md full (one-runtime setup, erasable-TS constraint, gate + eval requirements, deliberate-rebaseline rule, honest one-CLI smoke table), .github PR template, topic-packs/README.md spec (packs = pre-contract skeletons, no bodies - bodies generate at adoption against the adopter's profile), docs/specs/quality.md. tools/eval.ts landed: 4 fixtures, deterministic checklist half (43 items, gates absolutely) + judged half (pinned claude-sonnet-5, prompt sha, median-of-3, quantized grid, non-parsing = error not zero, identical-judge gating, 0.1 guard band under observed medians) + anchor set good/mediocre/bad with ranking-and-separation drift alarm; runs.jsonl append-only; baselines committed from a real establishment run and confirmed by an independent verification run (checklists 43/43, curriculum 0.63 vs min 0.4, lessons 0.85 vs min 0.7, anchors 0.8/0.5/0). The anchor alarm proved itself during setup: the first mediocre anchor scored 0 (tied with bad) and failed ranking until it was made genuinely mid-quality. README rewritten for v1 (quickstart, what's inside), AGENTS.md status -> v1 built, npm run eval wired. Demo topic pack lands via its own PR next (the documented path, exercised for real).
 - 2026-08-05 - **Phase 7 complete (tenant durability).** Design doc written first (docs/specs/durability.md: nested-independent-repo mirror model - no submodule, no second remote, the public repo stays structurally ignorant; POSIX shell as the deliberate one-runtime exception; hooks scoped off for mirror pushes; verify-before-every-push). tools/meno-init (idempotent: leakage-guard pre-commit hook that chains to pre-existing hooks, tenant dir, CLI census, next steps) and tools/meno-mirror (init|push|restore|status|verify; gh-created private repo when no URL; PRIVATE-visibility assertion for GitHub remotes, local paths allowed for drills, anything else hard-refused; restore refuses non-empty destinations). Automated e2e drill in the gate (tools/test/mirror.test.ts): init, hook blocks a force-added tenant file, push, outer-repo-ignorance checks (no tracked content/, no mirror URL in config), wipe, refuse-overwrite, restore byte-identical, unverifiable-remote refusal. Honest gap recorded in the spec: the real-GitHub visibility drill is maintainer-manual before first real use. Guide's backup section now shows the concrete commands + 4-command manual fallback.
 - 2026-08-05 - **Phase 6 complete (citation integrity).** audit-citations skill landed (adversarial live-fetch protocol: existence, claim support against why + citing prose, archive liveness, archive match; six verdicts; per-record routing into citation-refresh vs content-refresh; edge rules for multi-fault precedence, FABRICATED-vs-ROTTED evidence, orphaned sources, canonical URL comparison). Permanent seeded-fault fixture committed (examples/seeded-faults: structurally validate-clean mini-course seeding FABRICATED, MISATTRIBUTED, MISMATCHED-ARCHIVE, orphaned-MISATTRIBUTED among clean records; ANSWER-KEY for eval scoring). Acceptance: blind audit (answer key off-limits) caught ALL four faults with correct classes, flagged neither clean record, and proved never-existed via the book's canonical ToC; drill A citation-refresh diff touched exactly one archived_url line with zero prose; drill B content-refresh rewrote from live-fetched sources, removed the fabrication, re-audited all-CLEAN with anatomy intact. sourcing.md gained the CDX-API snapshot lookup (wayback/available lags). Spec: docs/specs/citations.md.
