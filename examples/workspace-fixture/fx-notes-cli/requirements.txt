@@ -1,4 +1,4 @@
 click==8.1.7
 requests>=2.31
 # dev tooling below
-pytest==8.2.0
+pytest==9.0.3
