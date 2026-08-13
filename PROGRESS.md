@@ -313,6 +313,21 @@ _Last updated: 2026-08-13_
 
 ## On the agenda (backlog, not started)
 
+- **UI navigation and content-visibility work order**
+  (`docs/reviews/2026-08-13-ui-navigation-review.md`): 17 ranked findings from a headless
+  traversal of every route, reviewed by a UI/UX and a frontend specialist. Scoped to adaptive
+  information architecture and state-driven surfacing; visual design and mobile were out of
+  scope. Sequenced as waves - **wave 0 is serial and must land first** (the shared course-context
+  hook, the mastery type-guard bug, the route-change effect, a shared error state, response
+  caching), then six file-disjoint parallel tracks. The collision map is in the document.
+  - **UI-01 is a live bug, not a design gap**: `asMastery` (`app/client/src/clientTypes.tsx:36`)
+    requires a `.courses` key the course endpoint does not send, so concept mastery and module
+    gate state have never rendered on any course page - including a currently failed, locked
+    gate. Fix this before anything that builds on study state.
+  - **Fixture extension, deferred deliberately**: `examples/example-learner` (1 subject, 2
+    courses, 15 files) cannot reproduce the density-dependent findings (UI-12, partly UI-11),
+    so those ship without regression tests. Growing the fixture would break assertions in
+    `tools/eval.ts` and ten test files, so it is its own change, not a prerequisite.
 - **Decision 19 program** (plan: `docs/plans/content-accuracy-and-community.md`): (1) blocking
   self-audit in `generate-module` + seeded-fault fixtures + eval scorers that drill the
   auditor; (2) the five-pack community slate (git-and-github and agent-harness-craft first);
