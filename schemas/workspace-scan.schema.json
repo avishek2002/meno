@@ -39,7 +39,12 @@
           "repos_found": { "type": "integer", "minimum": 0 },
           "pending_approval": {
             "type": "array",
-            "description": "Directory names present since approval that were not scanned. Non-empty means this root was skipped, not scanned.",
+            "description": "Directory names present since approval that were not scanned - each one individually, never the whole root: every other, approved child is scanned normally.",
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "missing_children": {
+            "type": "array",
+            "description": "Approved child directory names that no longer exist on disk this run - a renamed or deleted approved path, distinct from pending_approval (which names a present but unapproved child). Not required at the schema level for the same legacy-fixture reason status is not required.",
             "items": { "type": "string", "minLength": 1 }
           },
           "status": {
@@ -76,6 +81,7 @@
           "secrets_skipped",
           "unreadable_dirs"
         ],
+        "$comment": "'substantive' is deliberately not in the required list above, for the same legacy-fixture reason 'status' is not required on roots[] (see below): every snapshot lib/workspace-scan.ts actually produces always carries it, but an older snapshot predating this field must still validate.",
         "properties": {
           "repo_id": { "type": "string", "pattern": "^[0-9a-f]{12}$" },
           "name": { "type": "string", "minLength": 1 },
@@ -142,7 +148,11 @@
           "files_walked": { "type": "integer", "minimum": 0 },
           "symlinks_skipped": { "type": "integer", "minimum": 0 },
           "secrets_skipped": { "type": "integer", "minimum": 0 },
-          "unreadable_dirs": { "type": "integer", "minimum": 0 }
+          "unreadable_dirs": { "type": "integer", "minimum": 0 },
+          "substantive": {
+            "type": "boolean",
+            "description": "False when this repository carries no dependency manifest, no readme marker, and at most one commit in its history - a directory that is a git repository without being a project (a scratch clone, a throwaway experiment, an installed tool's own cache). Still listed here and still counted in aggregate.total_repos; excluded only from aggregate.marker_coverage, aggregate.dependency_frequency, and aggregate.manifest_coverage's denominators."
+          }
         },
         "additionalProperties": false
       }
@@ -152,20 +162,25 @@
       "required": ["total_roots", "total_repos", "dependency_frequency", "manifest_coverage", "marker_coverage"],
       "properties": {
         "total_roots": { "type": "integer", "minimum": 0 },
-        "total_repos": { "type": "integer", "minimum": 0 },
+        "total_repos": { "type": "integer", "minimum": 0, "description": "Every repository the scan found, substantive or not - unchanged in meaning by the substantive split below." },
+        "substantive_repos": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Count of total_repos that are substantive (see repos[].substantive). Not required at the schema level, for the same legacy-snapshot reason repos[].substantive is not required - every snapshot lib/workspace-scan.ts actually produces always carries it."
+        },
         "dependency_frequency": {
           "type": "object",
-          "description": "Dependency name -> count of repositories carrying it (deps and dev_deps combined, deduped per repo), sorted by descending count then ascending name and capped at max_dependency_names. A scoped npm name outside the public-scope allowlist is recorded as '@private-scope' instead of by name; a module-path name whose host is outside the public-module-host allowlist is recorded as 'private-module' instead of by name.",
+          "description": "Dependency name -> count of repositories carrying it (deps and dev_deps combined, deduped per repo), sorted by descending count then ascending name and capped at max_dependency_names. A scoped npm name outside the public-scope allowlist is recorded as '@private-scope' instead of by name; a module-path name whose host is outside the public-module-host allowlist is recorded as 'private-module' instead of by name. Computed over substantive repositories only.",
           "additionalProperties": { "type": "integer", "minimum": 0 }
         },
         "manifest_coverage": {
           "type": "object",
-          "description": "Manifest kind (e.g. 'npm') -> count of repos carrying at least one manifest of that kind.",
+          "description": "Manifest kind (e.g. 'npm') -> count of repos carrying at least one manifest of that kind. Computed over substantive repositories only.",
           "additionalProperties": { "type": "integer", "minimum": 0 }
         },
         "marker_coverage": {
           "type": "object",
-          "description": "Marker name -> a Rate ({value, n, of, reason?}) over total_repos, same shape as lib/insights.ts's Rate.",
+          "description": "Marker name -> a Rate ({value, n, of, reason?}) over substantive_repos (not total_repos), same shape as lib/insights.ts's Rate.",
           "additionalProperties": {
             "type": "object",
             "required": ["value", "n", "of"],

@@ -189,8 +189,14 @@ test('--read exits non-zero, having read zero roots, when workspace/roots.yml do
 });
 
 // --- 5. child drift -----------------------------------------------------------------------------
+// A newly-appeared, unapproved child is surfaced in pending_approval and never scanned - but,
+// unlike the bug this replaces, its approved sibling is still scanned normally. Asserting
+// obs.roots[0].repos === [] here (the old version of this test) would be true whether the fix
+// worked or the bug still stood, since it never actually approved anything the drift could
+// otherwise have scanned - see the dedicated partial-approval test below for the real,
+// leakage-sensitive assertion.
 
-test('a root whose immediate children gained a directory since approval yields it in pending_approval, not in the scanned repos', () => {
+test('a root whose immediate children gained a directory since approval yields it in pending_approval; its already-approved sibling is still scanned, not skipped', () => {
   const base = tmpRoot();
   mkFixtureRepo(base, 'proj');
   const roots: ApprovedRoot[] = [{ label: 'work', path: base, approved_children: ['proj'] }];
@@ -199,11 +205,104 @@ test('a root whose immediate children gained a directory since approval yields i
 
   const obs = collectWorkspace(roots, DEFAULT_BUDGETS, fixtureGit);
   assert.deepEqual(obs.roots[0].pending_approval, ['new-dir']);
-  assert.deepEqual(obs.roots[0].repos, []);
+  assert.deepEqual(
+    obs.roots[0].repos.map((r) => r.name),
+    ['proj'],
+    'the drifted sibling must not veto scanning the already-approved child',
+  );
 
   const snapshot = computeWorkspaceScan(obs, META);
   assert.deepEqual(snapshot.roots[0].pending_approval, ['new-dir']);
-  assert.equal(snapshot.repos.length, 0);
+  assert.equal(snapshot.repos.length, 1);
+  assert.equal(snapshot.repos[0].name, 'proj');
+});
+
+// --- 5b. partial approval: the case approved_children exists for -----------------------------
+// Regression for the design bug this change fixes: collectWorkspace used to skip an ENTIRE root
+// the moment any one child was unapproved, so approving a subset (the case a workspace holding
+// client or employer repositories alongside the user's own most needs) silently scanned nothing
+// at all - zero repositories, no error, no truncation event. The security-relevant half of this
+// test is that the unapproved sibling contributes zero repositories and leaks none of its file or
+// documentation content anywhere in the snapshot or the doc bundle - not merely that it is absent
+// from the repos list.
+
+test('a root with two approved repos and one unapproved sibling scans only the approved pair; the unapproved sibling contributes zero repositories and leaks nothing', () => {
+  const base = tmpRoot();
+  mkFixtureRepo(base, 'a');
+  mkFixtureRepo(base, 'b');
+  const repoC = mkFixtureRepo(base, 'c');
+  writeFileSync(join(repoC, 'README.md'), 'c-doc-body-should-never-leak');
+  writeFileSync(join(repoC, 'app.js'), 'const SENTINEL = "c-file-body-should-never-leak";');
+
+  const roots: ApprovedRoot[] = [{ label: 'work', path: base, approved_children: ['a', 'b'] }];
+  const obs = collectWorkspace(roots, DEFAULT_BUDGETS, fixtureGit);
+  const snapshot = computeWorkspaceScan(obs, META);
+  const bundle = buildDocBundle(obs);
+  const json = JSON.stringify(snapshot);
+  const bundleJson = JSON.stringify(bundle);
+
+  assert.deepEqual(obs.roots[0].pending_approval, ['c']);
+  assert.deepEqual(snapshot.roots[0].pending_approval, ['c']);
+  assert.deepEqual(
+    snapshot.repos.map((r) => r.name).sort(),
+    ['a', 'b'],
+    'both approved children must be scanned',
+  );
+  assert.ok(!snapshot.repos.some((r) => r.name === 'c'), 'the unapproved sibling must contribute zero repositories');
+  for (const sentinel of ['c-doc-body-should-never-leak', 'c-file-body-should-never-leak']) {
+    assert.ok(!json.includes(sentinel), `the snapshot must never carry content from the unapproved sibling (${sentinel})`);
+    assert.ok(!bundleJson.includes(sentinel), `the doc bundle must never carry content from the unapproved sibling (${sentinel})`);
+  }
+});
+
+// --- 5c. a root that is itself a repository still scans as before -----------------------------
+
+test('a root that is itself a repository (no children to partition) still scans normally', () => {
+  const base = tmpRoot();
+  writeFileSync(join(base, 'FIXTURE-git.json'), JSON.stringify({ commits: [], remote: null }));
+  writeFileSync(join(base, 'index.js'), '1');
+  const roots: ApprovedRoot[] = [{ label: 'work', path: base, approved_children: [] }];
+
+  const obs = collectWorkspace(roots, DEFAULT_BUDGETS, fixtureGit);
+  assert.equal(obs.roots[0].repos.length, 1);
+  assert.deepEqual(obs.roots[0].pending_approval, []);
+  assert.deepEqual(obs.roots[0].missing_children, []);
+});
+
+// --- 5d. an approved child that no longer exists on disk does not crash ------------------------
+
+test('an approved child directory that no longer exists on disk is skipped without crashing and reported in missing_children', () => {
+  const base = tmpRoot();
+  mkFixtureRepo(base, 'proj');
+  const roots: ApprovedRoot[] = [{ label: 'work', path: base, approved_children: ['proj', 'ghost-child'] }];
+
+  const obs = collectWorkspace(roots, DEFAULT_BUDGETS, fixtureGit);
+  assert.deepEqual(
+    obs.roots[0].repos.map((r) => r.name),
+    ['proj'],
+  );
+  assert.deepEqual(obs.roots[0].missing_children, ['ghost-child']);
+
+  const snapshot = computeWorkspaceScan(obs, META);
+  assert.deepEqual(snapshot.roots[0].missing_children, ['ghost-child']);
+  assert.ok(snapshot.limits.some((l) => l.includes("root 'work'") && l.includes('ghost-child') && l.includes('not found on disk')));
+});
+
+// --- 5e. determinism: approved_children order must not affect the snapshot ----------------------
+
+test('approved_children listed in a different order produces a JSON.stringify-identical snapshot', () => {
+  const base = tmpRoot();
+  mkFixtureRepo(base, 'alpha');
+  mkFixtureRepo(base, 'beta');
+
+  const rootsForward: ApprovedRoot[] = [{ label: 'work', path: base, approved_children: ['alpha', 'beta'] }];
+  const rootsReversed: ApprovedRoot[] = [{ label: 'work', path: base, approved_children: ['beta', 'alpha'] }];
+
+  const snapForward = computeWorkspaceScan(collectWorkspace(rootsForward, DEFAULT_BUDGETS, fixtureGit), META);
+  const snapReversed = computeWorkspaceScan(collectWorkspace(rootsReversed, DEFAULT_BUDGETS, fixtureGit), META);
+
+  assert.deepEqual(snapForward, snapReversed);
+  assert.equal(JSON.stringify(snapForward), JSON.stringify(snapReversed));
 });
 
 // --- 6. symlinks never followed ------------------------------------------------------------------
@@ -1113,4 +1212,87 @@ test('PART C: gitCli ignores a global i18n.logOutputEncoding setting in the call
   } finally {
     process.env.HOME = originalHome;
   }
+});
+
+// --- 16. scratch repo dilution: cache pruning and the substantive-only denominator -------------
+// PROGRESS.md, "The scanner counts scratch git repositories inside agent tool caches as real
+// projects": on a real scan, 4 of 13 discovered repositories sat under a coding agent's plugin
+// cache directory (three throwaway temp_git_* clones with one commit and zero documentation
+// files, one installed third-party plugin), diluting every marker ratio in the report. Two
+// complementary fixes: PRUNE_DIRS gained cache/.cache/caches (never descend into a tool cache at
+// all), and computeWorkspaceScan classifies each repo as substantive/not so the coverage ratios
+// use a denominator of real projects even when a scratch repo evades the prune list some other
+// way (a bare "temp-repos" directory outside any cache/, for instance).
+
+test('a repo with no manifest, no readme, and one commit is classified non-substantive, is still listed, and is excluded from marker_coverage\'s denominator', () => {
+  const base = tmpRoot();
+  // A substantive sibling so total_repos and substantive_repos can be told apart, and
+  // marker_coverage's real denominator (1) can be told apart from the unfiltered count (2).
+  const realProject = mkFixtureRepo(base, 'real-project', { commits: [{ date: '2026-08-01', author: 'a', subject: 'feat: init' }] });
+  writeFileSync(join(realProject, 'README.md'), 'a real project');
+  const scratchRepo = mkFixtureRepo(base, 'temp_git_1234_abcd', { commits: [{ date: '2026-08-01', author: 'a', subject: 'wip' }] });
+  writeFileSync(join(scratchRepo, 'index.js'), '1');
+
+  const roots: ApprovedRoot[] = [{ label: 'work', path: base, approved_children: ['real-project', 'temp_git_1234_abcd'] }];
+  const snapshot = computeWorkspaceScan(collectWorkspace(roots, DEFAULT_BUDGETS, fixtureGit), META);
+
+  const scratch = snapshot.repos.find((r) => r.name === 'temp_git_1234_abcd')!;
+  assert.equal(scratch.substantive, false, 'no manifest, no readme, one commit: non-substantive');
+  assert.ok(snapshot.repos.some((r) => r.name === 'temp_git_1234_abcd'), 'a non-substantive repo is still listed in repos - nothing is hidden');
+  assert.equal(snapshot.aggregate.total_repos, 2, 'total_repos counts every repository found, substantive or not');
+  assert.equal(snapshot.aggregate.substantive_repos, 1, 'only the real project is substantive');
+  // The actual bug this fixes: assert the denominator number directly, not merely that a rate
+  // object exists. Before this change, `of` would read 2 (diluted by the scratch repo).
+  assert.equal(snapshot.aggregate.marker_coverage.readme.of, 1, "marker_coverage's denominator must be substantive_repos, not total_repos");
+});
+
+test('a repo with a readme but no manifest and one commit is classified per the rule as written: a readme alone already breaks the non-substantive AND, so it is substantive', () => {
+  const base = tmpRoot();
+  const repo = mkFixtureRepo(base, 'readme-only', { commits: [{ date: '2026-08-01', author: 'a', subject: 'chore: init' }] });
+  writeFileSync(join(repo, 'README.md'), 'just a readme, no manifest');
+
+  const roots: ApprovedRoot[] = [{ label: 'work', path: base, approved_children: ['readme-only'] }];
+  const snapshot = computeWorkspaceScan(collectWorkspace(roots, DEFAULT_BUDGETS, fixtureGit), META);
+
+  const repoSnap = snapshot.repos.find((r) => r.name === 'readme-only')!;
+  assert.equal(repoSnap.substantive, true);
+});
+
+test('a directory named "cache" nested inside an approved root is never descended into; a repository beneath it contributes nothing', () => {
+  const base = tmpRoot();
+  const agentToolDir = join(base, 'agent-tool');
+  mkdirSync(agentToolDir, { recursive: true });
+  // Mirrors the real defect's shape: a scratch repo several levels under a tool's own cache/
+  // directory, discovered by the recursive walk rather than approved directly as a child.
+  const cacheRepoDir = join(agentToolDir, 'cache', 'plugins', 'temp_git_9999_xyz');
+  mkdirSync(cacheRepoDir, { recursive: true });
+  writeFileSync(join(cacheRepoDir, 'FIXTURE-git.json'), JSON.stringify({ commits: [], remote: null }));
+  const realProject = mkFixtureRepo(base, 'real-project');
+  writeFileSync(join(realProject, 'README.md'), 'x');
+
+  const roots: ApprovedRoot[] = [{ label: 'work', path: base, approved_children: ['agent-tool', 'real-project'] }];
+  const obs = collectWorkspace(roots, DEFAULT_BUDGETS, fixtureGit);
+
+  assert.deepEqual(
+    obs.roots[0].repos.map((r) => r.name),
+    ['real-project'],
+    'the repository under agent-tool/cache/ must never be discovered',
+  );
+});
+
+test('a limits line names the non-substantive count when one exists, and no such line appears when none exists', () => {
+  const baseWithScratch = tmpRoot();
+  const real = mkFixtureRepo(baseWithScratch, 'real-project', { commits: [{ date: '2026-08-01', author: 'a', subject: 'feat: x' }] });
+  writeFileSync(join(real, 'README.md'), 'x');
+  mkFixtureRepo(baseWithScratch, 'temp_git_0001_aaaa', { commits: [{ date: '2026-08-01', author: 'a', subject: 'wip' }] });
+  const rootsWithScratch: ApprovedRoot[] = [{ label: 'work', path: baseWithScratch, approved_children: ['real-project', 'temp_git_0001_aaaa'] }];
+  const withScratch = computeWorkspaceScan(collectWorkspace(rootsWithScratch, DEFAULT_BUDGETS, fixtureGit), META);
+  assert.ok(withScratch.limits.some((l) => l.includes('1 of 2 discovered repositories')), 'a limits line must name the non-substantive count');
+
+  const baseClean = tmpRoot();
+  const cleanRepo = mkFixtureRepo(baseClean, 'real-project', { commits: [{ date: '2026-08-01', author: 'a', subject: 'feat: x' }] });
+  writeFileSync(join(cleanRepo, 'README.md'), 'x');
+  const rootsClean: ApprovedRoot[] = [{ label: 'work', path: baseClean, approved_children: ['real-project'] }];
+  const clean = computeWorkspaceScan(collectWorkspace(rootsClean, DEFAULT_BUDGETS, fixtureGit), META);
+  assert.ok(!clean.limits.some((l) => l.includes('discovered repositories carried no dependency manifest')), 'no line when every repository is substantive');
 });

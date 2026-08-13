@@ -63,11 +63,18 @@ course, because a contract the learner confirmed is what every downstream skill 
    bearing guard: it is what makes "no source code bodies", "read depth capped", and "no
    raw paths in the report" deterministic rather than advisory. See Limits for the part of
    it that remains advisory.
-4. **Consent precedes reading.** `node tools/scan.ts <tenant-dir> --enumerate` lists
-   candidate roots with file counts and reads no file contents. `--read` refuses any root
-   absent from `workspace/roots.yml`, and refuses a root whose immediate child directories
-   have changed since approval, surfacing the new children as `pending_approval` instead of
-   scanning them. Approval binds what was approved, not the root forever. `--read` writes
+4. **Consent precedes reading, and binds per child, not per root.** `node tools/scan.ts
+   <tenant-dir> --enumerate` lists candidate roots with file counts and reads no file
+   contents. `--read` refuses any root absent from `workspace/roots.yml` outright. For a root
+   present in `workspace/roots.yml`, every approved child directory is scanned individually;
+   a child directory that is new since approval, or was never approved, is skipped on its own
+   and surfaced as `pending_approval`, never treated as a veto over the rest of the root.
+   Approving a subset of a root's children is expected, not an edge case: it is exactly what a
+   workspace holding client or employer repositories alongside the user's own requires. An
+   approved child directory that no longer exists on disk (renamed or deleted since approval)
+   is skipped without error and named separately, in `missing_children`, distinct from
+   `pending_approval` because it was approved and is simply gone rather than present-but-never-
+   approved. Approval binds what was approved, not the root forever. `--read` writes
    `workspace/YYYY-MM-DD-scan.json` by default (`--no-write` skips persisting it, for
    inspection only).
 
@@ -113,8 +120,9 @@ course, because a contract the learner confirmed is what every downstream skill 
     `collectWorkspace` resolves each approved root's path once per run and records a `status` of
     `ok`, `missing` (the path no longer exists), or `not-a-directory` (the path resolves to a
     file) on that root's entry in both the observation and the snapshot. A non-`ok` status always
-    carries `repos_found: 0` and `pending_approval: []`, since nothing was walked - before this
-    field existed, a renamed or replaced approved root produced exactly the same snapshot as a
+    carries `repos_found: 0`, `pending_approval: []`, and `missing_children: []`, since nothing
+    was walked - before this field existed, a renamed or replaced approved root produced exactly
+    the same snapshot as a
     genuinely empty one, silently confident. `tools/scan.ts`'s summary and the snapshot's own
     `limits` array both name a non-`ok` status by root label.
 11. **A workspace with too little evidence does not get a confident report.** Below a minimum
@@ -124,6 +132,20 @@ course, because a contract the learner confirmed is what every downstream skill 
     than writing observations and candidates from almost nothing, and offers a fresh
     `elicit-needs` interview instead: naming a topic directly never needed this subsystem. See
     [find-subjects/SKILL.md](../../.agents/skills/find-subjects/SKILL.md)'s thin-evidence check.
+12. **A candidate is checked against the tenant's existing courses before it is ever checked
+    against the community index.** `lib/course-dirs.ts`'s `listCourses` (`node
+    tools/list-courses.ts <tenant-dir> --json`, `npm run courses`) reads course manifests and
+    each course directory's `profile.md` presence only - never `progress/ledger.jsonl` or
+    `progress/mastery.yml`, which stay out of scope for this subsystem (see Boundaries). A
+    candidate matching a course that already carries a `profile.md` is reported as a
+    confirmed-contract finding and never proposed as a new candidate; a candidate matching a
+    course with no `profile.md` is proposed as starting that existing skeleton rather than a
+    fresh generation. Only a candidate matching neither is then checked against
+    `content/community/INDEX.md`. See
+    [find-subjects/references/report-format.md](../../.agents/skills/find-subjects/references/report-format.md)'s
+    three routing outcomes. This defect was found on `find-subjects`' first real run against a
+    real workspace: routing checked the community index only and proposed two courses the
+    tenant already held.
 
 ## Architecture
 
@@ -282,7 +304,43 @@ descendant escaped the root. The actual guard is that symbolic links are never f
 (counted as `symlinks_skipped`), so nothing the walker visits can lead it outside the root
 without a real, non-symlink boundary; the walker also prunes `.git/`, `node_modules/`,
 `.venv/`, `venv/`, `vendor/`, `.terraform/`, `dist/`, `build/`, `target/`, `__pycache__/`,
-`.next/`.
+`.next/`, `cache/`, `.cache/`, `caches/`. The last three were added after a real scan found four
+non-project repositories under a coding agent's plugin cache directory (see "Substantive
+repositories" below); matched exactly like every other entry in this list, case-sensitively, by
+literal directory name - see Limits for the honest cost of that.
+
+## Substantive repositories
+
+Found on a real `find-subjects` run, alongside the confirmed-contract defect above: 4 of 13
+discovered repositories were not projects at all, all four under a coding agent's plugin cache
+directory - three throwaway directories named like `temp_git_<digits>_<random>` with one commit
+and zero documentation files each, and one installed third-party plugin at a version-numbered
+path with its own readme and 55 files. Every ratio in the generated report was diluted by them:
+a marker coverage reading 6 of 13 was really 6 of 9 across repositories the person actually
+works in, and the third-party plugin's own documentation was read and interpreted as if it were
+the user's authored work. Two complementary fixes, because they catch different things:
+
+1. **The `cache`/`.cache`/`caches` prune additions** (above) stop the walker descending into a
+   tool's cache directory at all, which catches the observed case cleanly and generalises to
+   package and plugin caches from other tools.
+2. **A repository can still be a git repository without being a project** even when it never
+   sits under a pruned directory - a bare "scratch" folder outside any cache, for instance. Each
+   `SnapshotRepo` therefore carries `substantive: boolean`, computed purely from fields the same
+   repository entry already has: `substantive` is `false` only when the repository carries no
+   dependency manifest, no readme marker (`markers.readme`), **and** at most one commit in its
+   history (`commits_total`) - a directory accumulates at least one of those three signals the
+   moment it becomes a real, worked-on project. `aggregate.marker_coverage`,
+   `aggregate.dependency_frequency`, and `aggregate.manifest_coverage` are computed over
+   substantive repositories only, so a ratio like "6 of 9 repos carry a lockfile" describes real
+   projects rather than being diluted by a scratch clone.
+
+Nothing is hidden by this: `snapshot.repos` still lists every repository the scan found, whether
+substantive or not, and `aggregate.total_repos` keeps its exact original meaning (every
+repository found). `aggregate.substantive_repos` is a new, separate count rather than a
+redefinition of `total_repos` - a report can state both numbers rather than either one silently
+changing meaning underneath it. When at least one non-substantive repository was found, `limits`
+carries a line naming how many, so a report can never quietly imply its ratios covered every
+repository the scan discovered.
 
 ## Budgets
 
@@ -349,8 +407,10 @@ Three tiers, deliberately unequal in how much they are allowed to claim.
 4. Only allowlisted documentation files have their bodies read; no source file body is ever
    emitted.
 5. `--read` against a root absent from `workspace/roots.yml` exits non-zero having read
-   zero files, and a root whose immediate children changed since approval yields
-   `pending_approval` rather than a scan.
+   zero files. Within an approved root, a child directory that is new since approval, or was
+   never approved, yields `pending_approval` and is never scanned, while every other,
+   approved sibling is scanned normally - approving a subset of a root's children never
+   silently scans nothing.
 6. Symbolic links are never followed; a symlinked directory contributes zero files and
    increments `symlinks_skipped`.
 7. Every cap that binds appears in `truncation.events` and produces a `limits` line.
@@ -363,6 +423,15 @@ Three tiers, deliberately unequal in how much they are allowed to claim.
 11. Every structural fact in a narrative report traces to a field in that day's snapshot.
 12. A root whose approved path is missing or is not a directory never reports `status: 'ok'`;
     every other root does.
+13. No candidate in a narrative report's "Courses worth taking" section names a course already
+    under contract in the tenant (an existing course carrying `profile.md`). A candidate
+    matching such a course is reported as a confirmed-contract finding instead, never as a
+    proposed candidate.
+14. `aggregate.marker_coverage`, `aggregate.dependency_frequency`, and
+    `aggregate.manifest_coverage` are computed with `aggregate.substantive_repos` as their
+    denominator, never `aggregate.total_repos` - a non-substantive repository (see "Substantive
+    repositories") is still listed in `repos` and still counted in `total_repos`, but never
+    contributes to any of these three ratios.
 
 ## Verified by
 
@@ -383,13 +452,32 @@ Three tiers, deliberately unequal in how much they are allowed to claim.
   now does as protocol step 9 (`.agents/skills/find-subjects/SKILL.md`). `npm run gate`
   alone does not cover it.
 - Invariant 5: `tools/test/workspace-scan.test.ts` (non-zero exit and a zero open count
-  against an unapproved root; a child-drift fixture).
+  against an unapproved root; a child-drift fixture; a partial-approval fixture asserting
+  that an unapproved sibling contributes zero repositories and leaks no file or documentation
+  content anywhere in the snapshot or the doc bundle, while its approved siblings are scanned
+  normally; a missing-approved-child fixture).
 - Invariant 10: by construction, plus the existing write-authority test.
 - Invariant 11: `tools/validate.ts`'s `subjects` check.
 - Invariant 12: `tools/test/workspace-scan.test.ts` (a root pointed at a nonexistent path yields
   `status: 'missing'`; a root pointed at a regular file yields `status: 'not-a-directory'`; a
   genuinely empty real directory yields `status: 'ok'` and none of the three is conflated with
   another).
+- Invariant 13: procedural, not machine-verified - no validate check parses a generated
+  report's "Courses worth taking" section semantically to catch a course name that duplicates
+  an existing one, so this invariant is instructed in
+  [find-subjects/SKILL.md](../../.agents/skills/find-subjects/SKILL.md) protocol step 10 and
+  [find-subjects/references/report-format.md](../../.agents/skills/find-subjects/references/report-format.md),
+  not enforced by the gate. What IS machine-verified is the ground truth the check depends on:
+  `lib/course-dirs.ts`'s `listCourses` (confirmed-versus-skeleton by `profile.md` presence) is
+  unit-tested in `tools/test/course-dirs.test.ts`, including against the committed
+  `examples/example-learner` tree's one confirmed course and one skeleton course.
+- Invariant 14: `tools/test/workspace-scan.test.ts` (a repository with no manifest, no readme,
+  and one commit is classified `substantive: false`, stays listed in `repos`, and
+  `marker_coverage`'s denominator is asserted directly rather than merely checking a rate object
+  exists; a `limits` line names the non-substantive count when one exists and is absent when
+  none does) and `tools/test/workspace-fixture.test.ts` against the committed fixture's
+  `fx-scratch-clone` (non-substantive, still listed) and `fx-agent-tool-cache` (a repository
+  nested under a pruned `cache/` directory that never appears in the scan at all).
 
 ## Limits
 
@@ -414,11 +502,19 @@ The chokepoint makes most of this deterministic, but not all of it:
    is the control.
 4. **Generated files outside the committed prune list are counted** as ordinary files,
    because `.gitignore` is deliberately not consulted.
-5. **A bind mount or filesystem firmlink inside an approved root is still walked.** The
+5. **A project legitimately containing a source directory named `cache` (not a tool's own cache
+   directory) is skipped too.** `PRUNE_DIRS` matches by literal directory name, the same
+   convention every other entry in that list already uses; it cannot tell a tool's cache
+   directory apart from a project's own directory that happens to share the name. This is the
+   honest cost of a name-based prune list, and is why the substantive/non-substantive split
+   ("Substantive repositories" above) exists as a second, complementary guard: a scratch
+   repository that evades the prune list some other way is still excluded from the coverage
+   ratios' denominator, even though it still appears in `repos`.
+6. **A bind mount or filesystem firmlink inside an approved root is still walked.** The
    confinement guard is never-follow-symlinks, not a per-candidate escape check (see
    Traversal confinement above); a bind mount or firmlink is not a symbolic link, so the
    walker treats it as ordinary directory content and reads whatever it points at.
-6. **The manifest parsers are deliberately shallow** - a bounded regex or a hand-rolled line
+7. **The manifest parsers are deliberately shallow** - a bounded regex or a hand-rolled line
    scanner, never a real TOML/PEP 508/go.mod grammar, matching this repo's
    zero-dependency-tooling preference. Each still knowingly misses cases that a full parser
    would not, disclosed here rather than silently: `pyproject.toml` does not read poetry
@@ -436,7 +532,7 @@ The chokepoint makes most of this deterministic, but not all of it:
    all. None of these throw or corrupt other results - each yields fewer names than a full
    parser would, which is the acceptable "miss" this section exists to distinguish from a
    parser reporting something wrong.
-7. **The ephemeral doc-body bundle can outlive an aborted run.** It is written into the system
+8. **The ephemeral doc-body bundle can outlive an aborted run.** It is written into the system
    temporary directory (`os.tmpdir()`, "Data touched" table above) and is deleted only by the
    `find-subjects` skill's own cleanup step ("How it behaves" item 3) once it finishes, or by the
    next `--read`'s self-heal (`tools/scan.ts` removes any bundle a previous run left behind before

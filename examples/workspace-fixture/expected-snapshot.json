@@ -19,8 +19,9 @@
     {
       "root_id": "aaa77319aca1",
       "label": "fixture-workspace",
-      "repos_found": 3,
+      "repos_found": 4,
       "pending_approval": [],
+      "missing_children": [],
       "status": "ok"
     }
   ],
@@ -112,7 +113,8 @@
       "files_walked": 10,
       "symlinks_skipped": 0,
       "secrets_skipped": 0,
-      "unreadable_dirs": 0
+      "unreadable_dirs": 0,
+      "substantive": true
     },
     {
       "repo_id": "b0b082057938",
@@ -191,7 +193,8 @@
       "files_walked": 7,
       "symlinks_skipped": 0,
       "secrets_skipped": 0,
-      "unreadable_dirs": 0
+      "unreadable_dirs": 0,
+      "substantive": true
     },
     {
       "repo_id": "9e1129e8148c",
@@ -264,12 +267,58 @@
       "files_walked": 9,
       "symlinks_skipped": 1,
       "secrets_skipped": 3,
-      "unreadable_dirs": 0
+      "unreadable_dirs": 0,
+      "substantive": true
+    },
+    {
+      "repo_id": "f251e957c30c",
+      "name": "fx-scratch-clone",
+      "depth": 1,
+      "root_label": "fixture-workspace",
+      "remote_host": null,
+      "commits_total": 1,
+      "commits_90d": 1,
+      "commit_types": {},
+      "keyword_hits": {},
+      "authors": 1,
+      "extensions": {
+        ".json": 1,
+        ".md": 1,
+        ".js": 1
+      },
+      "language_shares": {
+        ".json": 0.33,
+        ".md": 0.33,
+        ".js": 0.33
+      },
+      "manifests": [],
+      "markers": {
+        "tests": false,
+        "ci": false,
+        "dockerfile": false,
+        "iac": false,
+        "readme": false,
+        "docs_dir": false,
+        "lockfile": false,
+        "license": false
+      },
+      "docs": [
+        {
+          "path": "FIXTURE.md",
+          "bytes": 834
+        }
+      ],
+      "files_walked": 3,
+      "symlinks_skipped": 0,
+      "secrets_skipped": 0,
+      "unreadable_dirs": 0,
+      "substantive": false
     }
   ],
   "aggregate": {
     "total_roots": 1,
-    "total_repos": 3,
+    "total_repos": 4,
+    "substantive_repos": 3,
     "dependency_frequency": {
       "@types/node": 1,
       "click": 1,
@@ -343,6 +392,7 @@
   },
   "limits": [
     ".gitignore is not consulted: the committed prune list is deterministic instead, so generated output outside that list is counted as ordinary files",
-    "commit subjects are discarded immediately after classification: only conventional-commit type counts and keyword hit counts against the committed vocabulary survive"
+    "commit subjects are discarded immediately after classification: only conventional-commit type counts and keyword hit counts against the committed vocabulary survive",
+    "1 of 4 discovered repositories carried no dependency manifest, no readme, and at most one commit, and were excluded from marker_coverage, dependency_frequency, and manifest_coverage's denominators (still listed in \"repos\" and counted in aggregate.total_repos)"
   ]
 }

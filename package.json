@@ -12,6 +12,7 @@
     "validate": "node tools/validate.ts",
     "eval": "node tools/eval.ts",
     "insights": "node tools/insights.ts",
+    "courses": "node tools/list-courses.ts",
     "scan": "node tools/scan.ts",
     "cost": "node tools/cost.ts",
     "export": "node tools/export.ts",

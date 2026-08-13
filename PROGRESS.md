@@ -15,6 +15,107 @@ _Last updated: 2026-08-12_
 
 ## Done
 
+- 2026-08-12 - **The scanner counted scratch git repositories inside agent tool caches as real
+  projects.** Found on a real `find-subjects` run: 4 of 13 discovered repositories were not
+  projects at all, all four under a coding agent's plugin cache directory - three throwaway
+  directories named like `temp_git_<digits>_<random>` with one commit and zero documentation
+  files each, and one installed third-party plugin at a version-numbered path with its own
+  readme and 55 files. Every ratio in the generated report was diluted by them: a marker
+  coverage reading 6 of 13 was really 6 of 9 across repositories the person actually works in,
+  and the third-party plugin's own documentation was read and interpreted as if it were the
+  user's authored work. The report had already been disclosing the dilution in its Limits
+  section, which was honest but not a fix.
+
+  Two complementary fixes, since they catch different things. (1) `PRUNE_DIRS`
+  (`lib/workspace-scan.ts`) gained `cache`, `.cache`, and `caches`, matched exactly like every
+  other entry there - case-sensitively, by literal name - so the walker never descends into a
+  tool's cache directory at all; this catches the observed case cleanly and generalises to
+  package/plugin caches from other tools. The honest cost, disclosed in the spec's Limits and
+  in a code comment: a project legitimately containing a source directory named `cache` is
+  skipped too. (2) Every `SnapshotRepo` now carries `substantive: boolean`, a pure derivation
+  from fields the repository entry already has - `false` only when the repository carries no
+  dependency manifest, no readme marker, and at most one commit in its history.
+  `aggregate.marker_coverage`, `aggregate.dependency_frequency`, and
+  `aggregate.manifest_coverage` are now computed over substantive repositories only, so a ratio
+  like "6 of 9 repos carry a lockfile" describes real projects rather than being diluted by a
+  scratch clone that evades the prune list some other way. Nothing is hidden by this:
+  `snapshot.repos` still lists every repository found, `aggregate.total_repos` keeps its exact
+  original meaning, and a new `aggregate.substantive_repos` count sits alongside it rather than
+  redefining it. A `limits` line names how many non-substantive repositories were found whenever
+  at least one was.
+
+  `schemas/workspace-scan.schema.json` gained `repos[].substantive` and
+  `aggregate.substantive_repos`, both optional at the schema level (same legacy-snapshot
+  reasoning as `roots[].status`) so an older snapshot still validates. `docs/specs/
+  subject-finder.md` gained a new "Substantive repositories" section, a Limits entry for the
+  `cache` prune's honest cost, invariant 14, and a matching "Verified by" entry. The committed
+  fixture (`examples/workspace-fixture/`) gained two new projects exercising each fix:
+  `fx-scratch-clone` (a real repository with no manifest, no readme, and one commit -
+  `substantive: false`, still listed) and `fx-agent-tool-cache` (not itself a repository; a real
+  repository sits nested at `cache/plugins/temp_git_9421_a1b2/` and is never discovered, proving
+  the prune). Golden regenerated and reviewed. New tests in `tools/test/workspace-scan.test.ts`
+  pin the exact rule (a readme alone already makes a repository substantive, asserted rather than
+  assumed) and assert the `marker_coverage` denominator number directly, since that number was
+  the actual bug. Gate green: 369 tests, `npm run validate` clean.
+
+- 2026-08-12 - **find-subjects: candidates duplicated courses the tenant already held.** Found
+  on the subsystem's first real run against a real workspace: two of three proposed candidates
+  (`ai-and-agents/llm-evals-and-judges` and `infrastructure/hosting-and-deployment`) were
+  courses already under contract in the learner's vault. The defect: protocol step 10 routed
+  every candidate by grepping `content/community/INDEX.md` for a matching pack, but never
+  checked which courses the tenant already had, so the same evidence that should have surfaced
+  "you're already covered here" instead produced a fresh proposal. Nothing in the gate or the
+  three-reviewer process caught it - it surfaced only because a human read `home.md` by hand
+  during the vault-weaving step. Proposing a course someone is already enrolled in is exactly
+  the kind of error that costs the whole report its credibility.
+
+  Fix: added `lib/course-dirs.ts`'s `listCourses` (and its CLI, `node tools/list-courses.ts
+  <tenant-dir> --json` / `npm run courses`), reusing the existing `findCourseDirs` walk rather
+  than inventing a parallel one. It returns, per course, domain, slug, title, and whether
+  `profile.md` exists - the line between "under contract" and "unstarted skeleton", the
+  distinction protocol step 10 now routes on. `SKILL.md` step 10 and
+  `references/report-format.md`'s "Courses worth taking" section now specify three routing
+  outcomes: already under contract (report it as a confirmed-contract finding, never propose
+  it), an unstarted skeleton (propose starting the existing one, not fresh generation), or no
+  match (the existing community-index or fresh-interview routing, unchanged). `docs/specs/
+  subject-finder.md` gained "How it behaves" item 12 and invariant 13.
+
+  Scope boundary held: this reads only course manifests and `profile.md`'s presence, never
+  `progress/ledger.jsonl` or `progress/mastery.yml` - holding a contract is not the same as
+  having studied it, and the settled decision that find-subjects does not consume study
+  insights or the ledger stands unchanged.
+
+  What is machine-checked versus prose-only: `listCourses` itself is unit-tested
+  (`tools/test/course-dirs.test.ts`), including against the committed `examples/example-
+  learner` tree's one confirmed course (`rust-for-backend`) and one skeleton course
+  (`git-fundamentals`). Nothing yet re-checks that a generated narrative report's routing
+  decision actually matches what `listCourses` returned that run - invariant 13's "Verified by"
+  entry says so plainly rather than claiming a gate check that was not built.
+
+- 2026-08-12 - **find-subjects: partial approval scanned nothing.** Found on the subsystem's
+  first real run, against a real workspace, hours after it shipped green. `collectWorkspace`
+  guarded discovery with `if (drift.pending_approval.length === 0)`, so any unapproved sibling
+  vetoed the entire root: approving a subset of a directory's children produced zero
+  repositories, no error, and no truncation event - a confident empty report. Partial approval
+  is not an edge case, it is the case that matters most: a workspace holding client or employer
+  repositories alongside your own is exactly when someone must approve part of a directory and
+  exclude the rest, which is what the consent design exists to allow. Discovery now descends per
+  approved child (`discoverApprovedChildren`, deterministic `Buffer.compare` order so the
+  user-authored `roots.yml` order cannot change a snapshot); `pending_approval` keeps its
+  meaning and is still never scanned. Added `missing_children` so an approved directory that was
+  renamed is surfaced rather than silently contributing nothing.
+
+  **Why 97 tests and three adversarial reviewers missed it:** every test built its `roots.yml`
+  with all children approved. The drift test approved everything and then added a directory
+  afterward, so it covered "a child appeared later" and never "the user deliberately approved a
+  subset". The suite tested the mechanism's edges and left its main path uncovered - and the
+  drift test turned out to be vacuous under the fix's own logic, because it never approved a
+  sibling the bug could have wrongly skipped. It is now strengthened to assert the approved
+  sibling is scanned while the drifted one stays pending. The new regression test seeds the
+  unapproved sibling with distinctive README and source bodies and asserts neither appears in
+  the snapshot or the doc bundle, so it proves the sibling was never opened rather than merely
+  absent from the results.
+
 - 2026-08-12 - **`find-subjects`: workspace-evidence course discovery.** Meno's front door
   assumed the learner already knows what they want to learn; `elicit-needs` opens with "what will
   you be able to DO", which is the wrong first question for someone who suspects they are

@@ -64,7 +64,7 @@ function scan() {
     {
       label: 'fixture-workspace',
       path: fixtureRoot,
-      approved_children: ['fx-infra', 'fx-notes-cli', 'fx-payments-api', 'fx-untracked-scripts'],
+      approved_children: ['fx-infra', 'fx-notes-cli', 'fx-payments-api', 'fx-untracked-scripts', 'fx-scratch-clone', 'fx-agent-tool-cache'],
     },
   ];
   const obs = collectWorkspace(roots, DEFAULT_BUDGETS, fixtureGit);
@@ -203,6 +203,28 @@ test('fx-payments-api: markers.tests and markers.ci are both true', () => {
 test('fx-untracked-scripts has no FIXTURE-git.json and contributes no repo to the scan', () => {
   const { snapshot } = scan();
   assert.ok(!snapshot.repos.some((r) => r.name === 'fx-untracked-scripts'));
+});
+
+// --- fx-scratch-clone / fx-agent-tool-cache: the substantive split and the cache prune ----------
+
+test('fx-scratch-clone is discovered and listed, but classified non-substantive and excluded from the coverage denominators', () => {
+  const { snapshot } = scan();
+  const repo = findRepo(snapshot.repos, 'fx-scratch-clone');
+  assert.equal(repo.substantive, false, 'no manifest, no readme, one commit');
+  assert.ok(
+    snapshot.aggregate.substantive_repos < snapshot.aggregate.total_repos,
+    'the fixture must carry at least one non-substantive repo so substantive_repos is a real subset of total_repos',
+  );
+  assert.ok(
+    snapshot.limits.some((l) => l.includes('discovered repositories carried no dependency manifest')),
+    'a limits line must name the non-substantive count',
+  );
+});
+
+test('fx-agent-tool-cache: the nested repository under cache/plugins/ is never discovered', () => {
+  const { snapshot } = scan();
+  assert.ok(!snapshot.repos.some((r) => r.name === 'temp_git_9421_a1b2'), 'a repository beneath a pruned cache/ directory must contribute nothing');
+  assert.ok(!JSON.stringify(snapshot).includes('temp_git_9421_a1b2'));
 });
 
 // --- privacy guards: no absolute path, home-directory prefix, or the fixture's own path ---------
