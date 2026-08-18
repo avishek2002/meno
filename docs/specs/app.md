@@ -3,8 +3,9 @@
 *Status: current as of Phase 4; amended at v1.5 (course groups), v1.6 (course-list collapse and
 filter; the group write surface removed), v1.10 (note-path breadcrumb, course deep-link, guarded
 back control), v1.11 (collapse state actually persists), v1.12 (breadcrumb up-navigation,
-truncatable routes, centralized href builders), and v1.13 (skip link, header reflow,
-reduced-motion coverage, operable-control contrast). Canonical formats owned elsewhere: check blocks and
+truncatable routes, centralized href builders), v1.13 (skip link, header reflow,
+reduced-motion coverage, operable-control contrast), and v1.14 (scroll clearance measured from
+the header). Canonical formats owned elsewhere: check blocks and
 callouts in
 [generate-module/references/check-formats.md](../../.agents/skills/generate-module/references/check-formats.md),
 todos in
@@ -240,6 +241,16 @@ write-authority seam (decision 14) is enforced in code.
     dark and would leave those controls with no perceptible edge (WCAG 1.4.11). The split is
     deliberate: 1.4.11 covers what identifies a component, not every hairline, so panel and
     separator edges keep the lighter token.
+    **Every in-page scroll target clears the sticky header at any width** (v1.14), because the
+    header publishes its own measured height as `--header-height` and `--scroll-clearance` is that
+    height plus a gap. A constant cannot work here: the header wraps, so it is 60px tall on a
+    laptop and 188px at 360px wide, and `scroll-margin-top` cannot reference another element's
+    height. The previous fixed 4.5rem left an anchored module card 28.5px underneath the header on
+    a narrow screen - `elementsFromPoint` returned `.app-header` over the very target the
+    navigation had been asked to reveal - and wrapping the header at v1.13 made the mismatch
+    larger, not smaller. The gap stays in CSS because it is a design decision; the height comes
+    from JavaScript because it is a fact about the DOM. All three consumers (the guidebook's
+    `#section` anchors, the module anchor, the course-list deep link) share the one expression.
     These came out of an agent-run audit of all twelve pages against WCAG 2.2, the ARIA Authoring
     Practices Guide, and the documented axe-core rule set. What that audit could check was
     structure, names, focus, contrast, geometry and motion; what it could not check was whether
