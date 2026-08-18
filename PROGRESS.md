@@ -4,16 +4,117 @@ Living status file - the done / backlog tracker for this project. **Update it wh
 finish a thing -> move it to Done; pick up or think of a new thing -> add it to the agenda; make a call
 that isn't captured in the code -> log it. Keep entries dated, newest near the top of each section.
 
-_Last updated: 2026-08-13_
+_Last updated: 2026-08-18_
 
 > Maintenance: keep this file current whenever work changes. Tooling can't see conversation-only
 > decisions, so logging those is on whoever made them.
 
 ## Pending decisions (needs maintainer)
 
-- None currently open.
+_None open._
 
 ## Done
+
+- 2026-08-18 - **Merged the note-breadcrumb PR (#43) against wave 2's own UI-15 work; the
+  "two `<h1>`s" call below is superseded.** Both sessions touched `NotePage`: #43 built
+  server-side course/domain resolution (`resolveNoteCourse` in `app/server/tree.ts`,
+  `NoteResponse.course`/`domain`) and kept the vault path as the page's `<h1>`, deliberately
+  accepting two `<h1>`s; wave 2 (UI-15 below) dropped the path heading and promoted the note
+  body's own heading instead, with a separate `Breadcrumb`. The maintainer ruling kept both:
+  `notePath.ts`'s `noteBreadcrumb()` and the server-confirmed segments moved into
+  `<nav aria-label="Breadcrumb">` rather than the `<h1>`, and the note body's own heading (already
+  inside the rendered HTML) is the page's only `<h1>`. Net result: one `<h1>`, plus a breadcrumb
+  that can never link to a course the tree does not contain - the data model #43 built, rendered
+  the way UI-15 asked for. `historyDepth.ts` and the guarded back control are unchanged. The route
+  table also merged: `routes.ts` (extracted by #43 for the same DOM-less-`node --test`
+  reason `routeTitles.ts` was) now carries both the `course` route's `#module` fragment and the
+  `tenant` route's `#course-<slug>` fragment; `routeTitle`/`routeNames`/`APP_TITLE` still source
+  from `routeTitles.ts`. Course list, header nav-current, and both `course-list.test.ts` suites
+  kept everything from both sides.
+
+- 2026-08-18 - **UI navigation review, wave 2 plus three cross-track gaps closed.** UI-16: a
+  second `localStorage` key (`meno.courseList.resume.v1:<tenant>`, `courseList.ts`) records the
+  last lesson opened; the course list renders a "Resume: <lesson>" link. UI-17: eight pages
+  (course, lesson, graph, todos, progress, insights, cost, note, guide) moved to route-level
+  `React.lazy` in `App.tsx`, wrapped in one `Suspense` reusing `AsyncStatus`; entry chunk
+  279.54 KB raw / 86.63 KB gzip -> 200.46 KB raw / 64.00 KB gzip. Cross-track gaps six tracks
+  correctly left alone: `courseCtx.revalidate` now composes into the lesson page's registered
+  revalidate, and `TenantsPage` collects every learner card's `/progress` revalidate so "Re-read
+  files" reaches both; the `course` route gained an optional trailing `#module` fragment
+  (mirroring `guide`'s `#section`) and module cards carry `id`, so `InsightsPage`'s planned-debt
+  table can link a module cell to it via `courseModuleHref` (`CostPage` has no module-level rows,
+  so nothing to anchor there); the dir-versus-slug hazard is now a comment on
+  `courseDirOfPath`. Spec: `docs/specs/app.md` (course-list item, guide-fragment item, invariant
+  13, data table, revalidate composition). Review: `docs/reviews/2026-08-13-ui-navigation-review.md`.
+
+- 2026-08-13 - **UI navigation review, wave 0 contract landed** (no behaviour yet). The shared seams
+  six parallel UI tracks build on: `app/client/src/courseContext.ts` (pure, unit-tested) plus
+  `useCourseContext.tsx` for UI-02; `asCourseMastery` in `clientTypes.tsx` for UI-01's live bug
+  (`/course/:course` sends `{concepts, modules}`, and `asMastery` rejected it, so mastery and gate
+  state have never rendered); `Breadcrumb`, `AsyncStatus` and `ErrorState` components; six
+  track-owned stylesheets under `styles/` so no two implementers edit `styles.css`; and
+  `routeTitle()` beside the `ROUTES` table for UI-03. Work order:
+  `docs/reviews/2026-08-13-ui-navigation-review.md`. Still open in wave 0: the route-change effect,
+  the response cache, and adopting `AsyncStatus`/`ErrorState` across the twelve pages.
+
+- 2026-08-18 - **v1.11: the course-list collapse state now survives a reload.** It never had. The
+  decision logged here was to fix it rather than write the limitation into the spec, and the fix
+  turned out to need two changes, not the one the note predicted, because two defects were lining
+  up. Reproducing it in a headless browser against the example tenant was what separated them.
+  React renders the list the moment `/tree` resolves, and `/groups` has not always landed by then,
+  so `ungrouped` falls back to every course and a transient `Ungrouped` section renders; setting
+  `open` on it fires a mount-time `toggle`; `toggleSection` read that as a click and persisted
+  against a section list holding only `section:ungrouped`, so `writeOpenState` pruned the real ids
+  away and called `removeItem`. The later mount toggles for the real sections then persisted
+  `true`, which normalization drops as the default - which is why the list came back fully
+  expanded and looked correct, and why v1.6 and the v1.10 walk both missed it. **`decideToggle`
+  now takes what was rendered** and discards any toggle whose value already agrees with it: the
+  browser fires `toggle` for every `open` attribute change including React's own, so a mount, a
+  remount, and `Collapse all` all produce events no learner asked for. That subsumes the old
+  forced-section special case rather than sitting beside it - forced means rendered open - so the
+  rule is one rule now. **And the page waits for `/groups` as well as `/tree`**, which removes the
+  transient section list the pruning ran against, plus a visible flash of a layout the tenant does
+  not have. A `/groups` request that genuinely fails still falls through to the ungrouped
+  fallback, which is what that fallback is for. Gate-covered as pure logic; the rendering that
+  produces the events is not, so the reload, both bulk controls, the filter's forced expansion and
+  its restore on Escape, and the deep-link force/release were re-observed in the browser.
+
+- 2026-08-18 - **A note page was a dead end titled with a raw file path.** `NotePage` printed the
+  vault path as inert text, so the screen every wikilink lands on had no way back to the course it
+  belongs to. The path is now a breadcrumb: the domain segment deep-links to the course list at the
+  course's own section (`#/t/:tenant#course-<slug>`, reusing the one-trailing-fragment shape the
+  guidebook's section links already had), the course segment goes to the course page, and every other
+  segment stays plain. **The fragment keys on the course, not the domain, and that was a correction
+  made under review**: an explicit group in `groups.yml` pulls its courses out of the derived domain
+  section, so a domain whose courses are all grouped has no section and the link expanded nothing -
+  precisely the shape of the committed example tenant, which made the feature inert on the living
+  spec. A course sits in exactly one section whichever layer claimed it, and its slug is already a
+  URL surface, so no hand-edited group id leaks into a URL or a DOM id.
+  **Resolution is server-side and that is the other load-bearing decision** -
+  `GET :tenant/note` now returns the owning `course` and `domain` from the same walk that answers
+  every other route, so the client links only what exists. The obvious alternative, guessing
+  `<domain>/<course>/...` from the path's shape, is silently wrong for `sources/` and `insights/`,
+  which sit at the vault root beside the domain directories; a wrong guess is a confident link to a
+  404. A guarded back control joins the header: `history.back()`, hidden at in-app depth 0 so a
+  bookmark or deep link cannot eject the reader out of the app, with depth stamped per
+  `history.state` entry rather than counted (a counter incremented on `hashchange` reads a backward
+  navigation as another step forward and defeats its own guard). Two supporting extractions follow
+  the repo's existing discipline: `app/client/src/routes.ts` and `notePath.ts` are DOM-free `.ts`
+  modules so `node --test` covers the route table and the breadcrumb rules the way it already covers
+  `courseList.ts`. Spec: `docs/specs/app.md` behavior 13 + invariant 14.
+  **Accepted then, reconciled since:** at the time this landed, the path stayed the `<h1>` while
+  the note body kept its own heading, so the page carried two `<h1>`s - a deliberate divergence
+  from UI-15 in `docs/reviews/2026-08-13-ui-navigation-review.md`, which prescribes dropping the
+  path heading. Merging this against wave 2's own UI-15 work (see the entry above) resolved that:
+  the note body's heading is now the page's only `<h1>`, and this PR's server-confirmed breadcrumb
+  segments render in a `<nav>` instead. UI-15 is fully addressed as of that merge.
+  **What the gate could not see.** The whole suite was green before the one real defect turned up:
+  the browser fires `toggle` when React sets `open` on the remounted `<details>`, so the deep link's
+  own forced open was read as a user action - releasing the force on the very render that applied it
+  and persisting over the learner's stored choice. `node --test` has no DOM, so nothing in the gate
+  could have caught it; a headless browser walk over the example tenant did. The rule now lives as a
+  pure decision (`decideToggle`) in `courseList.ts` with unit tests, so the regression is
+  gate-covered even though the rendering around it still is not.
 
 - 2026-08-13 - **`meno:connects` had no eligibility rule, so the graph drew every course against
   every other.** The convention asked only that a reason state "the actual causal or structural

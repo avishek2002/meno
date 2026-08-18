@@ -10,18 +10,28 @@ import {
   UNGROUPED_ID,
   UNGROUPED_TITLE,
   OPEN_STATE_PREFIX,
+  RESUME_STATE_PREFIX,
   openStateKey,
+  resumeStateKey,
   foldForSearch,
   isSectionOpen,
   withSectionOpen,
   withAllOpen,
   readOpenState,
   writeOpenState,
+  readResumeState,
+  writeResumeState,
   buildCourseListView,
+  dueCountsByCourse,
+  assembleSections,
+  courseSlugFromFragment,
+  sectionForCourse,
+  decideToggle,
   type ListSection,
   type FilterableCourse,
   type OpenState,
   type SectionStore,
+  type ResumeState,
 } from '../client/src/courseList.ts';
 
 const SECTIONS: ListSection[] = [
@@ -114,7 +124,7 @@ test('allSectionIds includes sections the filter hid, and writeOpenState against
 
 // --- case 13: source grep for the DOM-free / localStorage-fenced boundary ---
 
-test('localStorage appears in exactly one client file, and courseList.ts names no browser global', () => {
+test('localStorage appears only in the two named pages, and courseList.ts names no browser global', () => {
   const clientSrcDir = fileURLToPath(new URL('../client/src', import.meta.url));
 
   const files: string[] = [];
@@ -129,9 +139,18 @@ test('localStorage appears in exactly one client file, and courseList.ts names n
     }
   })(clientSrcDir);
 
-  const usingLocalStorage = files.filter((f) => readFileSync(f, 'utf8').includes('localStorage'));
-  assert.equal(usingLocalStorage.length, 1, `expected exactly one file naming localStorage, got: ${usingLocalStorage.join(', ')}`);
-  assert.ok(usingLocalStorage[0].endsWith(join('pages', 'TenantCoursesPage.tsx')));
+  // UI-16 added a second owner: the resume affordance is written from the
+  // lesson page a learner leaves and read from the course list they return
+  // to, so one file cannot own both ends the way open-state's single owner
+  // does. Every consumer still goes through courseList.ts's SectionStore
+  // shape rather than reaching for the global directly - that boundary,
+  // not a single-file count, is what this test actually guards.
+  const usingLocalStorage = files.filter((f) => readFileSync(f, 'utf8').includes('localStorage')).sort();
+  const expected = [
+    fileURLToPath(new URL('../client/src/pages/LessonPage.tsx', import.meta.url)),
+    fileURLToPath(new URL('../client/src/pages/TenantCoursesPage.tsx', import.meta.url)),
+  ].sort();
+  assert.deepEqual(usingLocalStorage, expected, `expected exactly these files to name localStorage, got: ${usingLocalStorage.join(', ')}`);
 
   const courseListSrc = readFileSync(fileURLToPath(new URL('../client/src/courseList.ts', import.meta.url)), 'utf8');
   assert.equal(courseListSrc.includes("from 'react'"), false);
@@ -341,6 +360,57 @@ test('foldForSearch strips combining marks and lowercases', () => {
   assert.equal(foldForSearch('CAFE'), 'cafe');
 });
 
+// --- UI-08: due-first sort ---
+
+test('dueCountsByCourse tallies entries per course, ignoring courses with none', () => {
+  const counts = dueCountsByCourse([{ course: 'git' }, { course: 'git' }, { course: 'rust-for-backend' }]);
+  assert.deepEqual(counts, { git: 2, 'rust-for-backend': 1 });
+  assert.deepEqual(dueCountsByCourse([]), {});
+});
+
+test('sections with a due course sort it to the top, stable otherwise, and report dueCount', () => {
+  const sections: ListSection[] = [
+    { id: 'version-control', title: 'Version Control', courses: ['git', 'gh-flow'], source: 'explicit' },
+  ];
+  const view = buildCourseListView({
+    sections,
+    ungrouped: [],
+    courses: COURSES,
+    query: '',
+    openState: {},
+    dueCounts: { 'gh-flow': 3 },
+  });
+  const section = view.sections.find((s) => s.id === 'version-control')!;
+  assert.deepEqual(section.courses, ['gh-flow', 'git'], 'the due course moves ahead of the non-due one');
+  assert.equal(section.dueCount, 1);
+});
+
+test('no dueCounts given: order and dueCount are unchanged from before UI-08', () => {
+  const view = buildCourseListView({ sections: SECTIONS, ungrouped: ['unfiled-one'], courses: COURSES, query: '', openState: {} });
+  assert.deepEqual(
+    view.sections.map((s) => s.courses),
+    [['git', 'gh-flow'], ['rust-for-backend'], ['unfiled-one']],
+  );
+  assert.ok(view.sections.every((s) => s.dueCount === 0));
+});
+
+test('two due courses in one section keep their relative order, both ahead of the non-due one', () => {
+  const sections: ListSection[] = [
+    { id: 'mixed', title: 'Mixed', courses: ['git', 'gh-flow', 'rust-for-backend'], source: 'explicit' },
+  ];
+  const view = buildCourseListView({
+    sections,
+    ungrouped: [],
+    courses: COURSES,
+    query: '',
+    openState: {},
+    dueCounts: { git: 1, 'rust-for-backend': 2 },
+  });
+  const section = view.sections.find((s) => s.id === 'mixed')!;
+  assert.deepEqual(section.courses, ['git', 'rust-for-backend', 'gh-flow']);
+  assert.equal(section.dueCount, 2);
+});
+
 // --- byDomain flag ---
 
 test('byDomain is true only for a derived domain section, never for Ungrouped', () => {
@@ -351,4 +421,196 @@ test('byDomain is true only for a derived domain section, never for Ungrouped', 
   assert.equal(explicit.byDomain, false);
   assert.equal(domain.byDomain, true);
   assert.equal(ungrouped.byDomain, false);
+});
+
+// --- UI-16: resume where you left off ---
+
+test('resumeStateKey starts with RESUME_STATE_PREFIX, distinct from OPEN_STATE_PREFIX, and encodes the tenant', () => {
+  const key = resumeStateKey('a/b');
+  assert.ok(key.startsWith(RESUME_STATE_PREFIX));
+  assert.notEqual(RESUME_STATE_PREFIX, OPEN_STATE_PREFIX);
+  assert.notEqual(key, resumeStateKey('a%2Fb'));
+});
+
+test('writeResumeState then readResumeState round-trips exactly', () => {
+  const resume: ResumeState = { course: 'git-fundamentals', module: 'm1-basics', file: 'staging', lessonTitle: 'Staging' };
+  const s = memoryStore();
+  writeResumeState(s, 'alice', resume);
+  assert.deepEqual(readResumeState(s, 'alice'), resume);
+});
+
+test('a resume record written for one tenant is invisible to another', () => {
+  const s = memoryStore();
+  writeResumeState(s, 'alice', { course: 'git', module: 'm1', file: 'f', lessonTitle: 'F' });
+  assert.equal(readResumeState(s, 'bob'), null);
+});
+
+test('readResumeState degrades to null for a null store, a throwing store, garbage JSON, and a record missing a field', () => {
+  assert.equal(readResumeState(null, 'tenant'), null);
+
+  const throwingStore: SectionStore = {
+    getItem: () => {
+      throw new Error('blocked');
+    },
+    setItem: () => {
+      throw new Error('quota exceeded');
+    },
+    removeItem: () => {
+      throw new Error('blocked');
+    },
+  };
+  assert.equal(readResumeState(throwingStore, 'tenant'), null);
+  // writeResumeState must not throw even though the store does.
+  writeResumeState(throwingStore, 'tenant', { course: 'c', module: 'm', file: 'f', lessonTitle: 'L' });
+
+  for (const garbage of ['not json', '[]', 'null', '{"course":"c"}', '{"course":"c","module":"m","file":"f","lessonTitle":5}']) {
+    const s = memoryStore({ [resumeStateKey('tenant')]: garbage });
+    assert.equal(readResumeState(s, 'tenant'), null, `garbage input: ${garbage}`);
+  }
+});
+
+// --- courseSlugFromFragment: the deep-link fragment -> course slug ---
+
+test('courseSlugFromFragment maps a valid course fragment to its slug', () => {
+  assert.equal(courseSlugFromFragment('course-llm-cost-and-token-engineering'), 'llm-cost-and-token-engineering');
+});
+
+test('courseSlugFromFragment returns null for an absent fragment', () => {
+  assert.equal(courseSlugFromFragment(undefined), null);
+});
+
+test('courseSlugFromFragment returns null for the retired domain-<x> shape and other non-course fragments', () => {
+  // the old scheme never shipped and carries no meaning now - it must not
+  // resolve to anything, not even by accident
+  assert.equal(courseSlugFromFragment('domain-ai-and-agents'), null);
+  assert.equal(courseSlugFromFragment('glossary'), null, 'guide section fragments are not course fragments');
+  assert.equal(courseSlugFromFragment('course-'), null, 'a course prefix with nothing after it names no slug');
+});
+
+// --- assembleSections / sectionForCourse: the assembled list a deep link resolves against ---
+
+const GROUP_SECTIONS: ListSection[] = [
+  { id: 'version-control', title: 'Version Control', courses: ['git', 'gh-flow'], source: 'explicit' },
+  { id: 'domain:backend', title: 'Backend', courses: ['rust-for-backend'], source: 'domain' },
+];
+
+const GROUP_COURSES: FilterableCourse[] = [
+  { slug: 'git', title: 'Git Fundamentals' },
+  { slug: 'gh-flow', title: 'GitHub Flow' },
+  { slug: 'rust-for-backend', title: 'Rust for Backend' },
+  { slug: 'unfiled-one', title: 'Solo Course' },
+];
+
+test("sectionForCourse resolves a course in an explicit group to that group's id", () => {
+  const assembled = assembleSections({ sections: GROUP_SECTIONS, ungrouped: ['unfiled-one'], courses: GROUP_COURSES });
+  assert.equal(sectionForCourse(assembled, 'git'), 'version-control');
+});
+
+test('sectionForCourse resolves a course in a derived domain section to the domain section id', () => {
+  const assembled = assembleSections({ sections: GROUP_SECTIONS, ungrouped: ['unfiled-one'], courses: GROUP_COURSES });
+  assert.equal(sectionForCourse(assembled, 'rust-for-backend'), 'domain:backend');
+});
+
+test('sectionForCourse resolves a course with no group and no domain to Ungrouped', () => {
+  const assembled = assembleSections({ sections: GROUP_SECTIONS, ungrouped: ['unfiled-one'], courses: GROUP_COURSES });
+  assert.equal(sectionForCourse(assembled, 'unfiled-one'), UNGROUPED_ID);
+});
+
+test('sectionForCourse returns null for a slug no section contains', () => {
+  const assembled = assembleSections({ sections: GROUP_SECTIONS, ungrouped: ['unfiled-one'], courses: GROUP_COURSES });
+  assert.equal(sectionForCourse(assembled, 'does-not-exist'), null);
+});
+
+test('assembleSections drops a slug an explicit group still lists after its course no longer exists', () => {
+  const stale: ListSection[] = [{ id: 'version-control', title: 'Version Control', courses: ['git', 'deleted-course'], source: 'explicit' }];
+  const assembled = assembleSections({ sections: stale, ungrouped: [], courses: [{ slug: 'git', title: 'Git' }] });
+  assert.deepEqual(assembled[0].courses, ['git']);
+  assert.equal(sectionForCourse(assembled, 'deleted-course'), null, 'a stale slug must not resolve to a section that no longer renders it');
+});
+
+// --- decideToggle: the release/persist decision behind a <details> toggle event ---
+// (TenantCoursesPage.toggleSection's only call site - see decideToggle's own
+// comment in courseList.ts for the two browser-only regressions this covers)
+
+test('decideToggle: a toggle that agrees with what was rendered is not a user action - the page-load erasure', () => {
+  // The regression this guard exists for, reproduced in a browser against
+  // `main`: React sets `open` on every section it renders open, the browser
+  // fires `toggle` for that attribute write at mount, and the handler used to
+  // read it as a click. Each one wrote `true` back, normalization dropped
+  // `true` as the default, and the surviving `false` entries were pruned
+  // against whatever section list had resolved so far - so the key was
+  // removed and every reload came back fully expanded.
+  assert.deepEqual(
+    decideToggle({ sectionId: 'version-control', activeForcedId: null, next: true, rendered: true, filtering: false }),
+    { release: false, persist: false },
+  );
+  // and the mirror of it: Collapse all removes the attribute, which fires a
+  // toggle of its own that setAllOpen has already persisted for.
+  assert.deepEqual(
+    decideToggle({ sectionId: 'version-control', activeForcedId: null, next: false, rendered: false, filtering: false }),
+    { release: false, persist: false },
+  );
+});
+
+test("decideToggle: the forced section's own programmatic open releases nothing and persists nothing", () => {
+  // forced means rendered open, so this is one instance of the rule above
+  // rather than a case of its own.
+  assert.deepEqual(
+    decideToggle({ sectionId: 'domain:ai-and-agents', activeForcedId: 'domain:ai-and-agents', next: true, rendered: true, filtering: false }),
+    { release: false, persist: false },
+  );
+});
+
+test('decideToggle: the user closing a forced section releases the force and persists the close', () => {
+  assert.deepEqual(
+    decideToggle({ sectionId: 'domain:ai-and-agents', activeForcedId: 'domain:ai-and-agents', next: false, rendered: true, filtering: false }),
+    { release: true, persist: true },
+  );
+});
+
+test('decideToggle: a toggle on a section that is not the active forced one always persists, never releases', () => {
+  assert.deepEqual(
+    decideToggle({ sectionId: 'version-control', activeForcedId: 'domain:ai-and-agents', next: true, rendered: false, filtering: false }),
+    { release: false, persist: true },
+  );
+  assert.deepEqual(
+    decideToggle({ sectionId: 'version-control', activeForcedId: 'domain:ai-and-agents', next: false, rendered: true, filtering: false }),
+    { release: false, persist: true },
+  );
+});
+
+test('decideToggle: a toggle when nothing is forced always persists, never releases', () => {
+  assert.deepEqual(
+    decideToggle({ sectionId: 'domain:ai-and-agents', activeForcedId: null, next: true, rendered: false, filtering: false }),
+    { release: false, persist: true },
+  );
+  assert.deepEqual(
+    decideToggle({ sectionId: 'domain:ai-and-agents', activeForcedId: null, next: false, rendered: true, filtering: false }),
+    { release: false, persist: true },
+  );
+});
+
+test('decideToggle: filtering discards a toggle on the forced section completely - release included, not only persist', () => {
+  // regression: closing a forced section while filtering used to release the
+  // force (making it look closed on this render) without persisting the
+  // close, so the very next render fell back to the filter's own forced-open
+  // (buildCourseListView pins open: true while filtering) and the section
+  // popped back open on its own. filtering must gate release exactly like it
+  // already gates persist, so this is the same {false, false} regardless of
+  // which way `next` points.
+  assert.deepEqual(
+    decideToggle({ sectionId: 'domain:ai-and-agents', activeForcedId: 'domain:ai-and-agents', next: false, rendered: true, filtering: true }),
+    { release: false, persist: false },
+  );
+  assert.deepEqual(
+    decideToggle({ sectionId: 'domain:ai-and-agents', activeForcedId: 'domain:ai-and-agents', next: true, rendered: false, filtering: true }),
+    { release: false, persist: false },
+  );
+});
+
+test('decideToggle: filtering discards a toggle on a non-forced section too', () => {
+  assert.deepEqual(
+    decideToggle({ sectionId: 'version-control', activeForcedId: null, next: true, rendered: false, filtering: true }),
+    { release: false, persist: false },
+  );
 });

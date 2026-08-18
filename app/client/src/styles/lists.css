@@ -1,0 +1,82 @@
+/* Track C - the course list and the learner list: due counts, the labelled
+   progress line replacing the colour-only dot row, and full-card click targets
+   (UI-08, UI-09).
+
+   Owned by one implementer; nothing outside track C edits this file. Loaded
+   from main.tsx after styles.css, so a rule here wins a specificity tie with
+   the base sheet. New rules only - existing rules stay in styles.css. */
+
+/* ---------- UI-08: the due-review summary line and "Due now" grouping ---------- */
+
+.due-summary-line {
+  color: var(--text-muted);
+  margin: 0.25rem 0 1rem;
+}
+
+/* ---------- UI-16: resume where you left off ---------- */
+
+.resume-line {
+  margin: 0.25rem 0 1rem;
+}
+
+.due-now-heading {
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--warning-text);
+}
+
+/* ---------- UI-09: whole-card click target, text progress line, segmented bar ---------- */
+
+/* The <a> now wraps the entire card's content (title, meta, progress line,
+   bar) rather than just the heading, so the whole bordered card - not only
+   the title text - is the click target. .course-card keeps its border,
+   padding and box-shadow from styles.css; this just makes the link fill it. */
+.course-card-link {
+  display: block;
+}
+
+.course-card-progress-line {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  margin: 0.25rem 0;
+}
+
+.module-bar {
+  display: flex;
+  gap: 2px;
+  height: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.module-bar-segment {
+  flex: 1 1 0;
+  min-width: 2px;
+  border-radius: 2px;
+  background: var(--border);
+  border: 1px solid transparent;
+}
+
+/* Written-content colour families, reusing the same accent/warning tokens the
+   status badges already use - kept as separate rules from styles.css's
+   `.status-dot.status-x` selectors rather than editing them. */
+.module-bar-segment.status-generated,
+.module-bar-segment.status-mastered {
+  background: var(--accent);
+}
+
+.module-bar-segment.status-in-progress,
+.module-bar-segment.status-stale {
+  background: var(--warning-border);
+}
+
+/* skeleton (nothing written yet) keeps the neutral --border background set above. */
+
+/* A module whose gate has failed: fill alone never carries this meaning
+   (WCAG 1.4.1) - the dashed, thicker border is a shape difference a
+   colour-blind reader can see, layered on top of whatever status fill the
+   module already has. */
+.module-bar-segment.gate-fail {
+  border: 2px dashed var(--incorrect-text);
+}

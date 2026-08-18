@@ -7,10 +7,13 @@
 // no-data course as $0, and let the shared-orchestration line read as if it
 // adds to the total. The total row, its caption, and the shared-orchestration
 // section each say independently that the two figures are separate.
-import type { ReactNode } from 'react';
+import { useCallback, useMemo, type ReactNode } from 'react';
 import { useResource } from '../useResource';
 import { useRegisterRevalidate } from '../RevalidateContext';
-import type { CostResponse } from '../../../shared/types.ts';
+import { AsyncStatus } from '../components/AsyncStatus';
+import { ErrorState } from '../components/ErrorState';
+import type { CostResponse, TreeResponse } from '../../../shared/types.ts';
+import { buildCourseStructure, type CourseStructure } from '../courseContext.ts';
 
 function Stat({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -27,10 +30,34 @@ function money(n: number): string {
 
 export function CostPage({ tenant }: { tenant: string }) {
   const { data, error, loading, revalidate } = useResource<CostResponse>(`/api/v1/${encodeURIComponent(tenant)}/cost`);
-  useRegisterRevalidate(revalidate);
+  // Cost identifies a course by `dir`, deliberately not the course.yml slug
+  // (lib/cost.ts: "keyed by directory... for a hand-made course the two can
+  // differ"), so a course cell has to resolve through /tree's dir, not
+  // reuse `course` (a directory basename) as if it were the routing slug.
+  const tree = useResource<TreeResponse>(`/api/v1/${encodeURIComponent(tenant)}/tree`);
+  const revalidateAll = useCallback(() => {
+    revalidate();
+    tree.revalidate();
+  }, [revalidate, tree.revalidate]);
+  useRegisterRevalidate(revalidateAll);
 
-  if (loading && !data) return <p className="status-line">Loading cost...</p>;
-  if (error) return <p className="status-line status-error">Could not load cost: {error}</p>;
+  const structuresByDir = useMemo(() => {
+    const out: Record<string, CourseStructure> = {};
+    for (const c of tree.data?.courses ?? []) out[c.dir] = buildCourseStructure(tenant, c);
+    return out;
+  }, [tenant, tree.data]);
+
+  if (loading && !data) return <AsyncStatus message="Loading cost..." />;
+  if (error) {
+    return (
+      <ErrorState
+        title="Could not load cost"
+        message={`Cost data for ${tenant} could not be loaded.`}
+        detail={error}
+        links={[{ label: 'Courses', href: `#/t/${encodeURIComponent(tenant)}` }]}
+      />
+    );
+  }
   if (!data) return null;
 
   if (data.reason === 'no-snapshot' || !data.snapshot) {
@@ -117,7 +144,13 @@ export function CostPage({ tenant }: { tenant: string }) {
               {snap.courses.map((c) => (
                 <tr key={c.dir}>
                   <td>
-                    <div>{c.course}</div>
+                    <div>
+                      {structuresByDir[c.dir] ? (
+                        <a href={structuresByDir[c.dir].href}>{structuresByDir[c.dir].title}</a>
+                      ) : (
+                        c.course
+                      )}
+                    </div>
                     {ambiguous(c.course) && <div className="cost-dir-hint">{c.dir}</div>}
                   </td>
                   <td>{money(c.cost_usd)}</td>
@@ -159,7 +192,7 @@ export function CostPage({ tenant }: { tenant: string }) {
           <ul className="cost-no-data-list">
             {snap.no_data.map((n) => (
               <li key={n.dir}>
-                {n.course}
+                {structuresByDir[n.dir] ? <a href={structuresByDir[n.dir].href}>{structuresByDir[n.dir].title}</a> : n.course}
                 {ambiguous(n.course) && <span className="cost-dir-hint"> - {n.dir}</span>}
               </li>
             ))}

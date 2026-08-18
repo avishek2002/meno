@@ -7,12 +7,9 @@ import { GUIDE, GUIDE_URL } from '../guide/content';
 import { GLOSSARY } from '../guide/glossary';
 
 export function GuidePage({ tenant, section }: { tenant?: string; section?: string }) {
-  useEffect(() => {
-    document.title = 'Guide - meno';
-    return () => {
-      document.title = 'meno';
-    };
-  }, []);
+  // document.title is set centrally in App.tsx from the route table (UI-03) -
+  // this page must not also set it, or the two fight over the tab title on
+  // every mount/unmount.
 
   // Section links are real URLs (#/guide#glossary), so they bookmark and answer
   // the back button; the router tolerates the suffix and we scroll to it here,

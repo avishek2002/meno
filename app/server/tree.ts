@@ -70,6 +70,33 @@ export function walkTenant(tenantDir: string, tenant: string): TreeResponse {
   return { tenant, courses, warnings };
 }
 
+// GET /note needs to know which course a note lives under (for the breadcrumb)
+// without the client guessing from the path itself - a guess like "first path
+// segment" breaks on sources/ and insights/, which sit at the vault root next
+// to the domain dirs. The walk already has every course's dir; this just
+// matches notePath against it the same way a filesystem would resolve the
+// most specific containing directory.
+export function resolveNoteCourse(
+  courses: CourseNode[],
+  notePath: string,
+): { course: { slug: string; title: string }; domain: string | null } | null {
+  // longest-match is defensive: findCourseDirs currently stops descending the
+  // moment a directory has its own course.yml, so today's walk can never hand
+  // this function a course dir that is itself the parent of another course
+  // dir. Keeping the tie-break here means this pure function stays correct on
+  // its own terms even if that walk's shape ever changes, at the cost of one
+  // comparison.
+  let best: CourseNode | null = null;
+  for (const course of courses) {
+    const prefix = `${course.dir}/`;
+    if (!notePath.startsWith(prefix)) continue;
+    if (!best || course.dir.length > best.dir.length) best = course;
+  }
+  if (!best) return null;
+  const domain = best.dir.includes('/') ? best.dir.split('/')[0] : null;
+  return { course: { slug: best.slug, title: best.title }, domain };
+}
+
 // basename (without .md) -> vault-relative path; ambiguous basenames resolve to
 // null, mirroring Obsidian's shortest-unique behavior at our flat-enough scale.
 // Path-style targets ([[modules/01-x/01-y]]) also resolve, exactly as Obsidian

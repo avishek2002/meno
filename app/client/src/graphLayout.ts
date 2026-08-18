@@ -170,6 +170,40 @@ export function groupCounts(
   return rows;
 }
 
+/** One row per search result - GraphPage's search box (UI-12). */
+export interface TitleMatch {
+  id: string;
+  title: string;
+}
+
+const SEARCH_RESULT_LIMIT = 8;
+
+/**
+ * Case-insensitive substring search over node titles for the graph page's
+ * search box (UI-12) - the graph has no server-side search, so this stays a
+ * pure client-side filter capped at SEARCH_RESULT_LIMIT results, the same
+ * way an unbounded query would otherwise flood the result list and the tab
+ * order with buttons. An empty or whitespace-only query matches nothing,
+ * the same "empty means absent" rule resolveFocus uses for `?focus=`.
+ * Picking a result still resolves through resolveFocus/`?focus=` at the
+ * call site - this function only narrows candidates, it does not focus one.
+ */
+export function searchNodesByTitle(
+  nodes: readonly { id: string; title: string }[],
+  query: string,
+  limit: number = SEARCH_RESULT_LIMIT,
+): TitleMatch[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  const matches: TitleMatch[] = [];
+  for (const n of nodes) {
+    if (!n.title.toLowerCase().includes(q)) continue;
+    matches.push({ id: n.id, title: n.title });
+    if (matches.length >= limit) break;
+  }
+  return matches;
+}
+
 export interface FilteredSubgraph<N, E> {
   nodes: N[];
   edges: E[];
@@ -193,6 +227,28 @@ export function filterGraphByGroups<N extends { id: string; group: string | null
   const visibleIds = new Set(visibleNodes.map((n) => n.id));
   const visibleEdges = edges.filter((e) => visibleIds.has(e.source) && visibleIds.has(e.target));
   return { nodes: visibleNodes, edges: visibleEdges };
+}
+
+/**
+ * The id of every node that is a `source` or `target` of at least one edge
+ * (either direction, since edges are undirected - invariant 4). Feeds
+ * fit-to-view's node filter below: a node with no edge at all has nothing
+ * pulling it toward the rest of the layout during the physics tick loop, so
+ * it stays wherever `seedPosition` put it and, empirically, `forceManyBody`'s
+ * repulsion pushes it further out still - one disconnected node at the
+ * corpus this was measured against (200 nodes, 35 with zero edges) settled
+ * over 2800 svg user-space units from the connected majority's own settled
+ * span of roughly 700. Fitting the view to every point let that handful of
+ * edgeless nodes dictate the zoom for the whole graph, shrinking the
+ * connected majority into about 6% of the canvas (UI-12 v2).
+ */
+export function connectedNodeIds(edges: readonly LayoutEdge[]): Set<string> {
+  const ids = new Set<string>();
+  for (const e of edges) {
+    ids.add(e.source);
+    ids.add(e.target);
+  }
+  return ids;
 }
 
 export function fitToViewTransform(points: readonly SeedPosition[], viewSize: number, margin: number): FitTransform {

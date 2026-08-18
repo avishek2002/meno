@@ -2,14 +2,17 @@
 // text editing. Every mutation carries If-Match: <raw_sha256> from the last GET;
 // a 409 means the file changed on disk underneath us, so we surface that and
 // revalidate rather than silently overwriting someone else's edit.
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { useResource } from '../useResource';
 import { useRegisterRevalidate } from '../RevalidateContext';
+import { AsyncStatus } from '../components/AsyncStatus';
 import { EmptyState } from '../components/EmptyState';
+import { ErrorState } from '../components/ErrorState';
 import { postJson, patchJson, ApiError } from '../api';
 import type { TodoAudience, TodoKind, TodosResponse } from '../../../shared/types.ts';
 import { InfoTip } from '../components/InfoTip';
 import { TODO_KIND_INFO, TODO_AUDIENCE_INFO, kindInfo, audienceInfo } from '../todoTags';
+import { useWikilinkNav, wikilinkTextToHtml } from '../wikilinks';
 
 export function TodosPage({ tenant }: { tenant: string }) {
   const base = `/api/v1/${encodeURIComponent(tenant)}/todos`;
@@ -23,9 +26,20 @@ export function TodosPage({ tenant }: { tenant: string }) {
   const [notice, setNotice] = useState<string | null>(null);
   const [editing, setEditing] = useState<number | null>(null);
   const [editText, setEditText] = useState('');
+  // UI-13: 8 of 26 todos are done and were interleaved with open ones with no
+  // way to separate them - default to hidden so the list opens on the work
+  // still to do.
+  const [hideDone, setHideDone] = useState(true);
 
   const sha = data?.raw_sha256;
   const ifMatch = sha ? { 'if-match': sha } : undefined;
+
+  // One listener for the whole list rather than one per row: wikilinks in
+  // todo text go through the same pipeline RenderedHtml uses (UI-13/UI-14).
+  // `sha` in the dependency list is the html-equivalent signal - a new
+  // fetch's todo text needs its `#wiki:` hrefs rewritten again.
+  const listRef = useRef<HTMLDivElement>(null);
+  useWikilinkNav(listRef, tenant, sha);
 
   const handleFailure = (e: unknown): void => {
     if (e instanceof ApiError && e.status === 409) {
@@ -92,11 +106,21 @@ export function TodosPage({ tenant }: { tenant: string }) {
     }
   };
 
-  if (loading && !data) return <p className="status-line">Loading todos...</p>;
-  if (error) return <p className="status-line status-error">Could not load todos: {error}</p>;
+  if (loading && !data) return <AsyncStatus message="Loading todos..." />;
+  if (error) {
+    return (
+      <ErrorState
+        title="Could not load todos"
+        message={`Todos for ${tenant} could not be loaded.`}
+        detail={error}
+        links={[{ label: 'Courses', href: `#/t/${encodeURIComponent(tenant)}` }]}
+      />
+    );
+  }
 
   const sections = data?.sections ?? [];
   const totalTodos = sections.reduce((n, s) => n + s.todos.length, 0);
+  const doneCount = sections.reduce((n, s) => n + s.todos.filter((t) => t.done).length, 0);
 
   return (
     <section>
@@ -141,57 +165,81 @@ export function TodosPage({ tenant }: { tenant: string }) {
         {kindInfo(newKind).blurb} {audienceInfo(newAudience).blurb}
       </p>
 
+      {totalTodos > 0 && (
+        <label className="hide-done-toggle">
+          <input type="checkbox" checked={hideDone} onChange={(e) => setHideDone(e.target.checked)} />
+          Hide done ({doneCount})
+        </label>
+      )}
+
       {totalTodos === 0 ? (
         <EmptyState title={`No todos yet for ${tenant}`} body="Nothing is queued here yet." />
       ) : (
-        sections.map((s) => (
-          <div key={s.heading || 'untitled'} className="todo-section">
-            {s.heading && <h2>{s.heading}</h2>}
-            <ul className="todo-list">
-              {s.todos.map((t) => (
-                <li key={t.line} className={`todo-item${t.done ? ' todo-done' : ''}`}>
-                  <input
-                    type="checkbox"
-                    checked={t.done}
-                    disabled={busy === t.line}
-                    onChange={() => void toggleDone(t.line, !t.done)}
-                  />
-                  {editing === t.line ? (
-                    <input
-                      type="text"
-                      className="todo-edit-input"
-                      value={editText}
-                      onChange={(e) => setEditText(e.target.value)}
-                      onBlur={() => void saveText(t.line)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') void saveText(t.line);
-                      }}
-                      autoFocus
-                    />
-                  ) : (
-                    <button
-                      type="button"
-                      className="todo-text-btn"
-                      disabled={busy === t.line}
-                      onClick={() => {
-                        setEditing(t.line);
-                        setEditText(t.text);
-                      }}
-                    >
-                      {t.text}
-                    </button>
-                  )}
-                  {t.type && <span className={`type-tag type-${t.type}`}>{kindInfo(t.type).label}</span>}
-                  {t.audience && <span className={`audience-tag audience-${t.audience}`}>{audienceInfo(t.audience).label}</span>}
-                  {t.completedOn && <span className="completed-on">{t.completedOn}</span>}
-                  <button type="button" className="park-btn" disabled={busy === t.line} onClick={() => void park(t.line)}>
-                    Park
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))
+        <div ref={listRef}>
+          {sections.map((s) => {
+            const visible = hideDone ? s.todos.filter((t) => !t.done) : s.todos;
+            if (visible.length === 0) return null;
+            return (
+              <div key={s.heading || 'untitled'} className="todo-section">
+                {s.heading && <h2>{s.heading}</h2>}
+                <ul className="todo-list">
+                  {visible.map((t) => (
+                    <li key={t.line} className={`todo-item${t.done ? ' todo-done' : ''}`}>
+                      <input
+                        type="checkbox"
+                        checked={t.done}
+                        disabled={busy === t.line}
+                        onChange={() => void toggleDone(t.line, !t.done)}
+                      />
+                      {editing === t.line ? (
+                        <input
+                          type="text"
+                          className="todo-edit-input"
+                          value={editText}
+                          onChange={(e) => setEditText(e.target.value)}
+                          onBlur={() => void saveText(t.line)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') void saveText(t.line);
+                          }}
+                          autoFocus
+                        />
+                      ) : (
+                        // UI-13: text is no longer the click target for editing -
+                        // that forced it to render as a plain string, so a
+                        // wikilink inside it could never become a real link.
+                        // Rendered through the same wikilink pipeline RenderedHtml
+                        // uses (wikilinks.tsx); a dedicated button below owns edit.
+                        <span
+                          className="todo-text"
+                          dangerouslySetInnerHTML={{ __html: wikilinkTextToHtml(t.text) }}
+                        />
+                      )}
+                      {editing !== t.line && (
+                        <button
+                          type="button"
+                          className="todo-edit-btn"
+                          disabled={busy === t.line}
+                          onClick={() => {
+                            setEditing(t.line);
+                            setEditText(t.text);
+                          }}
+                        >
+                          Edit
+                        </button>
+                      )}
+                      {t.type && <span className={`type-tag type-${t.type}`}>{kindInfo(t.type).label}</span>}
+                      {t.audience && <span className={`audience-tag audience-${t.audience}`}>{audienceInfo(t.audience).label}</span>}
+                      {t.completedOn && <span className="completed-on">{t.completedOn}</span>}
+                      <button type="button" className="park-btn" disabled={busy === t.line} onClick={() => void park(t.line)}>
+                        Park
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
+        </div>
       )}
     </section>
   );
