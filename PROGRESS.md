@@ -11,9 +11,66 @@ _Last updated: 2026-08-18_
 
 ## Pending decisions (needs maintainer)
 
-_None open._
+- 2026-08-18 - **Interactive checks never render, in dev and in the production build alike.** The
+  app's core feature is dead and nothing reports it: no console error, no failing test. Three
+  `div.meno-check` mount points render empty on every lesson. **Two diagnoses have been tested and
+  disproven**, which is the useful part of this entry. It is *not* StrictMode: removing
+  `<StrictMode>` entirely changes nothing. It is *not* the missing `html` dependency on
+  `useCheckMounts` (a real omission - `useWikilinkNav` takes one for exactly this hazard and
+  documents why) - adding it, plus per-container idempotent roots and an `isConnected`-guarded
+  teardown, still rendered nothing; instrumentation confirmed the effect runs, finds all three
+  mounts, calls `root.render()`, and the cleanup correctly skips (`connected=true, children=0`).
+  That work was reverted rather than shipped, because it looked like a fix and fixed nothing.
+  **The live lead is the dev/prod split**: the production build *does* commit (mount points gain a
+  child at 488ms) and is then wiped when the whole `.prose` subtree is replaced 8ms later
+  (`+85 -85`), while dev never commits at all. A render that silently no-ops in dev but works in a
+  bundle usually means two React copies in the module graph - Vite pre-bundling `react-dom/client`
+  separately from the app's `react`, so a root from one copy renders elements created by the
+  other's JSX runtime. Check that first. **The decision:** this is a debugging session, not a
+  one-line fix, and it should be scheduled as one.
+
+- 2026-08-18 - **Audit findings not closed by v1.13**, from the same sweep, all measured, none
+  yet fixed: todo checkboxes have no accessible name (AX `name: ""`); the check widget's cloze
+  input is labelled by `placeholder` alone and its radio group has no `fieldset`/`legend`; nothing
+  announces async updates anywhere (filter emptying, todo notices, the graph legend dropping 228
+  nodes to 101 - zero live regions in the DOM before or after); all 22 tables lack a name and any
+  `th[scope]`; the module anchor lands *under* the header at 360px because `--scroll-clearance` is
+  a fixed 4.5rem while the header grows to 100.95px when it wraps (v1.13 makes the header wrap,
+  which makes this reachable more often, not less); `h1` -> `h4` skip on the course list; the
+  course-list `h1`'s accessible name is polluted by its nested InfoTip button ("Courses What is
+  Groups question mark"); white-on-`--accent` and white-on-`--violet-border` are 2.34:1 and 3.08:1
+  in dark mode; the cost empty state renders no `h1`; and note page titles leak the full vault
+  path including `.md`. **The decision:** which of these to batch next, and whether the
+  design-system drift (20 rendered font sizes, 36 spacing literals, no `--space-*` token) is worth
+  a dedicated pass or should be absorbed opportunistically.
 
 ## Done
+
+- 2026-08-18 - **v1.13: the four highest-leverage findings from an agent-run UI audit.** The audit
+  itself is the interesting half. Because an agent cannot see a page, the review was scoped to what
+  a machine can actually assert - the accessibility tree, computed styles, geometry, keyboard
+  driving, media-query emulation - against WCAG 2.2, the ARIA Authoring Practices Guide, and the
+  documented axe-core rule set. That band is smaller than a human designer's but sharper inside it,
+  and it turns out to be where this repo keeps losing defects: automated tooling covers ~57% of
+  accessibility issues by volume, and the checks with **no axe rule at all** (focus visibility and
+  order, live-region timing, non-text contrast, reflow, reduced motion, route announcement) are
+  exactly the ones nothing here was testing. Four pages of findings came back; these four shipped.
+  **A skip link**, which did not exist - every keyboard reader tabbed the wordmark, tenant name,
+  back control and seven nav links on every route before reaching content (WCAG 2.4.1, Level A).
+  It moves focus itself rather than following its fragment, because this is a hash-routed app and
+  `#main-content` in `location.hash` would land the reader on not-found - the skip link would break
+  the page it exists to fix. **The header wraps**: seven nav links in an unwrapped flex row measured
+  715px against a 320px viewport, and because the header is sticky the overflow followed you down
+  every page (WCAG 1.4.10, 10 of 13 routes). **Reduced motion covers everything**: the media block
+  named `.module-card` alone, one of nine `transition` declarations, so the refresh button, InfoTip,
+  meter fill, check card and both graph elements ignored the preference. Replaced with a wildcard
+  that cannot be outgrown by the next transition someone adds. **`--border-strong`** (3.55:1 light,
+  3.91:1 dark) now draws the edge of anything operable, where `--border` is 1.32:1 and 1.44:1 - the
+  stylesheet had already measured those exact ratios in a comment for one case at `styles.css:707`
+  and fixed it locally without generalising. Deliberately not applied to decorative panel edges:
+  WCAG 1.4.11 covers what identifies a component, not every hairline. Everything above was
+  browser-verified, including that the skip link is the first tabbable element, reveals from -64px
+  to 8px on focus, and leaves `location.hash` untouched.
 
 - 2026-08-18 - **v1.12: going up a level, and a URL that truncates.** Asked for as "a native back
   button in the top nav that goes back a page" plus "fix the url paths, what do `#`, `t`, `c`, `m`,

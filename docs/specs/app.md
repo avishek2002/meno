@@ -2,8 +2,9 @@
 
 *Status: current as of Phase 4; amended at v1.5 (course groups), v1.6 (course-list collapse and
 filter; the group write surface removed), v1.10 (note-path breadcrumb, course deep-link, guarded
-back control), v1.11 (collapse state actually persists), and v1.12 (breadcrumb up-navigation,
-truncatable routes, centralized href builders). Canonical formats owned elsewhere: check blocks and
+back control), v1.11 (collapse state actually persists), v1.12 (breadcrumb up-navigation,
+truncatable routes, centralized href builders), and v1.13 (skip link, header reflow,
+reduced-motion coverage, operable-control contrast). Canonical formats owned elsewhere: check blocks and
 callouts in
 [generate-module/references/check-formats.md](../../.agents/skills/generate-module/references/check-formats.md),
 todos in
@@ -213,6 +214,26 @@ write-authority seam (decision 14) is enforced in code.
     transcriptions of one grammar, so they are pinned together by round-trip tests asserting
     `matchRoute(builder(...))` recovers what went in. Nothing else in the client may write a
     route URL by hand.
+
+15. The accessibility floor, and where it is enforced (v1.13). Four properties hold on every
+    route, each of them checkable by a machine rather than by eye, which is the only reason they
+    can be trusted: a **skip link** is the first tab stop, hidden until focused, and moves focus
+    into `<main>` rather than following its own fragment (this is a hash-routed app - letting
+    `#main-content` reach `location.hash` would hand the router a hash it cannot match and land
+    the reader on not-found); the **header wraps** rather than pushing the document sideways, so
+    no route scrolls horizontally at 320 CSS px (WCAG 1.4.10); **`prefers-reduced-motion` is
+    honored by every animated element**, through one wildcard rule that cannot be outgrown by the
+    next transition somebody adds; and **`--border-strong` (3:1 against its background in both
+    schemes) draws the edge of anything a person operates** - text fields, selects, and buttons
+    whose only boundary is a border - where the decorative `--border` is 1.32:1 light and 1.44:1
+    dark and would leave those controls with no perceptible edge (WCAG 1.4.11). The split is
+    deliberate: 1.4.11 covers what identifies a component, not every hairline, so panel and
+    separator edges keep the lighter token.
+    These came out of an agent-run audit of all twelve pages against WCAG 2.2, the ARIA Authoring
+    Practices Guide, and the documented axe-core rule set. What that audit could check was
+    structure, names, focus, contrast, geometry and motion; what it could not check was whether
+    any of it looks good. The findings it raised and this change does not close are recorded in
+    PROGRESS.md rather than silently dropped.
 
 ## Architecture
 

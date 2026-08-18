@@ -10,6 +10,15 @@
   --text: #1b1b18;
   --text-muted: #6b6a63;
   --border: #e2e0d9;
+  /* The boundary of anything a person operates - a text field, a select, a
+     button whose only edge is its border. WCAG 1.4.11 wants 3:1 against what
+     sits behind it, and --border above is 1.32:1 in this scheme, so a control
+     drawn with it has effectively no edge for anyone who needs contrast to
+     see one. --border stays as-is for decorative separators and panel edges,
+     which the criterion does not cover: the point is to make operable things
+     findable, not to draw every hairline twice as dark.
+     #8a8880 is 3.55:1 on --bg and 3.26:1 on --bg-subtle. */
+  --border-strong: #8a8880;
   --accent: #2f6f4f;
   --accent-soft: #e6f1ea;
   --link: #1d5fae;
@@ -77,6 +86,9 @@
     --text: #eceae6;
     --text-muted: #a3a09a;
     --border: #34333a;
+    /* 3.91:1 on --bg, 3.60:1 on --bg-subtle - the dark-scheme pair of the
+       light --border-strong above, where plain --border is 1.44:1. */
+    --border-strong: #75747d;
     --accent: #5fbb8e;
     --accent-soft: #17301f;
     --link: #7bb2f0;
@@ -179,11 +191,35 @@ h3 {
   line-height: 1.25;
 }
 
+/* Off-screen until focused, then pinned over the header. Positioned rather
+   than display:none because a hidden element cannot be tabbed to, and the
+   whole point is that the first Tab of the page reaches it. */
+.skip-link {
+  position: absolute;
+  left: 0.5rem;
+  top: -4rem;
+  z-index: 20;
+  padding: 0.5rem 0.9rem;
+  background: var(--bg-raised);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  text-decoration: none;
+  box-shadow: var(--shadow);
+}
+
+.skip-link:focus-visible {
+  top: 0.5rem;
+}
+
 /* ---------- header ---------- */
 
 .app-header {
   display: flex;
   align-items: center;
+  /* Wraps with .main-nav below, so the row grows in height instead of pushing
+     the document sideways at narrow widths. */
+  flex-wrap: wrap;
   gap: 1.25rem;
   padding: 0.75rem 1.5rem;
   border-bottom: 1px solid var(--border);
@@ -233,7 +269,7 @@ h3 {
   width: 1.9rem;
   height: 1.9rem;
   background: transparent;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius);
   color: var(--text-muted);
   cursor: pointer;
@@ -248,6 +284,14 @@ h3 {
 
 .main-nav {
   display: flex;
+  /* Wrapping is what keeps the page off a horizontal scrollbar at 320 CSS px
+     (WCAG 1.4.10). Seven nav links in one unwrapped flex row measured 715px
+     wide against a 320px viewport, and because .app-header is sticky the
+     overflow followed the reader down every page. Wrapping rather than
+     collapsing behind a disclosure: the links stay visible and operable at
+     every width, and a taller header is handled by --scroll-clearance
+     already existing for exactly that reason. */
+  flex-wrap: wrap;
   gap: 1rem;
   margin-right: auto;
 }
@@ -265,7 +309,7 @@ h3 {
 .refresh-btn {
   margin-left: auto;
   background: var(--bg-subtle);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius);
   padding: 0.4rem 0.8rem;
   cursor: pointer;
@@ -615,9 +659,24 @@ h3 {
   border-color: var(--accent);
 }
 
+/* Reduced motion, everything at once. This used to name .module-card alone,
+   which covered one of the nine `transition` declarations in this stylesheet -
+   the refresh button, the InfoTip, the meter fill, the check card and both
+   graph elements all kept animating for a reader who had asked the operating
+   system for less motion. Naming each selector is the version that goes stale
+   the next time someone adds a transition, so the wildcard is deliberate: it
+   cannot be outgrown. Near-zero rather than 0s keeps transitionend/animationend
+   handlers firing, so nothing that waits on one hangs. The JavaScript half of
+   this lives in reducedMotion.tsx, which owns the matchMedia query for the
+   scroll and highlight behaviour CSS cannot reach. */
 @media (prefers-reduced-motion: reduce) {
-  .module-card {
-    transition: none;
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
@@ -848,7 +907,7 @@ h3 {
 }
 
 .check-cloze-input {
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
   padding: 0.4rem 0.6rem;
   margin-right: 0.5rem;
@@ -1007,7 +1066,7 @@ th {
 
 .todo-create input[type='text'] {
   flex: 1;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
   padding: 0.45rem 0.7rem;
   background: var(--bg);
@@ -1022,7 +1081,7 @@ th {
 }
 
 .todo-create-select select {
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
   padding: 0.45rem 0.6rem;
   background: var(--bg);
@@ -1037,7 +1096,7 @@ th {
 
 .todo-create button,
 .park-btn {
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   background: var(--bg-subtle);
   border-radius: 6px;
   padding: 0.45rem 0.9rem;
