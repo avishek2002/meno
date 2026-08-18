@@ -4,16 +4,65 @@ Living status file - the done / backlog tracker for this project. **Update it wh
 finish a thing -> move it to Done; pick up or think of a new thing -> add it to the agenda; make a call
 that isn't captured in the code -> log it. Keep entries dated, newest near the top of each section.
 
-_Last updated: 2026-08-13_
+_Last updated: 2026-08-18_
 
 > Maintenance: keep this file current whenever work changes. Tooling can't see conversation-only
 > decisions, so logging those is on whoever made them.
 
 ## Pending decisions (needs maintainer)
 
-- None currently open.
+- 2026-08-18 - **The course-list collapse state has never survived a reload** - a bug on `main`,
+  found while browser-verifying the note breadcrumb, deliberately left unfixed there to keep that change to its
+  agreed scope. Close a section, reload, and it is open again with the stored preference deleted.
+  Mechanism: the browser fires `toggle` when the `<details>` mounts, `toggleSection` reads that as a
+  user action and persists `true`, `writeOpenState` normalizes `true` entries away, the object
+  empties, and the key is removed. Reproduced against `main` on the committed example tenant, and
+  the same class of defect the breadcrumb work hit. Behavior 9 and invariant 13 in
+  `docs/specs/app.md` both describe this feature as working, so either the code or the spec is
+  wrong and one of them has to move. **The decision:** fix it (the guard is small - ignore a toggle
+  whose value already matches what was rendered) or write the limitation into the spec. Fixing it
+  is the recommendation; it is the only browser-persisted state the app has, and it silently does
+  not work.
 
 ## Done
+
+- 2026-08-18 - **A note page was a dead end titled with a raw file path.** `NotePage` printed the
+  vault path as inert text, so the screen every wikilink lands on had no way back to the course it
+  belongs to. The path is now a breadcrumb: the domain segment deep-links to the course list at the
+  course's own section (`#/t/:tenant#course-<slug>`, reusing the one-trailing-fragment shape the
+  guidebook's section links already had), the course segment goes to the course page, and every other
+  segment stays plain. **The fragment keys on the course, not the domain, and that was a correction
+  made under review**: an explicit group in `groups.yml` pulls its courses out of the derived domain
+  section, so a domain whose courses are all grouped has no section and the link expanded nothing -
+  precisely the shape of the committed example tenant, which made the feature inert on the living
+  spec. A course sits in exactly one section whichever layer claimed it, and its slug is already a
+  URL surface, so no hand-edited group id leaks into a URL or a DOM id.
+  **Resolution is server-side and that is the other load-bearing decision** -
+  `GET :tenant/note` now returns the owning `course` and `domain` from the same walk that answers
+  every other route, so the client links only what exists. The obvious alternative, guessing
+  `<domain>/<course>/...` from the path's shape, is silently wrong for `sources/` and `insights/`,
+  which sit at the vault root beside the domain directories; a wrong guess is a confident link to a
+  404. A guarded back control joins the header: `history.back()`, hidden at in-app depth 0 so a
+  bookmark or deep link cannot eject the reader out of the app, with depth stamped per
+  `history.state` entry rather than counted (a counter incremented on `hashchange` reads a backward
+  navigation as another step forward and defeats its own guard). Two supporting extractions follow
+  the repo's existing discipline: `app/client/src/routes.ts` and `notePath.ts` are DOM-free `.ts`
+  modules so `node --test` covers the route table and the breadcrumb rules the way it already covers
+  `courseList.ts`. Spec: `docs/specs/app.md` behavior 13 + invariant 14.
+  **Knowingly accepted:** the path stays the `<h1>` while the note body keeps its own heading, so the
+  page carries two `<h1>`s. That diverges from UI-15 in
+  `docs/reviews/2026-08-13-ui-navigation-review.md`, which prescribes dropping the path heading -
+  Avishek chose legibility of location over the duplicate-heading fix after being shown both. UI-15
+  is therefore **partly addressed** (links added, orphan status fixed, double `<h1>` retained), and
+  UI-06's planned shared `Breadcrumb` component will have to reconcile with this page rather than
+  assume it owns the pattern.
+  **What the gate could not see.** The whole suite was green before the one real defect turned up:
+  the browser fires `toggle` when React sets `open` on the remounted `<details>`, so the deep link's
+  own forced open was read as a user action - releasing the force on the very render that applied it
+  and persisting over the learner's stored choice. `node --test` has no DOM, so nothing in the gate
+  could have caught it; a headless browser walk over the example tenant did. The rule now lives as a
+  pure decision (`decideToggle`) in `courseList.ts` with unit tests, so the regression is
+  gate-covered even though the rendering around it still is not.
 
 - 2026-08-12 - **The scanner counted scratch git repositories inside agent tool caches as real
   projects.** A real `find-subjects` run found 4 of 13 repositories were not projects, all under a

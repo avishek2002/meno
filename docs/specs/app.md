@@ -1,7 +1,8 @@
 # App spec
 
-*Status: current as of Phase 4; amended at v1.5 (course groups) and v1.6 (course-list collapse and
-filter; the group write surface removed). Canonical formats owned elsewhere: check blocks and
+*Status: current as of Phase 4; amended at v1.5 (course groups), v1.6 (course-list collapse and
+filter; the group write surface removed), and v1.10 (note-path breadcrumb, course deep-link, guarded
+back control). Canonical formats owned elsewhere: check blocks and
 callouts in
 [generate-module/references/check-formats.md](../../.agents/skills/generate-module/references/check-formats.md),
 todos in
@@ -116,6 +117,45 @@ write-authority seam (decision 14) is enforced in code.
 12. `#/t/:tenant/graph` renders the whole tenant vault as one picture, joined to the ledger -
     what is planned but unwritten, what is mastered, and how courses connect. See
     [graph.md](graph.md) for the full behavior.
+13. Getting out of a note, and one step back (v1.10). A note is reached by following a wikilink
+    from anywhere in the vault, so it is the screen most likely to be entered with no idea where
+    it sits. It keeps its vault path as its `<h1>` and renders that path as segments, where a
+    segment the server confirmed is a real place becomes a link: the domain directory to the
+    course list deep-linked at the course's own section (`#/t/:tenant#course-<slug>`, the same
+    one-trailing-fragment shape the guidebook's section links already use), and the course
+    directory to the course page. Every other segment - the intermediate directories, and the
+    file itself - is plain text, styled so the reader can tell what is clickable before
+    clicking. **Resolution is server-side**: `GET :tenant/note` returns the owning course and
+    its domain from the same walk that answers every other route, so the client links only what
+    exists, and a note outside every course (`home.md`, `insights/`, `sources/`) degrades to a
+    wholly plain path rather than a confident link to a 404. The deep link forces the section
+    holding that course open over the stored collapse state and scrolls to it, moving focus
+    there and honoring `prefers-reduced-motion`; that forcing is never written back, exactly as
+    the filter's is not (item 9), because a visit is not a preference. A fragment naming a
+    course this tenant does not have renders the ordinary list and nothing else.
+    **The fragment keys on the course, not the domain**, which is the non-obvious half. Keying
+    on the domain reads as the natural choice - it is the segment being clicked - but an
+    explicit group in `groups.yml` removes its courses from the derived domain section, so a
+    domain whose courses are all filed into groups has no section at all and the link would
+    expand nothing. The example tenant is exactly that shape, which is how this was caught. The
+    course, unlike the domain, is always in exactly one section whichever layer claimed it. It
+    also keeps the property the domain form had: a course slug is already a URL surface
+    (`#/t/:tenant/c/:course`), while an arbitrary group id from a hand-edited file never becomes
+    one - not in a URL, and not as a DOM id either, which is why the scroll target is held as an
+    element reference rather than looked up by id.
+    **The path stays the `<h1>` while the note body keeps its own heading, so the page carries
+    two `<h1>`s.** That is a knowingly accepted cost, taken against
+    [the v1.10 navigation review](../reviews/2026-08-13-ui-navigation-review.md)'s UI-15, which
+    prescribes dropping the path heading instead: the path as the title is what makes the
+    location legible at a glance, and the review's own shared breadcrumb component (UI-06) has
+    to reconcile with this page when it lands.
+    The header carries a back control alongside the wordmark: `history.back()`, hidden entirely
+    at in-app depth 0, so a bookmark or a deep link cannot eject the reader out of Meno on their
+    first click. Depth is stamped per history entry on `history.state` rather than counted,
+    because a counter incremented on every `hashchange` reads a backward navigation as another
+    step forward and defeats the guard it exists to provide. The stamping happens on
+    `hashchange` rather than at navigation time because this app's links are plain anchors that
+    never pass through `navigate()`.
 
 ## Architecture
 
@@ -146,7 +186,9 @@ One process, two halves, one root `package.json`:
 The HTTP surface (base `/api/v1`): reads - `health`, `tenants`, `:tenant/tree`,
 `:tenant/course/:course`, `:tenant/lesson/:course/:module/:file`, `:tenant/note?path=`,
 `:tenant/todos`, `:tenant/progress`, `:tenant/insights`, `:tenant/ledger`, `:tenant/groups`,
-`:tenant/graph`. `:tenant/insights`
+`:tenant/graph`. `:tenant/note?path=` also answers with the note's owning `course` and `domain`,
+or nulls, resolved from the same walk rather than from the path's shape (invariant 14).
+`:tenant/insights`
 has no write counterpart - it computes `lib/insights.ts`'s `computeInsights` fresh over the
 same walk and adds the list of narrative report files under `insights/` (spec:
 [insights.md](insights.md)). Writes (the entire write surface) - `POST :tenant/check/submit`,
@@ -222,6 +264,12 @@ both run before routing so they cover writes and unrouted paths equally.
     `meno.courseList.open.v1`. No content, evidence, progress, or todo is ever kept in the
     browser, and every screen renders correctly with the store empty, full of stale ids, or
     unavailable entirely.
+14. The note breadcrumb links only what the server resolved. The client never infers a course
+    from the shape of a path; `GET :tenant/note` answers with the owning course and domain or
+    with nulls, and any segment without a server-confirmed target renders as text. A course slug
+    is emitted as a fragment only when it matches the route pattern's own character class, so a
+    link this app renders can never land on not-found. No group id from `groups.yml` appears in
+    a URL or in the document, at either end of this feature.
 
 ## Verified by
 
@@ -244,6 +292,29 @@ both run before routing so they cover writes and unrouted paths equally.
   coverage of a write route and an unrouted path. Forging a `Host` header needs
   `helpers.ts`'s `rawRequest`, because `fetch` replaces a caller-supplied one.
 - Invariant 4: by construction (no code path); the ledger check re-asserts at rest.
+- Invariant 14 and behavior 13: `app/test/api.test.ts` for the server half (a note inside a course
+  dir resolving to its slug, title and domain; a note outside every course - both at the vault root
+  and in a non-course subdirectory - resolving to nulls; plus direct `resolveNoteCourse` cases for
+  the longest-prefix tie-break, an ungrouped course dir, and a sibling-prefix near miss that must not
+  claim the path). `app/test/note-path.test.ts` covers the breadcrumb rules, `app/test/route-table.test.ts`
+  the `tenant` route's fragment - including the assertion that a greedy `tenant` class does not swallow
+  `#domain-x` - and `app/test/history-depth.test.ts` the back button's depth decision. The DOM behavior
+  around all of it - the forced-open override, its release, the scroll, the button appearing and
+  hiding - is **browser-verified rather than gate-covered**: `node --test` has no DOM, so a headless
+  walk over the example tenant is what actually observed it. That walk is not committed and does not
+  run in CI, which is the honest limit of this claim. It is also what caught the one defect this
+  change had after the gate was already green: the browser fires `toggle` when React sets `open` on
+  the remounted `<details>`, so the deep link's own forced open was being read as a user action -
+  releasing the force on the render that applied it and persisting over the learner's stored choice.
+  The rule now lives as a pure decision (`decideToggle`) in `courseList.ts` with its own unit tests,
+  so that regression is gate-covered even though the rendering is not.
+- **A pre-existing bug this change did not introduce and does not fix**, found by the same walk and
+  reproduced against `main`: the course-list collapse state (behavior 9, invariant 13) does not
+  survive a page reload. A section closed by the learner is stored correctly, but on the next load
+  the same mount-time `toggle` fires for every section, the handler persists `true`, normalization
+  drops `true` entries, the object empties, and `writeOpenState` calls `removeItem`. The stored
+  preference is gone and the list renders open, which looks correct and is why it went unnoticed
+  through v1.6 - the pure logic it is unit-tested on is right, and no test in the gate has a DOM.
 - Invariants 11-12: by construction (no route reads outside the content root; both
   renderers import `GLOSSARY`). Not machine-asserted - a future contributor could add a
   second copy of a definition and nothing would fail.

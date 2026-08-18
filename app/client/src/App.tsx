@@ -33,7 +33,7 @@ export default function App() {
       page = <GuidePage section={route.params.section} />;
       break;
     case 'tenant':
-      page = <TenantCoursesPage tenant={route.params.tenant} />;
+      page = <TenantCoursesPage tenant={route.params.tenant} section={route.params.section} />;
       break;
     case 'course':
       page = <CoursePage tenant={route.params.tenant} course={route.params.course} />;

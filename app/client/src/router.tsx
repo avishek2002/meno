@@ -1,52 +1,16 @@
-// Hand-rolled hash router: a regex table over `location.hash`, matched on every
-// `hashchange`. No route library - the app has eight shapes and they don't
-// change often enough to earn a dependency.
+// Hand-rolled hash router: matches location.hash against the route table in
+// routes.ts on every hashchange. No route library - the app has a handful of
+// shapes and they don't change often enough to earn a dependency. The route
+// table itself lives in routes.ts, not here, so it unit-tests without a DOM.
 import { useEffect, useMemo, useState } from 'react';
-import { decodeParams } from './routeParams.ts';
+import { matchRoute, type Route } from './routes.ts';
 
-export interface Route {
-  name: string;
-  params: Record<string, string>;
-}
-
-interface RouteDef {
-  name: string;
-  pattern: RegExp;
-}
-
-const ROUTES: RouteDef[] = [
-  { name: 'home', pattern: /^#\/$/ },
-  // The optional trailing fragment is the guidebook's in-page section links:
-  // one hash router plus one document fragment, so a section stays linkable.
-  { name: 'guide', pattern: /^#\/guide(?:#(?<section>[\w-]+))?$/ },
-  { name: 'lesson', pattern: /^#\/t\/(?<tenant>[^/]+)\/c\/(?<course>[^/]+)\/m\/(?<module>[^/]+)\/l\/(?<file>[^/]+)$/ },
-  { name: 'course', pattern: /^#\/t\/(?<tenant>[^/]+)\/c\/(?<course>[^/]+)$/ },
-  { name: 'todos', pattern: /^#\/t\/(?<tenant>[^/]+)\/todos$/ },
-  { name: 'progress', pattern: /^#\/t\/(?<tenant>[^/]+)\/progress$/ },
-  { name: 'insights', pattern: /^#\/t\/(?<tenant>[^/]+)\/insights$/ },
-  { name: 'cost', pattern: /^#\/t\/(?<tenant>[^/]+)\/cost$/ },
-  // The browser puts everything after the first `#` into location.hash, so
-  // `?focus=` written after the hash route lives inside the hash itself -
-  // the optional query is folded into this one pattern, the same way `guide`
-  // folds in its optional trailing fragment above. `[^/?]+` keeps a `?` out
-  // of `tenant`; `[^&#]*` keeps a second query param or trailing fragment
-  // from silently landing inside `focus` - either fails the match and falls
-  // through to not-found instead.
-  { name: 'graph', pattern: /^#\/t\/(?<tenant>[^/?]+)\/graph(?:\?focus=(?<focus>[^&#]*))?$/ },
-  { name: 'note', pattern: /^#\/t\/(?<tenant>[^/]+)\/n\/(?<path>.+)$/ },
-  { name: 'tenant', pattern: /^#\/t\/(?<tenant>[^/]+)$/ },
-];
+// Re-exported so existing importers of `Route` from this module keep working
+// unchanged now that its definition moved to routes.ts.
+export type { Route };
 
 function readHash(): string {
   return window.location.hash || '#/';
-}
-
-function matchRoute(hash: string): Route {
-  for (const r of ROUTES) {
-    const m = hash.match(r.pattern);
-    if (m) return { name: r.name, params: decodeParams(m.groups) };
-  }
-  return { name: 'not-found', params: {} };
 }
 
 export function useRoute(): Route {

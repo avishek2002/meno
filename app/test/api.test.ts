@@ -9,7 +9,8 @@ import { promisify } from 'node:util';
 import { withTenant, api, type TestApp } from './helpers.ts';
 import { readLedgerEvents } from '../server/ledger.ts';
 import { parseTodos, addTodo, patchTodo } from '../server/todos.ts';
-import type { TodoKind } from '../shared/types.ts';
+import { resolveNoteCourse } from '../server/tree.ts';
+import type { TodoKind, CourseNode } from '../shared/types.ts';
 
 const L = { course: 'rust-for-backend', module: '01-syntax-and-ownership-basics' };
 
@@ -58,6 +59,23 @@ test('wikilinks resolve like the vault index; broken ones are marked', async () 
   const { json } = await api(app, 'GET', `/api/v1/example-learner/lesson/${L.course}/${L.module}/03-ownership`);
   const links = json.links as { resolved: Record<string, string>; broken: string[] };
   assert.ok(links.resolved['02-syntax-for-experienced-developers']?.endsWith('02-syntax-for-experienced-developers.md'));
+});
+
+test('GET /note resolves the owning course and its domain for a note inside a course dir', async () => {
+  const { json } = await api(app, 'GET', '/api/v1/example-learner/note?path=software-engineering/rust-for-backend/rust-for-backend-hub.md');
+  assert.equal((json.course as { slug: string }).slug, 'rust-for-backend');
+  assert.ok(typeof (json.course as { title: string }).title === 'string' && (json.course as { title: string }).title.length > 0);
+  assert.equal(json.domain, 'software-engineering');
+});
+
+test('GET /note returns course: null, domain: null for a note outside every course', async () => {
+  const home = await api(app, 'GET', '/api/v1/example-learner/note?path=home.md');
+  assert.deepEqual({ course: home.json.course, domain: home.json.domain }, { course: null, domain: null });
+  // sources/ is a non-course subdirectory - a naive "first path segment" guess
+  // would still be wrong here since it isn't a domain either, but this is the
+  // case that actually catches a positional heuristic
+  const source = await api(app, 'GET', '/api/v1/example-learner/note?path=sources/git-notes-from-previous-team.md');
+  assert.deepEqual({ course: source.json.course, domain: source.json.domain }, { course: null, domain: null });
 });
 
 test('adding files mid-process makes them appear with no config change', async () => {
@@ -262,6 +280,34 @@ test('ledger limit is clamped and garbage limits fall back to the default', asyn
     assert.equal(status, 200);
     assert.ok((json.events as unknown[]).length <= 200);
   }
+});
+
+// minimal CourseNode stubs - resolveNoteCourse only ever reads dir/slug/title
+const stubCourse = (dir: string, slug: string): CourseNode => ({
+  dir, slug, title: `Title for ${slug}`, status: 'active', hub: '', objectives: [], modules: [],
+});
+
+// findCourseDirs can never actually emit a nested pair like this - it stops
+// descending the moment a directory has its own course.yml, so a course dir
+// is never the parent of another course dir today. This guards the
+// longest-match branch as defensive code anyway: it keeps the resolver
+// correct on its own terms if that walk's shape ever changes, not a case
+// real input reaches right now.
+test('resolveNoteCourse defensively prefers the longer dir on a nested-course shape the walk cannot currently produce', () => {
+  const courses = [stubCourse('a', 'a-course'), stubCourse('a/b', 'b-course')];
+  const result = resolveNoteCourse(courses, 'a/b/note.md');
+  assert.equal(result?.course.slug, 'b-course');
+});
+
+test('resolveNoteCourse yields domain: null for an ungrouped course dir with no slash', () => {
+  const courses = [stubCourse('bare-course', 'bare-course')];
+  const result = resolveNoteCourse(courses, 'bare-course/note.md');
+  assert.deepEqual(result, { course: { slug: 'bare-course', title: 'Title for bare-course' }, domain: null });
+});
+
+test('resolveNoteCourse does not let a sibling-prefix dir claim a near-miss path', () => {
+  const courses = [stubCourse('a/b', 'b-course')];
+  assert.equal(resolveNoteCourse(courses, 'a/bc/note.md'), null);
 });
 
 test('a read event for a nonexistent lesson is refused, and hostile seconds are rejected', async () => {
