@@ -112,6 +112,33 @@ export default function App() {
 
   return (
     <RevalidateContext.Provider value={setRevalidate}>
+      {/* WCAG 2.4.1. The header carries a wordmark, a tenant name, a back
+          control and seven nav links, and every one of them sits ahead of the
+          content on every route - so without this a keyboard reader tabs the
+          whole chrome again on each page just to reach what they came for.
+          First element in the tree so it is the first tab stop; visible only
+          while focused (see .skip-link), which is why it is a real link rather
+          than a hidden one. It targets <main>, which is already tabIndex={-1}
+          for the route-change focus move, so the jump lands somewhere focus
+          can actually rest.
+
+          It moves focus itself rather than letting the browser follow the
+          fragment, because this is a hash-routed app: letting `#main-content`
+          reach location.hash would hand the router a hash it cannot match and
+          land the reader on not-found - the skip link would break the page it
+          exists to make usable. The href stays for the semantics (a link with
+          no href is not a link, and is not focusable), and preventDefault
+          keeps it out of the router's way. */}
+      <a
+        className="skip-link"
+        href="#main-content"
+        onClick={(e) => {
+          e.preventDefault();
+          mainRef.current?.focus();
+        }}
+      >
+        Skip to content
+      </a>
       <Header
         tenant={route.params.tenant}
         route={route.name}
@@ -121,7 +148,7 @@ export default function App() {
           target - the landing spot the effect above moves focus to on every
           route change, so a keyboard or screen-reader user gets a signal that
           navigation happened. */}
-      <main className="content" ref={mainRef} tabIndex={-1}>
+      <main className="content" id="main-content" ref={mainRef} tabIndex={-1}>
         <Suspense fallback={<AsyncStatus message="Loading..." />}>{page}</Suspense>
       </main>
     </RevalidateContext.Provider>
