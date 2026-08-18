@@ -2,11 +2,15 @@
 // mermaid diagrams, references, and the once-after-20s read-progress ping.
 import { useEffect } from 'react';
 import { useResource } from '../useResource';
+import { useCourseContext } from '../useCourseContext';
 import { useRegisterRevalidate } from '../RevalidateContext';
 import { AsyncStatus } from '../components/AsyncStatus';
 import { ErrorState } from '../components/ErrorState';
 import { RenderedHtml } from '../components/RenderedHtml';
 import { ReferencesPanel } from '../components/ReferencesPanel';
+import { Breadcrumb, type BreadcrumbSegment } from '../components/Breadcrumb';
+import { LessonNav } from '../components/LessonNav';
+import { courseHref } from '../courseContext.ts';
 import { postJson } from '../api';
 import { parseSources } from '../clientTypes';
 import type { LessonResponse } from '../../../shared/types.ts';
@@ -22,6 +26,12 @@ export function LessonPage({ tenant, course, module, file }: LessonPageProps) {
   const url = `/api/v1/${encodeURIComponent(tenant)}/lesson/${encodeURIComponent(course)}/${encodeURIComponent(module)}/${encodeURIComponent(file)}`;
   const { data, error, status, loading, revalidate } = useResource<LessonResponse>(url);
   useRegisterRevalidate(revalidate);
+
+  // UI-06: the breadcrumb and prev/next both come from the same course fetch
+  // that powers the course page (UI-02), never a lesson-local guess at the
+  // course/module title.
+  const courseCtx = useCourseContext(tenant, course);
+  const neighbours = courseCtx.neighbours(module, file);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -60,8 +70,20 @@ export function LessonPage({ tenant, course, module, file }: LessonPageProps) {
   const sources = parseSources(data.frontmatter);
   const title = typeof data.frontmatter.title === 'string' ? data.frontmatter.title : file;
 
+  // Fall back to the raw slug when the course fetch has not landed yet (or
+  // failed) rather than blocking the breadcrumb on a second network round
+  // trip - it upgrades to the real title the moment useCourseContext resolves.
+  const courseTitle = courseCtx.structure?.title ?? course;
+  const moduleTitle = neighbours.current?.moduleTitle ?? module;
+  const breadcrumbSegments: BreadcrumbSegment[] = [
+    { label: 'Courses', href: `#/t/${encodeURIComponent(tenant)}` },
+    { label: courseTitle, href: courseCtx.structure?.href ?? courseHref(tenant, course) },
+    { label: moduleTitle },
+  ];
+
   return (
     <article className="lesson">
+      <Breadcrumb segments={breadcrumbSegments} />
       <header className="lesson-header">
         <h1>{title}</h1>
         <a className="show-in-graph" href={`#/t/${encodeURIComponent(tenant)}/graph?focus=${encodeURIComponent(file)}`}>
@@ -85,6 +107,7 @@ export function LessonPage({ tenant, course, module, file }: LessonPageProps) {
         lesson={file}
       />
       <ReferencesPanel sources={sources} />
+      <LessonNav neighbours={neighbours} />
     </article>
   );
 }

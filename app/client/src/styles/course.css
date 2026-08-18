@@ -4,3 +4,94 @@
    Owned by one implementer; nothing outside track B edits this file. Loaded
    from main.tsx after styles.css, so a rule here wins a specificity tie with
    the base sheet. New rules only - existing rules stay in styles.css. */
+
+.course-gate-alert {
+  border: 1px solid var(--incorrect-border);
+  background: var(--incorrect-bg);
+  color: var(--incorrect-text);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.9rem;
+  margin: 0 0 1rem;
+  font-size: 0.92rem;
+}
+
+.continue-block {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-subtle);
+  padding: 0.75rem 1.1rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.continue-block h2 {
+  margin: 0 0 0.4rem;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+}
+
+.continue-block p {
+  margin: 0;
+}
+
+/* Gate chip: a word plus an icon glyph, never colour alone (UI-01). The
+   colour classes below are a bonus visual cue on top of the two channels
+   that already carry the meaning without it. */
+.gate-chip {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+}
+
+.gate-chip-pass {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.gate-chip-fail {
+  background: var(--incorrect-bg);
+  color: var(--incorrect-text);
+  border-color: var(--incorrect-border);
+}
+
+.gate-chip-insufficient-evidence {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  border-color: var(--warning-border);
+}
+
+/* Objectives and the hub map become <details>, closed by default once a
+   course has ledger events (UI-07) - same visual language as
+   .group-section summary and .prose details already use elsewhere. */
+.objectives,
+.hub-note {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.6rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.objectives summary,
+.hub-note summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.objectives[open] summary,
+.hub-note[open] summary {
+  margin-bottom: 0.6rem;
+}
+
+.objectives ul {
+  padding-left: 1.2rem;
+  margin: 0;
+}

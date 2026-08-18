@@ -4,15 +4,42 @@
 // study-insights skill has written. Deliberately neutral: no pass/fail
 // coloring anywhere on this page (docs/specs/insights.md) - it must not read
 // as a second gate, only as an honest mirror of what the ledger and vault say.
-import type { ReactNode } from 'react';
+import { useCallback, useMemo, type ReactNode } from 'react';
 import { useResource } from '../useResource';
 import { useRegisterRevalidate } from '../RevalidateContext';
 import { AsyncStatus } from '../components/AsyncStatus';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorState } from '../components/ErrorState';
-import type { InsightsResponse, Rate } from '../../../shared/types.ts';
+import type { InsightsResponse, Rate, TreeResponse } from '../../../shared/types.ts';
 import { InfoTip } from '../components/InfoTip';
 import { TODO_KIND_INFO } from '../todoTags';
+import { buildCourseStructure, courseHref, type CourseStructure } from '../courseContext.ts';
+import { conceptHref, daysOverdue } from '../due.ts';
+
+/**
+ * `usage.lessons_never_opened` entries are `${course}/${module}/${file}`
+ * (lib/insights.ts, the same triple lessonHref takes) - split it back apart
+ * so the row can link to the real lesson instead of naming it as an opaque
+ * string.
+ */
+function parseNeverOpened(key: string): { course: string; module: string; file: string } | null {
+  const parts = key.split('/');
+  if (parts.length !== 3 || parts.some((p) => p === '')) return null;
+  const [course, module, file] = parts;
+  return { course, module, file };
+}
+
+/** A course or module cell: a link when the structure resolves it, plain text otherwise (structure not loaded, or an unknown course). */
+function CourseCell({ tenant, course, structures }: { tenant: string; course: string; structures: Record<string, CourseStructure> }) {
+  const title = structures[course]?.title;
+  return <a href={courseHref(tenant, course)}>{title ?? course}</a>;
+}
+
+/** A concept cell: links to the lesson that introduced it, falling back to the course page (UI-11's fallback), or plain text before the course structure has loaded. */
+function ConceptCell({ concept, structure }: { concept: string; structure: CourseStructure | undefined }) {
+  const href = conceptHref(structure ?? null, concept);
+  return href ? <a href={href}>{concept}</a> : <>{concept}</>;
+}
 
 function RateText({ value }: { value: Rate }) {
   if (value.value === null) return <span className="rate-empty">not enough data ({value.n})</span>;
@@ -34,7 +61,23 @@ function Stat({ label, children }: { label: string; children: ReactNode }) {
 
 export function InsightsPage({ tenant }: { tenant: string }) {
   const { data, error, loading, revalidate } = useResource<InsightsResponse>(`/api/v1/${encodeURIComponent(tenant)}/insights`);
-  useRegisterRevalidate(revalidate);
+  // Every course/module/concept named on this page is a bare identifier in
+  // the InsightsReport payload (lib/insights.ts) - resolving it to a title
+  // and a lesson link needs the course structure /tree already carries.
+  // useResource's cache (UI-05) means a page that fetched /tree already
+  // serves this for free.
+  const tree = useResource<TreeResponse>(`/api/v1/${encodeURIComponent(tenant)}/tree`);
+  const revalidateAll = useCallback(() => {
+    revalidate();
+    tree.revalidate();
+  }, [revalidate, tree.revalidate]);
+  useRegisterRevalidate(revalidateAll);
+
+  const structures = useMemo(() => {
+    const out: Record<string, CourseStructure> = {};
+    for (const c of tree.data?.courses ?? []) out[c.slug] = buildCourseStructure(tenant, c);
+    return out;
+  }, [tenant, tree.data]);
 
   if (loading && !data) return <AsyncStatus message="Loading insights..." />;
   if (error) {
@@ -61,6 +104,9 @@ export function InsightsPage({ tenant }: { tenant: string }) {
         Insights <InfoTip entry="insights" />
       </h1>
       <p className="status-line">As of {data.as_of}, over {data.basis.ledger_lines} ledger lines.</p>
+      <p className="status-line">
+        For the due list ordered by urgency and grouped by course, see <a href={`#/t/${encodeURIComponent(tenant)}/progress`}>progress</a>.
+      </p>
 
       <section className="insights-section">
         <h2>Sessions</h2>
@@ -96,10 +142,14 @@ export function InsightsPage({ tenant }: { tenant: string }) {
             <tbody>
               {reviews.overdue.map((o, i) => (
                 <tr key={i}>
-                  <td>{o.course}</td>
-                  <td>{o.concept}</td>
+                  <td>
+                    <CourseCell tenant={tenant} course={o.course} structures={structures} />
+                  </td>
+                  <td>
+                    <ConceptCell concept={o.concept} structure={structures[o.course]} />
+                  </td>
                   <td>{o.next_review}</td>
-                  <td>{o.days_overdue}</td>
+                  <td>{daysOverdue(o.next_review, data.as_of)}</td>
                 </tr>
               ))}
             </tbody>
@@ -135,8 +185,12 @@ export function InsightsPage({ tenant }: { tenant: string }) {
               <tbody>
                 {gates.unrepaid_overrides.map((u, i) => (
                   <tr key={i}>
-                    <td>{u.course}</td>
-                    <td>{u.concept}</td>
+                    <td>
+                      <CourseCell tenant={tenant} course={u.course} structures={structures} />
+                    </td>
+                    <td>
+                      <ConceptCell concept={u.concept} structure={structures[u.course]} />
+                    </td>
                     <td>{u.gate_ts}</td>
                     <td>{u.reinject_after}</td>
                   </tr>
@@ -172,8 +226,12 @@ export function InsightsPage({ tenant }: { tenant: string }) {
             <tbody>
               {evidence.mastered_on_old_evidence.map((m, i) => (
                 <tr key={i}>
-                  <td>{m.course}</td>
-                  <td>{m.concept}</td>
+                  <td>
+                    <CourseCell tenant={tenant} course={m.course} structures={structures} />
+                  </td>
+                  <td>
+                    <ConceptCell concept={m.concept} structure={structures[m.course]} />
+                  </td>
                   <td>{m.days_since_transfer}</td>
                 </tr>
               ))}
@@ -194,8 +252,12 @@ export function InsightsPage({ tenant }: { tenant: string }) {
             <tbody>
               {evidence.weak_concepts.map((w, i) => (
                 <tr key={i}>
-                  <td>{w.course}</td>
-                  <td>{w.concept}</td>
+                  <td>
+                    <CourseCell tenant={tenant} course={w.course} structures={structures} />
+                  </td>
+                  <td>
+                    <ConceptCell concept={w.concept} structure={structures[w.course]} />
+                  </td>
                   <td>{w.first_score}</td>
                   <td>{w.latest_score}</td>
                   <td>{w.n_transfer}</td>
@@ -234,6 +296,25 @@ export function InsightsPage({ tenant }: { tenant: string }) {
             </li>
           ))}
         </ul>
+        {usage.lessons_never_opened.length > 0 && (
+          <details className="insights-detail-list">
+            <summary>Lessons never opened ({usage.lessons_never_opened.length})</summary>
+            <ul>
+              {usage.lessons_never_opened.map((key) => {
+                const parsed = parseNeverOpened(key);
+                if (!parsed) return <li key={key}>{key}</li>;
+                const structure = structures[parsed.course];
+                const lesson = structure?.lessons.find((l) => l.module === parsed.module && l.file === parsed.file);
+                // Every neverOpened entry names a generated (non-planned) lesson, so once
+                // the structure has loaded it should always resolve; the course-page
+                // fallback only fires while /tree is still loading or on a data mismatch.
+                const href = lesson?.href ?? structure?.href ?? null;
+                const label = lesson ? `${structure!.title} / ${lesson.moduleTitle} / ${lesson.title}` : key;
+                return <li key={key}>{href ? <a href={href}>{label}</a> : label}</li>;
+              })}
+            </ul>
+          </details>
+        )}
         {usage.planned_debt.length > 0 && (
           <table>
             <thead>
@@ -246,8 +327,15 @@ export function InsightsPage({ tenant }: { tenant: string }) {
             <tbody>
               {usage.planned_debt.map((p, i) => (
                 <tr key={i}>
-                  <td>{p.course}</td>
-                  <td>{p.module}</td>
+                  <td>
+                    <CourseCell tenant={tenant} course={p.course} structures={structures} />
+                  </td>
+                  <td>
+                    {/* The route has no module anchor yet (docs/reviews/2026-08-13-ui-navigation-review.md
+                        UI-10 asks for one; CoursePage/router.tsx do not support it), so this links to the
+                        course page as the closest faithful target rather than the module itself. */}
+                    <a href={courseHref(tenant, p.course)}>{p.module}</a>
+                  </td>
                   <td>{p.planned}</td>
                 </tr>
               ))}

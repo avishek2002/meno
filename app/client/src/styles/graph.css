@@ -4,3 +4,139 @@
    Owned by one implementer; nothing outside track E edits this file. Loaded
    from main.tsx after styles.css, so a rule here wins a specificity tie with
    the base sheet. New rules only - existing rules stay in styles.css. */
+
+/* The legend moves from an absolutely-positioned overlay (styles.css) to a
+   real column beside the canvas, so it stops covering nodes (UI-12: it used
+   to cover 27% of the canvas and hide 8 nodes). Wraps below the canvas on a
+   narrow viewport instead of squeezing it. */
+.graph-canvas-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.75rem;
+  overflow: visible;
+}
+
+.graph-svg {
+  flex: 1 1 20rem;
+  min-width: 0;
+}
+
+.graph-legend-panel {
+  position: static;
+  flex: 0 0 16rem;
+  max-width: 16rem;
+}
+
+.graph-legend-panel:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.graph-legend {
+  position: static;
+  max-height: 70vh;
+}
+
+.graph-legend-toggle {
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+/* Text labels beside a node (UI-12: 200 nodes, zero labels). Counter-scaled
+   in GraphPage.tsx so size stays constant across zoom levels; the halo
+   (paint-order + stroke) keeps the text legible over edges and other nodes
+   without a background rectangle. */
+.graph-node-label {
+  font-size: 0.68rem;
+  fill: var(--text);
+  paint-order: stroke;
+  stroke: var(--bg-subtle);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  user-select: none;
+}
+
+/* The search box above the canvas (UI-12: no search, no zoom - this adds
+   search; zoom already existed via wheel/pinch). */
+.graph-search {
+  margin-bottom: 0.75rem;
+}
+
+.graph-search label {
+  display: block;
+  font-size: 0.85rem;
+  margin-bottom: 0.3rem;
+}
+
+.graph-search-row {
+  display: flex;
+  gap: 0.4rem;
+  max-width: 24rem;
+}
+
+.graph-search-row input {
+  flex: 1 1 auto;
+}
+
+.graph-search-results {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  max-width: 24rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.graph-search-results li button {
+  width: 100%;
+  text-align: left;
+}
+
+.graph-search-empty {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+/* A skip link before the canvas (UI-12: 94 nodes carried tabIndex={0} with
+   no bypass - a keyboard probe needed 104 Tab presses to escape the node
+   set). Off-screen until focused, the standard skip-link pattern; the node
+   group is also down to a single roving tab stop now (see GraphPage.tsx),
+   so this is defence in depth rather than the only fix. */
+.graph-skip-link {
+  position: absolute;
+  left: -999px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.graph-skip-link:focus {
+  position: static;
+  display: inline-block;
+  width: auto;
+  height: auto;
+  margin-bottom: 0.5rem;
+  padding: 0.3rem 0.6rem;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.graph-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (max-width: 40rem) {
+  .graph-legend-panel {
+    flex: 1 1 100%;
+    max-width: none;
+  }
+}

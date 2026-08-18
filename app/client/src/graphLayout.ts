@@ -170,6 +170,40 @@ export function groupCounts(
   return rows;
 }
 
+/** One row per search result - GraphPage's search box (UI-12). */
+export interface TitleMatch {
+  id: string;
+  title: string;
+}
+
+const SEARCH_RESULT_LIMIT = 8;
+
+/**
+ * Case-insensitive substring search over node titles for the graph page's
+ * search box (UI-12) - the graph has no server-side search, so this stays a
+ * pure client-side filter capped at SEARCH_RESULT_LIMIT results, the same
+ * way an unbounded query would otherwise flood the result list and the tab
+ * order with buttons. An empty or whitespace-only query matches nothing,
+ * the same "empty means absent" rule resolveFocus uses for `?focus=`.
+ * Picking a result still resolves through resolveFocus/`?focus=` at the
+ * call site - this function only narrows candidates, it does not focus one.
+ */
+export function searchNodesByTitle(
+  nodes: readonly { id: string; title: string }[],
+  query: string,
+  limit: number = SEARCH_RESULT_LIMIT,
+): TitleMatch[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  const matches: TitleMatch[] = [];
+  for (const n of nodes) {
+    if (!n.title.toLowerCase().includes(q)) continue;
+    matches.push({ id: n.id, title: n.title });
+    if (matches.length >= limit) break;
+  }
+  return matches;
+}
+
 export interface FilteredSubgraph<N, E> {
   nodes: N[];
   edges: E[];

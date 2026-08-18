@@ -18,6 +18,7 @@ import {
   readOpenState,
   writeOpenState,
   buildCourseListView,
+  dueCountsByCourse,
   type ListSection,
   type FilterableCourse,
   type OpenState,
@@ -339,6 +340,57 @@ test('withAllOpen sets every id at once', () => {
 test('foldForSearch strips combining marks and lowercases', () => {
   assert.equal(foldForSearch('Café'), 'cafe');
   assert.equal(foldForSearch('CAFE'), 'cafe');
+});
+
+// --- UI-08: due-first sort ---
+
+test('dueCountsByCourse tallies entries per course, ignoring courses with none', () => {
+  const counts = dueCountsByCourse([{ course: 'git' }, { course: 'git' }, { course: 'rust-for-backend' }]);
+  assert.deepEqual(counts, { git: 2, 'rust-for-backend': 1 });
+  assert.deepEqual(dueCountsByCourse([]), {});
+});
+
+test('sections with a due course sort it to the top, stable otherwise, and report dueCount', () => {
+  const sections: ListSection[] = [
+    { id: 'version-control', title: 'Version Control', courses: ['git', 'gh-flow'], source: 'explicit' },
+  ];
+  const view = buildCourseListView({
+    sections,
+    ungrouped: [],
+    courses: COURSES,
+    query: '',
+    openState: {},
+    dueCounts: { 'gh-flow': 3 },
+  });
+  const section = view.sections.find((s) => s.id === 'version-control')!;
+  assert.deepEqual(section.courses, ['gh-flow', 'git'], 'the due course moves ahead of the non-due one');
+  assert.equal(section.dueCount, 1);
+});
+
+test('no dueCounts given: order and dueCount are unchanged from before UI-08', () => {
+  const view = buildCourseListView({ sections: SECTIONS, ungrouped: ['unfiled-one'], courses: COURSES, query: '', openState: {} });
+  assert.deepEqual(
+    view.sections.map((s) => s.courses),
+    [['git', 'gh-flow'], ['rust-for-backend'], ['unfiled-one']],
+  );
+  assert.ok(view.sections.every((s) => s.dueCount === 0));
+});
+
+test('two due courses in one section keep their relative order, both ahead of the non-due one', () => {
+  const sections: ListSection[] = [
+    { id: 'mixed', title: 'Mixed', courses: ['git', 'gh-flow', 'rust-for-backend'], source: 'explicit' },
+  ];
+  const view = buildCourseListView({
+    sections,
+    ungrouped: [],
+    courses: COURSES,
+    query: '',
+    openState: {},
+    dueCounts: { git: 1, 'rust-for-backend': 2 },
+  });
+  const section = view.sections.find((s) => s.id === 'mixed')!;
+  assert.deepEqual(section.courses, ['git', 'rust-for-backend', 'gh-flow']);
+  assert.equal(section.dueCount, 2);
 });
 
 // --- byDomain flag ---

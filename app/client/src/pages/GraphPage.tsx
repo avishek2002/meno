@@ -14,7 +14,7 @@
 // same graph lays out identically on every load; only a manual drag (session
 // only, never persisted) moves a node after that.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from 'react';
+import type { FormEvent as ReactFormEvent, KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from 'react';
 import type { Simulation, SimulationLinkDatum, SimulationNodeDatum } from 'd3-force';
 import { navigate } from '../router.tsx';
 import { useResource } from '../useResource';
@@ -31,9 +31,10 @@ import {
   hasNoConnectionEdges,
   hopNeighborhood,
   resolveFocus,
+  searchNodesByTitle,
   seedPosition,
 } from '../graphLayout.ts';
-import type { GraphGroupCount } from '../graphLayout.ts';
+import type { GraphGroupCount, TitleMatch } from '../graphLayout.ts';
 import type { GraphEdge, GraphNode, GraphNodeState, GraphResponse } from '../../../shared/types.ts';
 
 interface SimNode extends SimulationNodeDatum {
@@ -65,13 +66,28 @@ const DRAG_THRESHOLD = 4; // px of pointer movement before a pointerdown+up coun
 const HOVER_HOPS = 1;
 const FOCUS_HOPS = 2;
 const GROUP_PALETTE_SIZE = 8; // app/client/src/styles.css defines --graph-group-0..7
+const MIN_NODE_RADIUS = 7; // svg user-space glyph floor, named explicitly per UI-12's "enforce a minimum radius"
+const MAX_NODE_RADIUS = 24;
+// Half of a 24x24 CSS px hit target (WCAG 2.5.8, "target size minimum"): what
+// the invisible padding circle below solves for, never the visible glyph -
+// UI-12 measured a 2px rendered diameter at 200 nodes because fit-to-view's
+// zoom-out and the viewBox-to-CSS ratio both shrink the glyph, and growing
+// the glyph enough to survive that compounded shrink would blow past
+// MAX_NODE_RADIUS ("without growing the glyph itself").
+const HIT_TARGET_RADIUS_CSS = 12;
+// A node auto-labels once its glyph clears this radius (in_degree 4, see
+// nodeRadius) regardless of hover or focus; every node in the current
+// highlight set (hover's 1-hop or ?focus='s 2-hop neighbourhood) labels too,
+// so a focused view is self-describing even when every member is small -
+// UI-12.
+const LABEL_RADIUS_THRESHOLD = 14;
 
 function clamp(n: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, n));
 }
 
 function nodeRadius(inDegree: number): number {
-  return Math.min(24, 7 + Math.sqrt(inDegree) * 4);
+  return Math.min(MAX_NODE_RADIUS, MIN_NODE_RADIUS + Math.sqrt(inDegree) * 4);
 }
 
 function groupColorVar(groupId: string | null, groupIndex: Map<string, number>): string {
@@ -222,6 +238,26 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
     null,
   );
   const suppressClickRef = useRef<string | null>(null);
+  const nodeRefs = useRef<Map<string, SVGGElement>>(new Map());
+
+  // CSS px per svg user-space unit at scale 1 (transform.k not yet
+  // applied), tracked via ResizeObserver in setSvgRef below - the other
+  // half of the hit-area math (UI-12). The viewBox is square but the
+  // element is not (`width: 100%`, `height: 70vh`), and with no explicit
+  // preserveAspectRatio the default `xMidYMid meet` scales uniformly by
+  // whichever of width/VIEW_SIZE or height/VIEW_SIZE is smaller, letterboxing
+  // the other axis - using width alone would silently overstate the hit
+  // radius on any viewport where height is the binding dimension. Defaults
+  // to 1 (a 1:1 guess) until the observer's first callback fires, which only
+  // affects one initial paint of an invisible circle.
+  const [baseScalePxPerUnit, setBaseScalePxPerUnit] = useState<number>(1);
+  // The one node currently in the tab sequence (UI-12's roving-focus entry
+  // point) - every other node stays tabIndex={-1} and moves via arrow keys
+  // (onNodeKeyDown/moveActive below), so Tab passes over the whole node
+  // group in a single stop instead of the 94 stops it used to take.
+  const [activeNodeId, setActiveNodeId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [legendOpen, setLegendOpen] = useState<boolean>(true);
 
   // The counts the legend/filter panel shows - always over the FULL,
   // unfiltered node list (graphLayout.groupCounts), so a toggle always shows
@@ -316,6 +352,47 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
 
   const groupIndex = useMemo(() => new Map((data?.groups ?? []).map((g, i) => [g.id, i])), [data]);
 
+  // Keeps the roving-focus entry point valid across a fresh fetch or a
+  // group toggle (UI-12): a resolved ?focus= wins when it survived the
+  // filter, else the previous active node if it is still visible, else the
+  // first visible node - never null while any node is on screen.
+  useEffect(() => {
+    if (!visibleGraph || visibleGraph.nodes.length === 0) {
+      setActiveNodeId(null);
+      return;
+    }
+    setActiveNodeId((prev) => {
+      if (resolvedFocus && visibleGraph.nodes.some((n) => n.id === resolvedFocus)) return resolvedFocus;
+      if (prev && visibleGraph.nodes.some((n) => n.id === prev)) return prev;
+      return visibleGraph.nodes[0].id;
+    });
+  }, [visibleGraph, resolvedFocus]);
+
+  // Arrow-key roving focus (UI-12): walks the visible node list one at a
+  // time in render order and imperatively focuses the DOM node, since a
+  // tabIndex={-1} element is still focusable via .focus() even before React
+  // has committed the new tabIndex={0} for it.
+  const moveActive = useCallback(
+    (delta: number): void => {
+      if (!visibleGraph || visibleGraph.nodes.length === 0) return;
+      const order = visibleGraph.nodes;
+      const currentId = activeNodeId ?? order[0].id;
+      const idx = order.findIndex((n) => n.id === currentId);
+      const nextIdx = idx === -1 ? 0 : (idx + delta + order.length) % order.length;
+      const nextId = order[nextIdx].id;
+      setActiveNodeId(nextId);
+      nodeRefs.current.get(nextId)?.focus();
+    },
+    [visibleGraph, activeNodeId],
+  );
+
+  // The search box's candidate list (UI-12) - a plain substring filter over
+  // titles, capped in searchNodesByTitle. Picking or submitting a match
+  // navigates through the same `?focus=` deep link LessonPage/CoursePage
+  // use, so centering and the focus-neighbourhood highlight come from the
+  // one existing code path rather than a second one built for search.
+  const searchMatches = useMemo(() => (data ? searchNodesByTitle(data.nodes, searchQuery) : []), [data, searchQuery]);
+
   // Fit-to-view once, the first time settled positions are available for a
   // load with no incoming focus - never re-fired by a later pan, zoom, or
   // drag, and re-armed whenever the visible subgraph changes (the physics
@@ -361,7 +438,19 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
       setTransform((t) => ({ ...t, k: clamp(t.k * factor, MIN_ZOOM, MAX_ZOOM) }));
     };
     el.addEventListener('wheel', onWheelNative, { passive: false });
-    return () => el.removeEventListener('wheel', onWheelNative);
+    // Tracks the SVG's rendered CSS size so the hit-area padding (UI-12)
+    // can convert a 24 CSS px target into the right svg user-space radius
+    // regardless of viewport size or how far fit-to-view has zoomed out.
+    const observer = new ResizeObserver((entries) => {
+      const rect = entries[0]?.contentRect;
+      if (!rect || rect.width <= 0 || rect.height <= 0) return;
+      setBaseScalePxPerUnit(Math.min(rect.width, rect.height) / VIEW_SIZE);
+    });
+    observer.observe(el);
+    return () => {
+      el.removeEventListener('wheel', onWheelNative);
+      observer.disconnect();
+    };
   }, []);
 
   function clientDeltaToWorld(dxPx: number, dyPx: number): Point {
@@ -436,10 +525,22 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
   }
 
   function onNodeKeyDown(e: ReactKeyboardEvent<SVGGElement>, node: GraphNode): void {
-    if (!node.route) return;
     if (e.key === 'Enter' || e.key === ' ') {
+      if (!node.route) return;
       e.preventDefault();
       activateNode(node);
+      return;
+    }
+    // Roving focus (UI-12): arrow keys walk the visible node list one at a
+    // time instead of Tab - a keyboard probe used to need 104 Tab presses
+    // to leave the node set; now Tab passes over the whole group in one
+    // stop and arrow keys do the within-group movement instead.
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      moveActive(1);
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      moveActive(-1);
     }
   }
 
@@ -452,6 +553,24 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
   function hideTooltip(): void {
     setHoveredId(null);
     setTooltip(null);
+  }
+
+  // Both the search box and (deferred to the router) the "Show in graph"
+  // links on LessonPage/CoursePage drive this same `?focus=` path - UI-12's
+  // "reusing the same resolve-focus path the existing ?focus= deep link
+  // uses" - so centering, highlighting, and now labelling all come from the
+  // one resolveFocus/resolvedFocus flow above rather than a second one.
+  function focusNodeById(id: string): void {
+    navigate(`#/t/${encodeURIComponent(tenant)}/graph?focus=${encodeURIComponent(id)}`);
+    setSearchQuery('');
+  }
+
+  function onSearchSubmit(e: ReactFormEvent<HTMLFormElement>): void {
+    e.preventDefault();
+    const q = searchQuery.trim().toLowerCase();
+    const exact = searchMatches.find((m: TitleMatch) => m.title.toLowerCase() === q);
+    const match = exact ?? searchMatches[0];
+    if (match) focusNodeById(match.id);
   }
 
   if (loading && !data) return <AsyncStatus message="Loading graph..." />;
@@ -495,6 +614,10 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
   // second-brain sweep for edges that already exist would be a lie.
   const noConnectionsYet = hasNoConnectionEdges(data.edges);
   const nothingVisible = visibleGraph.nodes.length === 0;
+  // Rendered CSS px per svg user-space unit at the current zoom - see
+  // HIT_TARGET_RADIUS_CSS above. transform.k is always >= MIN_ZOOM (0.2), so
+  // this is never zero.
+  const pxPerUnit = baseScalePxPerUnit * transform.k;
 
   return (
     <section className="graph-page">
@@ -515,6 +638,42 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
           and they will appear here.
         </p>
       )}
+      <form className="graph-search" role="search" onSubmit={onSearchSubmit}>
+        <label htmlFor="graph-search-input">Find a note by title</label>
+        <div className="graph-search-row">
+          <input
+            id="graph-search-input"
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by title..."
+            autoComplete="off"
+            aria-describedby="graph-search-hint"
+          />
+          <button type="submit">Go</button>
+        </div>
+        <span id="graph-search-hint" className="graph-visually-hidden">
+          Press enter, or choose a result below, to centre and highlight that note in the graph.
+        </span>
+        {searchQuery.trim().length > 0 && (
+          <ul className="graph-search-results">
+            {searchMatches.length === 0 ? (
+              <li className="graph-search-empty">No notes match &quot;{searchQuery.trim()}&quot;</li>
+            ) : (
+              searchMatches.map((m: TitleMatch) => (
+                <li key={m.id}>
+                  <button type="button" onClick={() => focusNodeById(m.id)}>
+                    {m.title}
+                  </button>
+                </li>
+              ))
+            )}
+          </ul>
+        )}
+      </form>
+      <a href="#graph-legend-panel" className="graph-skip-link">
+        Skip past graph nodes
+      </a>
       <div className="graph-canvas-wrap">
         {nothingVisible ? (
           // All groups toggled off (design point 6): the existing empty
@@ -524,7 +683,7 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
           // state only (design point 10, no URL).
           <EmptyState
             title="No groups selected"
-            body="Every course group is turned off in the filter panel below. Turn one back on to see the graph again."
+            body="Every course group is turned off in the legend and filter panel. Turn one back on to see the graph again."
           />
         ) : (
           <svg
@@ -567,8 +726,18 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
                 const color = groupColorVar(node.group, groupIndex);
                 const visual = nodeVisual(node.state, color);
                 const r = nodeRadius(node.in_degree);
+                // The invisible hit-target circle (UI-12): always at least
+                // r, so it never shrinks the click area below the glyph,
+                // but grown independently of r to reach a real 24 CSS px
+                // target - see HIT_TARGET_RADIUS_CSS and pxPerUnit above.
+                const padR = Math.max(r, HIT_TARGET_RADIUS_CSS / pxPerUnit);
                 const dimmed = highlight ? !highlight.has(node.id) : false;
                 const clickable = node.route !== null;
+                const inHighlight = highlight ? highlight.has(node.id) : false;
+                // Labelled when the glyph clears the size threshold, or
+                // whenever this node is in the current hover/focus
+                // neighbourhood, regardless of size (UI-12).
+                const showLabel = r >= LABEL_RADIUS_THRESHOLD || inHighlight;
                 // A ghost node has no route and no file to open - it renders as
                 // an image rather than a link, never a click target
                 // (docs/specs/graph.md, "How it behaves" item 6), and its label
@@ -578,9 +747,16 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
                 return (
                   <g
                     key={node.id}
+                    ref={(el) => {
+                      if (el) nodeRefs.current.set(node.id, el);
+                      else nodeRefs.current.delete(node.id);
+                    }}
                     role={clickable ? 'link' : 'img'}
                     aria-label={label}
-                    tabIndex={clickable ? 0 : -1}
+                    // Roving focus (UI-12): only the active node is ever in
+                    // the Tab sequence - see the activeNodeId effect and
+                    // moveActive above.
+                    tabIndex={node.id === activeNodeId ? 0 : -1}
                     className={clickable ? 'graph-node graph-node-clickable' : 'graph-node'}
                     opacity={dimmed ? 0.15 : visual.opacity}
                     onPointerDown={(e) => onNodePointerDown(e, node.id)}
@@ -593,6 +769,7 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
                     onClick={() => activateNode(node)}
                     onKeyDown={(e) => onNodeKeyDown(e, node)}
                   >
+                    <circle cx={pos.x} cy={pos.y} r={padR} fill="transparent" pointerEvents="all" />
                     <circle
                       cx={pos.x}
                       cy={pos.y}
@@ -601,7 +778,24 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
                       stroke={visual.stroke}
                       strokeWidth={visual.strokeWidth}
                       strokeDasharray={visual.dash}
+                      pointerEvents="none"
                     />
+                    {showLabel && (
+                      <text
+                        className="graph-node-label"
+                        // Counter-scales against the outer pan/zoom group so
+                        // label text stays a constant CSS size regardless of
+                        // how far fit-to-view has zoomed out (UI-12) - the
+                        // glyph itself is not counter-scaled, only the text.
+                        transform={`translate(${pos.x} ${pos.y}) scale(${1 / transform.k})`}
+                        x={r + 4}
+                        y={0}
+                        dominantBaseline="middle"
+                        pointerEvents="none"
+                      >
+                        {node.title}
+                      </text>
+                    )}
                   </g>
                 );
               })}
@@ -609,12 +803,32 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
           </svg>
         )}
 
-        <GraphLegend
-          groupCounts={legendGroupCounts}
-          groupIndex={groupIndex}
-          visibleGroupIds={visibleGroupIds}
-          onToggleGroup={toggleGroup}
-        />
+        {/* A real column beside the canvas, not an overlay on top of it
+            (UI-12: the legend used to cover 27% of the canvas and hide 8
+            nodes) - see graph.css. id/tabIndex is the skip link's target;
+            also collapsible, since the finding names either fix as
+            sufficient. */}
+        <div className="graph-legend-panel" id="graph-legend-panel" tabIndex={-1}>
+          <button
+            type="button"
+            className="graph-legend-toggle"
+            onClick={() => setLegendOpen((v) => !v)}
+            aria-expanded={legendOpen}
+            aria-controls="graph-legend-body"
+          >
+            {legendOpen ? 'Hide legend' : 'Show legend'}
+          </button>
+          {legendOpen && (
+            <div id="graph-legend-body">
+              <GraphLegend
+                groupCounts={legendGroupCounts}
+                groupIndex={groupIndex}
+                visibleGroupIds={visibleGroupIds}
+                onToggleGroup={toggleGroup}
+              />
+            </div>
+          )}
+        </div>
 
         {tooltip && (
           <div className="graph-tooltip" style={{ left: tooltip.left, top: tooltip.top }} role="status">
