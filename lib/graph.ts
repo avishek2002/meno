@@ -29,6 +29,7 @@ import type {
   GraphEdgeKind,
   GraphResponse,
 } from '../app/shared/types.ts';
+import { lessonHref, noteHref } from '../app/shared/routeHrefs.ts';
 
 /**
  * Everything the model needs, already computed by the existing single
@@ -137,7 +138,9 @@ export function dedupeEdges(edges: GraphEdge[]): GraphEdge[] {
  * - `route`: null when `state` is `ghost`; otherwise
  *   `#/t/<tenant>/c/<course>/m/<module>/l/<file-without-.md>` for a lesson and
  *   `#/t/<tenant>/n/<vault path>` for every other node, each segment
- *   `encodeURIComponent`d (the vault path keeps its `/` separators).
+ *   `encodeURIComponent`d (the vault path keeps its `/` separators) - built by
+ *   `lessonHref`/`noteHref` (app/shared/routeHrefs.ts), the same builders
+ *   routes.ts's client-side patterns match against.
  * - `in_degree`: the number of distinct nodes that are the `source` of a
  *   DEDUPLICATED edge whose `target` is this node. Computed after `dedupeEdges`,
  *   so each neighbour counts at most once.
@@ -162,7 +165,6 @@ export function dedupeEdges(edges: GraphEdge[]): GraphEdge[] {
  * target, then one line per self-targeting connects bullet, then one line per
  * connects diagnostic - never an error, never a throw.
  */
-const encPathSegment = (p: string): string => p.split('/').map(encodeURIComponent).join('/');
 
 /** A lesson manifest entry, wherever it lives, joined back to its course and module. */
 interface LessonRef {
@@ -259,12 +261,9 @@ export function buildGraph(input: GraphInput): GraphResponse {
     if (state === 'ghost') {
       route = null;
     } else if (lessonInfo) {
-      const file = encodeURIComponent(lessonInfo.lesson.file.replace(/\.md$/, ''));
-      route =
-        `#/t/${encodeURIComponent(tenant)}/c/${encodeURIComponent(lessonInfo.course.slug)}` +
-        `/m/${encodeURIComponent(lessonInfo.module.slug)}/l/${file}`;
+      route = lessonHref(tenant, lessonInfo.course.slug, lessonInfo.module.slug, lessonInfo.lesson.file);
     } else {
-      route = `#/t/${encodeURIComponent(tenant)}/n/${encPathSegment(id)}`;
+      route = noteHref(tenant, id);
     }
 
     nodes.push({ id, title, kind, group, course: courseSlug, state, in_degree: 0, route });

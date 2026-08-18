@@ -44,10 +44,17 @@ test('resolveWikilinkPath routes a lesson path to the lesson route', () => {
   assert.equal(href, '#/t/sam/c/rust-for-backend/m/m1-ownership/l/what-is-ownership');
 });
 
-test('resolveWikilinkPath falls back to the note route for anything else', () => {
+test('resolveWikilinkPath falls back to the note route for anything else, encoding each path segment rather than the whole path', () => {
+  // Segment-wise, not whole-string: the note route's `path` group keeps `/`
+  // as its own separator (routes.ts's `(?<path>.+)` group), the same
+  // contract lib/graph.ts's `route` field already documented before this
+  // builder existed - see noteHref (app/shared/routeHrefs.ts). Encoding the
+  // whole string instead (this call site's behaviour before the route-href
+  // sweep) would still have matched and round-tripped through matchRoute,
+  // just as an unreadable %2F-laden URL.
   const href = resolveWikilinkPath('sam', 'software-engineering/rust-for-backend/rust-for-backend-hub.md');
   assert.equal(
     href,
-    '#/t/sam/n/software-engineering%2Frust-for-backend%2Frust-for-backend-hub.md',
+    '#/t/sam/n/software-engineering/rust-for-backend/rust-for-backend-hub.md',
   );
 });

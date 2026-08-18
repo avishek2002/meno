@@ -169,7 +169,7 @@ spec row is stale.
 | [specs/validation.md](specs/validation.md) | validate checks, exit codes, policy | Phase 2 | 3, 5 |
 | [specs/lessons.md](specs/lessons.md) | lesson generation, anatomy, checks | Phase 3 | - |
 | [specs/progress.md](specs/progress.md) | ledger events, mastery derivation, gates | Phase 3 | 5 |
-| [specs/app.md](specs/app.md) | server + client, API surface, write path | Phase 4 | v1.5, v1.6, v1.10, v1.11 |
+| [specs/app.md](specs/app.md) | server + client, API surface, write path | Phase 4 | v1.5, v1.6, v1.10, v1.11, v1.12 |
 | [specs/tutor-session.md](specs/tutor-session.md) | review sessions, grading, generate-ahead | Phase 5 | - |
 | [specs/citations.md](specs/citations.md) | audit protocol, stale-content flows | Phase 6 | - |
 | [specs/durability.md](specs/durability.md) | init, private mirror, restore | Phase 7 | - |

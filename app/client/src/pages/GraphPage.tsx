@@ -37,6 +37,7 @@ import {
 } from '../graphLayout.ts';
 import type { GraphGroupCount, TitleMatch } from '../graphLayout.ts';
 import type { GraphEdge, GraphNode, GraphNodeState, GraphResponse } from '../../../shared/types.ts';
+import { tenantHref, graphHref } from '../../../shared/routeHrefs.ts';
 
 interface SimNode extends SimulationNodeDatum {
   id: string;
@@ -597,7 +598,7 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
   // uses" - so centering, highlighting, and now labelling all come from the
   // one resolveFocus/resolvedFocus flow above rather than a second one.
   function focusNodeById(id: string): void {
-    navigate(`#/t/${encodeURIComponent(tenant)}/graph?focus=${encodeURIComponent(id)}`);
+    navigate(graphHref(tenant, id));
     setSearchQuery('');
   }
 
@@ -616,7 +617,7 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
         title="Could not load graph"
         message={`The knowledge graph for ${tenant} could not be loaded.`}
         detail={error}
-        links={[{ label: 'Courses', href: `#/t/${encodeURIComponent(tenant)}` }]}
+        links={[{ label: 'Courses', href: tenantHref(tenant) }]}
       />
     );
   }

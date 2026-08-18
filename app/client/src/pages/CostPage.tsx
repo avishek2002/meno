@@ -14,6 +14,7 @@ import { AsyncStatus } from '../components/AsyncStatus';
 import { ErrorState } from '../components/ErrorState';
 import type { CostResponse, TreeResponse } from '../../../shared/types.ts';
 import { buildCourseStructure, type CourseStructure } from '../courseContext.ts';
+import { tenantHref } from '../../../shared/routeHrefs.ts';
 
 function Stat({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -54,7 +55,7 @@ export function CostPage({ tenant }: { tenant: string }) {
         title="Could not load cost"
         message={`Cost data for ${tenant} could not be loaded.`}
         detail={error}
-        links={[{ label: 'Courses', href: `#/t/${encodeURIComponent(tenant)}` }]}
+        links={[{ label: 'Courses', href: tenantHref(tenant) }]}
       />
     );
   }

@@ -5,6 +5,8 @@
 import { useEffect } from 'react';
 import { GUIDE, GUIDE_URL } from '../guide/content';
 import { GLOSSARY } from '../guide/glossary';
+import { guideHref } from '../../../shared/routeHrefs.ts';
+import { prefersReducedMotion } from '../reducedMotion.tsx';
 
 export function GuidePage({ tenant, section }: { tenant?: string; section?: string }) {
   // document.title is set centrally in App.tsx from the route table (UI-03) -
@@ -16,7 +18,7 @@ export function GuidePage({ tenant, section }: { tenant?: string; section?: stri
   // because a nested fragment is not something the browser resolves itself.
   useEffect(() => {
     if (!section) return;
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reduced = prefersReducedMotion();
     document.getElementById(section)?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
   }, [section]);
 
@@ -36,11 +38,11 @@ export function GuidePage({ tenant, section }: { tenant?: string; section?: stri
         <ul>
           {GUIDE.map((s) => (
             <li key={s.id}>
-              <a href={`#/guide#${s.id}`}>{s.title}</a>
+              <a href={guideHref(s.id)}>{s.title}</a>
             </li>
           ))}
           <li>
-            <a href="#/guide#glossary">Glossary</a>
+            <a href={guideHref('glossary')}>Glossary</a>
           </li>
         </ul>
       </nav>

@@ -9,6 +9,7 @@
 import { useEffect, useState } from 'react';
 import { InfoTip } from './InfoTip';
 import { nextDepth, stampedState } from '../historyDepth.ts';
+import { homeHref, guideHref, tenantHref, todosHref, progressHref, insightsHref, costHref, graphHref } from '../../../shared/routeHrefs.ts';
 
 // Tracks how many in-app entries back the reader can go, so the back button
 // can hide itself entirely rather than ever ejecting someone out of Meno -
@@ -69,7 +70,6 @@ export function Header({
   route: string;
   onRefresh: () => void;
 }) {
-  const t = tenant ? encodeURIComponent(tenant) : '';
   const current = (name: string): 'page' | undefined => {
     const match = name === 'tenant' ? COURSES_SUB_ROUTES.has(route) : route === name;
     return match ? 'page' : undefined;
@@ -84,7 +84,7 @@ export function Header({
             ←
           </button>
         )}
-        <a href="#/" className="wordmark">
+        <a href={homeHref()} className="wordmark">
           meno
         </a>
         {tenant && <span className="tenant-name">{tenant}</span>}
@@ -92,27 +92,27 @@ export function Header({
       <nav className="main-nav" aria-label="Main">
         {tenant && (
           <>
-            <a href={`#/t/${t}`} aria-current={current('tenant')}>
+            <a href={tenantHref(tenant)} aria-current={current('tenant')}>
               Courses
             </a>
-            <a href={`#/t/${t}/graph`} aria-current={current('graph')}>
+            <a href={graphHref(tenant)} aria-current={current('graph')}>
               Graph
             </a>
-            <a href={`#/t/${t}/todos`} aria-current={current('todos')}>
+            <a href={todosHref(tenant)} aria-current={current('todos')}>
               Todos
             </a>
-            <a href={`#/t/${t}/progress`} aria-current={current('progress')}>
+            <a href={progressHref(tenant)} aria-current={current('progress')}>
               Progress
             </a>
-            <a href={`#/t/${t}/insights`} aria-current={current('insights')}>
+            <a href={insightsHref(tenant)} aria-current={current('insights')}>
               Insights
             </a>
-            <a href={`#/t/${t}/cost`} aria-current={current('cost')}>
+            <a href={costHref(tenant)} aria-current={current('cost')}>
               Cost
             </a>
           </>
         )}
-        <a href="#/guide" className="nav-guide" aria-current={current('guide')}>
+        <a href={guideHref()} className="nav-guide" aria-current={current('guide')}>
           Guide
         </a>
       </nav>

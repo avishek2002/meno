@@ -16,6 +16,7 @@ import { RenderedHtml } from '../components/RenderedHtml';
 import { Breadcrumb, type BreadcrumbSegment } from '../components/Breadcrumb';
 import { noteBreadcrumb } from '../notePath.ts';
 import type { NoteResponse } from '../../../shared/types.ts';
+import { tenantHref } from '../../../shared/routeHrefs.ts';
 
 export function NotePage({ tenant, path }: { tenant: string; path: string }) {
   const { data, error, loading, revalidate } = useResource<NoteResponse>(
@@ -33,7 +34,7 @@ export function NotePage({ tenant, path }: { tenant: string; path: string }) {
         title="Could not load note"
         message="This note could not be loaded."
         detail={error}
-        links={[{ label: 'Courses', href: `#/t/${encodeURIComponent(tenant)}` }]}
+        links={[{ label: 'Courses', href: tenantHref(tenant) }]}
       />
     );
   }

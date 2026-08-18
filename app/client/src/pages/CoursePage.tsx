@@ -9,9 +9,18 @@ import { AsyncStatus } from '../components/AsyncStatus';
 import { ErrorState } from '../components/ErrorState';
 import { RenderedHtml } from '../components/RenderedHtml';
 import { Meter } from '../components/Meter';
+import { Breadcrumb, type BreadcrumbSegment } from '../components/Breadcrumb';
 import { useCourseContext } from '../useCourseContext';
 import { stripMd, type CourseLesson, type CourseModuleEntry, type CourseStructure } from '../courseContext.ts';
 import type { ClientCourseMastery, ClientModuleMastery } from '../clientTypes';
+import { tenantHref, graphHref, progressHref } from '../../../shared/routeHrefs.ts';
+import { prefersReducedMotion } from '../reducedMotion.tsx';
+
+// How long the arrival highlight (below) stays on the module card the
+// #module anchor landed on, before it clears itself - long enough to be
+// seen, short enough to read as "you just arrived" rather than a permanent
+// state that could be confused with a gate chip.
+const HIGHLIGHT_MS = 1500;
 
 // The basename form graphLayout.ts's focus resolution understands: strip the
 // directory and the .md suffix from the hub file, so this link never needs
@@ -75,14 +84,33 @@ export function CoursePage({ tenant, course, module }: { tenant: string; course:
   useRegisterRevalidate(revalidate);
 
   // UI-10: the module anchor (router.tsx's optional trailing #module on the
-  // `course` route) scrolls once the module card exists in the DOM - it
-  // cannot exist before `structure` has loaded, the same ordering reason
-  // GuidePage's #section effect waits on nothing but is safe to fire
+  // `course` route, or the truncated /m/<module> path form LessonPage's
+  // breadcrumb now links to) scrolls once the module card exists in the DOM
+  // - it cannot exist before `structure` has loaded, the same ordering
+  // reason GuidePage's #section effect waits on nothing but is safe to fire
   // immediately since its sections are static content.
+  //
+  // Focus moves to the card too, not just the viewport - without it a
+  // keyboard user following the breadcrumb link lands with focus still on
+  // <main> (App.tsx's route-change effect) and their next Tab restarts from
+  // the top, the same gap TenantCoursesPage's deep-link effect fixes for its
+  // own forced section. `:focus-visible` is not a reliable ring here:
+  // browsers frequently withhold it on a programmatic focus() the way they
+  // would not on a real click or Tab, so the highlight below is a separate,
+  // explicit signal rather than something this focus() is trusted to draw
+  // on its own. CSS `:target` cannot substitute for either: the browser
+  // treats the whole hash as one fragment, so no element id in this document
+  // will ever match it.
   useEffect(() => {
     if (!module || !structure) return;
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    document.getElementById(module)?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
+    const el = document.getElementById(module);
+    if (!el) return;
+    const reduced = prefersReducedMotion();
+    el.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
+    el.focus({ preventScroll: true });
+    el.classList.add('module-card-arrived');
+    const timer = setTimeout(() => el.classList.remove('module-card-arrived'), HIGHLIGHT_MS);
+    return () => clearTimeout(timer);
   }, [module, structure]);
 
   if (loading && !data) return <AsyncStatus message="Loading course..." />;
@@ -92,7 +120,7 @@ export function CoursePage({ tenant, course, module }: { tenant: string; course:
         title="Could not load course"
         message="This course could not be loaded."
         detail={error}
-        links={[{ label: 'Courses', href: `#/t/${encodeURIComponent(tenant)}` }]}
+        links={[{ label: 'Courses', href: tenantHref(tenant) }]}
       />
     );
   }
@@ -109,14 +137,27 @@ export function CoursePage({ tenant, course, module }: { tenant: string; course:
   const incompleteModule = firstIncompleteModule(structure);
   const target = due.length === 0 ? continueLesson(incompleteModule) : null;
 
+  // The up-move from a lesson's breadcrumb (LessonPage.tsx) lands here, one
+  // level below the tenant root - the same rule that gives the lesson and
+  // note pages a breadcrumb, applied to a third page rather than special-
+  // cased. Flat sibling pages (Graph, Todos, Progress, Insights, Cost) sit
+  // one level under the tenant root too, but stay off this rule: the nav
+  // bar's own aria-current already answers "where am I" for those, and nothing
+  // ever routes there through this page the way a lesson's "up" routes here.
+  const breadcrumbSegments: BreadcrumbSegment[] = [
+    { label: 'Courses', href: tenantHref(tenant) },
+    { label: structure.title },
+  ];
+
   return (
     <section>
+      <Breadcrumb segments={breadcrumbSegments} />
       <header className="course-header">
         <h1>{structure.title}</h1>
         <span className={`status-badge status-${structure.status}`}>{structure.status}</span>
         <a
           className="show-in-graph"
-          href={`#/t/${encodeURIComponent(tenant)}/graph?focus=${encodeURIComponent(hubBasename(structure.hub))}`}
+          href={graphHref(tenant, hubBasename(structure.hub))}
         >
           Show in graph
         </a>
@@ -138,7 +179,7 @@ export function CoursePage({ tenant, course, module }: { tenant: string; course:
           <p>
             {due.length} concept{due.length === 1 ? '' : 's'} due for review:{' '}
             {due.map(([concept]) => concept).join(', ')}. Ask your agent to run a tutor session, or see{' '}
-            <a href={`#/t/${encodeURIComponent(tenant)}/progress`}>progress</a>.
+            <a href={progressHref(tenant)}>progress</a>.
           </p>
         ) : target ? (
           <p>
@@ -158,7 +199,17 @@ export function CoursePage({ tenant, course, module }: { tenant: string; course:
           return (
             // id makes each card a scroll/link target (UI-10): courseModuleHref
             // builds an href of exactly `#/t/.../c/course#${m.slug}`.
-            <div key={m.slug} id={m.slug} className="module-card">
+            // tabIndex={-1} only on the anchored module: reachable by the
+            // scroll-and-focus effect above's focus() call, never by Tab - a
+            // <div> is not natively focusable, and only the one card an
+            // anchor actually resolved to ever needs to be a focus target,
+            // the same convention TenantCoursesPage's forced <details> uses.
+            <div
+              key={m.slug}
+              id={m.slug}
+              className="module-card"
+              tabIndex={m.slug === module ? -1 : undefined}
+            >
               <h3>
                 {m.title} <span className={`status-badge status-${m.status}`}>{m.status}</span>
                 {gate && gate.gate !== 'none' && (

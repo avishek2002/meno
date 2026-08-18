@@ -2,7 +2,8 @@
 
 *Status: current as of Phase 4; amended at v1.5 (course groups), v1.6 (course-list collapse and
 filter; the group write surface removed), v1.10 (note-path breadcrumb, course deep-link, guarded
-back control), and v1.11 (collapse state actually persists). Canonical formats owned elsewhere: check blocks and
+back control), v1.11 (collapse state actually persists), and v1.12 (breadcrumb up-navigation,
+truncatable routes, centralized href builders). Canonical formats owned elsewhere: check blocks and
 callouts in
 [generate-module/references/check-formats.md](../../.agents/skills/generate-module/references/check-formats.md),
 todos in
@@ -178,6 +179,40 @@ write-authority seam (decision 14) is enforced in code.
     step forward and defeats the guard it exists to provide. The stamping happens on
     `hashchange` rather than at navigation time because this app's links are plain anchors that
     never pass through `navigate()`.
+14. Going up, and a URL that truncates (v1.12). Every page more than one level below the tenant
+    root carries a breadcrumb - lesson, note, and course - and the flat siblings under the tenant
+    root (Graph, Todos, Progress, Insights, Cost) carry none, because the nav bar's `aria-current`
+    already answers "where am I" for those and a one-segment breadcrumb says nothing. **The
+    breadcrumb is the up control, and the header's back control is not.** The `←` beside the
+    wordmark stays exactly what item 13 describes, `history.back()`: a left arrow in the top-left
+    reads as temporal in every browser and every operating system, so binding it to "up" would
+    make it the one control on the page whose destination cannot be guessed before clicking,
+    where a breadcrumb names its target in words. Temporal back is also already free on every
+    gesture, key and mouse button the platform provides; hierarchical up is the move the platform
+    cannot make.
+    **The module is a route segment, not only a fragment.** `#/t/:tenant/c/:course/m/:module`
+    resolves to the course page scrolled to that module, which is what the lesson breadcrumb's
+    module segment links to. That makes every meaningful prefix of a lesson URL a real page -
+    deleting `/l/<file>` lands on the module, deleting `/m/<module>` on the course, deleting
+    `/c/<course>` on the course list - where before, truncating a lesson URL by one segment gave
+    not-found. Hand-editing the address bar is a real navigation gesture and it now works.
+    The `#<module>` fragment form of item 9's anchor keeps matching, so bookmarks written before
+    this change still resolve; it is the older spelling of the same destination, not a second
+    destination. Arriving at a module by either spelling scrolls it into view, moves focus to it
+    (`tabIndex={-1}`, `preventScroll`) so a keyboard reader is not returned to the top of the
+    document, and marks it with a highlight class cleared after about 1.5 seconds - all three
+    honoring `prefers-reduced-motion`, read through the one helper that owns that query. The
+    highlight cannot be CSS `:target`: the browser treats everything after the first `#` as the
+    fragment, so with a hash router no element id ever matches it. Nor can the programmatic
+    `focus()` be relied on to draw a ring, because `:focus-visible` frequently does not fire on
+    focus a script moved.
+    Every route URL the app emits is built by a named builder in `app/shared/routeHrefs.ts` -
+    including the ones `lib/graph.ts` writes into `GraphResponse.route`, which is why the module
+    lives under `app/shared/` rather than beside the client's other route logic: it is the one
+    directory the server half may import from. The route table and the builders are two
+    transcriptions of one grammar, so they are pinned together by round-trip tests asserting
+    `matchRoute(builder(...))` recovers what went in. Nothing else in the client may write a
+    route URL by hand.
 
 ## Architecture
 
@@ -293,6 +328,11 @@ both run before routing so they cover writes and unrouted paths equally.
     is emitted as a fragment only when it matches the route pattern's own character class, so a
     link this app renders can never land on not-found. No group id from `groups.yml` appears in
     a URL or in the document, at either end of this feature.
+15. No route URL is written by hand. Every one is built by a named builder in
+    `app/shared/routeHrefs.ts`, on both sides of the process - the client's links and the
+    `GraphResponse.route` field the server emits - and every meaningful prefix of a lesson URL,
+    truncated at a `/<letter>/<value>` boundary, matches a named route rather than falling
+    through to not-found.
 
 ## Verified by
 
@@ -352,6 +392,20 @@ both run before routing so they cover writes and unrouted paths equally.
 - Invariants 11-12: by construction (no route reads outside the content root; both
   renderers import `GLOSSARY`). Not machine-asserted - a future contributor could add a
   second copy of a definition and nothing would fail.
+- Behavior 14 and invariant 15 (v1.12): `app/test/route-hrefs.test.ts` round-trips every builder
+  through `matchRoute` and asserts the encoding of a value carrying a space, a `#`, a `/` and a
+  non-ASCII character; `app/test/route-table.test.ts` walks a lesson URL's `/<letter>/<value>`
+  boundaries and asserts each prefix resolves to a named route; `app/test/scroll-reset.test.ts`
+  covers the anchored-route guard on the scroll reset; `app/test/reduced-motion.test.ts` is a
+  source grep asserting exactly one file queries `prefers-reduced-motion`, the same technique
+  `course-list.test.ts` uses to keep `localStorage` in one file. What no test in the gate covers
+  is the rendering: the breadcrumb links, the focus move, and the highlight have no DOM to fail
+  in, so they were **browser-verified** over the example tenant - the lesson breadcrumb's module
+  link navigating to the truncated form, the module card landing clear of the sticky header
+  (top 72px against a header bottom of 60px), `document.activeElement` becoming the card, the
+  highlight class present on arrival and gone 1.8 seconds later, and zero breadcrumbs on all five
+  flat sibling pages. That walk is not committed and does not run in CI, the same honest limit
+  the v1.10 and v1.11 walks carry.
 - The guidebook and tooltips: typecheck, build, and the full suite pass, and the built
   bundle was confirmed to carry the copy. **Not visually verified in a browser** - the
   usual "drive it in both colour schemes" pass could not run in the session that added it
