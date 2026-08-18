@@ -37,10 +37,25 @@
   --code-bg: #f2f1ec;
   --shadow: 0 1px 2px rgba(20, 20, 15, 0.08);
   --radius: 8px;
+  /* The sticky header's measured height, written by Header.tsx on mount and
+     whenever the header resizes. The value here is only the pre-JavaScript
+     fallback: it matches the unwrapped single-row header, which is what the
+     first paint renders at any width wide enough to fit the nav.
+     It has to be measured rather than declared because the header wraps
+     (v1.13, so the page does not scroll sideways at 320px), and a wrapped
+     header is nearly twice as tall - 100.95px against 60.17px at 360px wide.
+     A constant tuned to the tall case would push every anchored scroll target
+     40px down the page on a normal-width screen; a constant tuned to the
+     short case leaves the target underneath the header exactly when the
+     header is biggest. Neither is fixable in CSS alone, because
+     scroll-margin-top cannot reference another element's height. */
+  --header-height: 3.75rem;
   /* Shared by every scroll target the sticky .app-header can land on top of
-     (.guide-section, .module-card, .group-section): one number so a header
-     height change only has to be made here, not re-copied at each target. */
-  --scroll-clearance: 4.5rem;
+     (.guide-section, .module-card, .group-section): one expression so a
+     header height change only has to be made here, not re-copied at each
+     target. The gap is the design decision and stays in CSS; the height is a
+     fact about the DOM and comes from JavaScript. */
+  --scroll-clearance: calc(var(--header-height) + 0.75rem);
   /* Todo kind colors: a plain categorical palette, deliberately not the
      pass/fail set above (accent/warning/correct/incorrect) - a kind is a
      category, not a judgment. admin reuses the neutral badge colors below. */

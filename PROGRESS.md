@@ -16,9 +16,7 @@ _Last updated: 2026-08-18_
   input is labelled by `placeholder` alone and its radio group has no `fieldset`/`legend`; nothing
   announces async updates anywhere (filter emptying, todo notices, the graph legend dropping 228
   nodes to 101 - zero live regions in the DOM before or after); all 22 tables lack a name and any
-  `th[scope]`; the module anchor lands *under* the header at 360px because `--scroll-clearance` is
-  a fixed 4.5rem while the header grows to 100.95px when it wraps (v1.13 makes the header wrap,
-  which makes this reachable more often, not less); `h1` -> `h4` skip on the course list; the
+  `th[scope]`; `h1` -> `h4` skip on the course list; the
   course-list `h1`'s accessible name is polluted by its nested InfoTip button ("Courses What is
   Groups question mark"); white-on-`--accent` and white-on-`--violet-border` are 2.34:1 and 3.08:1
   in dark mode; the cost empty state renders no `h1`; and note page titles leak the full vault
@@ -27,6 +25,25 @@ _Last updated: 2026-08-18_
   a dedicated pass or should be absorbed opportunistically.
 
 ## Done
+
+- 2026-08-18 - **v1.14: scroll clearance is measured from the header instead of guessed.** The
+  sticky header publishes its own height as `--header-height` (a `ResizeObserver` in `Header.tsx`)
+  and `--scroll-clearance` is that height plus a gap, so every in-page scroll target clears the
+  header at any width. A constant could not work: the header wraps, and `scroll-margin-top` cannot
+  reference another element's height, so this is not expressible in CSS alone. The old fixed
+  4.5rem was tuned to the unwrapped case and left an anchored module card 28.5px *underneath* the
+  header on a narrow screen, with `elementsFromPoint` returning `.app-header` over the very target
+  the navigation had been asked to reveal. **Wrapping the header at v1.13 made this worse, not
+  better** - the audit measured a 100.95px header at 360px, and after v1.13 it is 187.94px, so the
+  gap between the guess and the truth roughly doubled. The split of responsibility is the part
+  worth keeping: the gap stays in CSS because it is a design decision, the height comes from
+  JavaScript because it is a fact about the DOM. Verified in a browser across all three consumers
+  of the token (the guidebook's `#section` anchors, the module anchor, the course-list deep link)
+  at 1280px, 360px and 320px; the card top now sits at 72.6px against a 60.2px header on a laptop
+  and 200.0px against a 187.9px header at 360px, and `elementsFromPoint` returns the card rather
+  than the header in every case. No unit test: the whole behaviour is geometry against a rendered
+  sticky element, which `node --test` has no way to see.
+
 
 - 2026-08-18 - **The interactive checks were never rendering, and the cause was one object
   literal.** Every `div.meno-check` on every lesson was empty, in development and in the

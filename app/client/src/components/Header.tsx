@@ -54,6 +54,44 @@ function useBackDepth(): number {
   return depth;
 }
 
+/**
+ * Publishes the header's own height as `--header-height` on the document
+ * root, so `--scroll-clearance` (styles.css) can be the header plus a gap
+ * rather than a guess.
+ *
+ * Why a measurement and not a constant: the header wraps at narrow widths, so
+ * it is 60.17px tall on a laptop and 100.95px at 360px wide. Every in-page
+ * scroll target - the guidebook's `#section` anchors, the module anchor on a
+ * course page, the course-list deep link - has to clear whichever of those is
+ * current, and `scroll-margin-top` cannot reference another element's height,
+ * so CSS alone cannot express it. The old fixed 4.5rem was right for the
+ * unwrapped case only: at 360px the anchored module card landed 28.5px
+ * underneath the header, with `elementsFromPoint` returning `.app-header`
+ * over the top of the card the navigation had just been asked to reveal.
+ *
+ * ResizeObserver rather than a resize listener because the header's height
+ * changes when its own content wraps, which a viewport-width listener would
+ * only approximate, and because it fires once with the initial size - so the
+ * first paint is corrected without a separate measure-on-mount path.
+ */
+function useHeaderHeightVar(el: HTMLElement | null): void {
+  useEffect(() => {
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const publish = (): void => {
+      document.documentElement.style.setProperty('--header-height', `${el.getBoundingClientRect().height}px`);
+    };
+    const observer = new ResizeObserver(publish);
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      // Back to the stylesheet's fallback rather than a stale pixel value, so
+      // a header that unmounts cannot leave every scroll target offset by the
+      // height it happened to have last.
+      document.documentElement.style.removeProperty('--header-height');
+    };
+  }, [el]);
+}
+
 // course, lesson and note are reached only by drilling into Courses - there
 // is no other nav item for them - so all three carry the same aria-current as
 // the course list itself (UI-03). Without this, three levels into a course
@@ -75,9 +113,13 @@ export function Header({
     return match ? 'page' : undefined;
   };
   const backDepth = useBackDepth();
+  // Callback ref: the effect has to re-run if the element identity ever
+  // changes, which a plain useRef would not report.
+  const [headerEl, setHeaderEl] = useState<HTMLElement | null>(null);
+  useHeaderHeightVar(headerEl);
 
   return (
-    <header className="app-header">
+    <header className="app-header" ref={setHeaderEl}>
       <div className="app-header-left">
         {backDepth > 0 && (
           <button type="button" className="back-btn" aria-label="Back" onClick={() => history.back()}>
