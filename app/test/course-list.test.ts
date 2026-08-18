@@ -420,38 +420,60 @@ test('assembleSections drops a slug an explicit group still lists after its cour
 // (TenantCoursesPage.toggleSection's only call site - see decideToggle's own
 // comment in courseList.ts for the two browser-only regressions this covers)
 
-test("decideToggle: the forced section's own programmatic open releases nothing and persists nothing", () => {
+test('decideToggle: a toggle that agrees with what was rendered is not a user action - the page-load erasure', () => {
+  // The regression this guard exists for, reproduced in a browser against
+  // `main`: React sets `open` on every section it renders open, the browser
+  // fires `toggle` for that attribute write at mount, and the handler used to
+  // read it as a click. Each one wrote `true` back, normalization dropped
+  // `true` as the default, and the surviving `false` entries were pruned
+  // against whatever section list had resolved so far - so the key was
+  // removed and every reload came back fully expanded.
   assert.deepEqual(
-    decideToggle({ sectionId: 'domain:ai-and-agents', activeForcedId: 'domain:ai-and-agents', next: true, filtering: false }),
+    decideToggle({ sectionId: 'version-control', activeForcedId: null, next: true, rendered: true, filtering: false }),
+    { release: false, persist: false },
+  );
+  // and the mirror of it: Collapse all removes the attribute, which fires a
+  // toggle of its own that setAllOpen has already persisted for.
+  assert.deepEqual(
+    decideToggle({ sectionId: 'version-control', activeForcedId: null, next: false, rendered: false, filtering: false }),
+    { release: false, persist: false },
+  );
+});
+
+test("decideToggle: the forced section's own programmatic open releases nothing and persists nothing", () => {
+  // forced means rendered open, so this is one instance of the rule above
+  // rather than a case of its own.
+  assert.deepEqual(
+    decideToggle({ sectionId: 'domain:ai-and-agents', activeForcedId: 'domain:ai-and-agents', next: true, rendered: true, filtering: false }),
     { release: false, persist: false },
   );
 });
 
 test('decideToggle: the user closing a forced section releases the force and persists the close', () => {
   assert.deepEqual(
-    decideToggle({ sectionId: 'domain:ai-and-agents', activeForcedId: 'domain:ai-and-agents', next: false, filtering: false }),
+    decideToggle({ sectionId: 'domain:ai-and-agents', activeForcedId: 'domain:ai-and-agents', next: false, rendered: true, filtering: false }),
     { release: true, persist: true },
   );
 });
 
 test('decideToggle: a toggle on a section that is not the active forced one always persists, never releases', () => {
   assert.deepEqual(
-    decideToggle({ sectionId: 'version-control', activeForcedId: 'domain:ai-and-agents', next: true, filtering: false }),
+    decideToggle({ sectionId: 'version-control', activeForcedId: 'domain:ai-and-agents', next: true, rendered: false, filtering: false }),
     { release: false, persist: true },
   );
   assert.deepEqual(
-    decideToggle({ sectionId: 'version-control', activeForcedId: 'domain:ai-and-agents', next: false, filtering: false }),
+    decideToggle({ sectionId: 'version-control', activeForcedId: 'domain:ai-and-agents', next: false, rendered: true, filtering: false }),
     { release: false, persist: true },
   );
 });
 
 test('decideToggle: a toggle when nothing is forced always persists, never releases', () => {
   assert.deepEqual(
-    decideToggle({ sectionId: 'domain:ai-and-agents', activeForcedId: null, next: true, filtering: false }),
+    decideToggle({ sectionId: 'domain:ai-and-agents', activeForcedId: null, next: true, rendered: false, filtering: false }),
     { release: false, persist: true },
   );
   assert.deepEqual(
-    decideToggle({ sectionId: 'domain:ai-and-agents', activeForcedId: null, next: false, filtering: false }),
+    decideToggle({ sectionId: 'domain:ai-and-agents', activeForcedId: null, next: false, rendered: true, filtering: false }),
     { release: false, persist: true },
   );
 });
@@ -465,18 +487,18 @@ test('decideToggle: filtering discards a toggle on the forced section completely
   // already gates persist, so this is the same {false, false} regardless of
   // which way `next` points.
   assert.deepEqual(
-    decideToggle({ sectionId: 'domain:ai-and-agents', activeForcedId: 'domain:ai-and-agents', next: false, filtering: true }),
+    decideToggle({ sectionId: 'domain:ai-and-agents', activeForcedId: 'domain:ai-and-agents', next: false, rendered: true, filtering: true }),
     { release: false, persist: false },
   );
   assert.deepEqual(
-    decideToggle({ sectionId: 'domain:ai-and-agents', activeForcedId: 'domain:ai-and-agents', next: true, filtering: true }),
+    decideToggle({ sectionId: 'domain:ai-and-agents', activeForcedId: 'domain:ai-and-agents', next: true, rendered: false, filtering: true }),
     { release: false, persist: false },
   );
 });
 
 test('decideToggle: filtering discards a toggle on a non-forced section too', () => {
   assert.deepEqual(
-    decideToggle({ sectionId: 'version-control', activeForcedId: null, next: true, filtering: true }),
+    decideToggle({ sectionId: 'version-control', activeForcedId: null, next: true, rendered: false, filtering: true }),
     { release: false, persist: false },
   );
 });

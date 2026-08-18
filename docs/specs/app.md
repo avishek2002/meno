@@ -1,8 +1,8 @@
 # App spec
 
 *Status: current as of Phase 4; amended at v1.5 (course groups), v1.6 (course-list collapse and
-filter; the group write surface removed), and v1.10 (note-path breadcrumb, course deep-link, guarded
-back control). Canonical formats owned elsewhere: check blocks and
+filter; the group write surface removed), v1.10 (note-path breadcrumb, course deep-link, guarded
+back control), and v1.11 (collapse state actually persists). Canonical formats owned elsewhere: check blocks and
 callouts in
 [generate-module/references/check-formats.md](../../.agents/skills/generate-module/references/check-formats.md),
 todos in
@@ -92,8 +92,17 @@ write-authority seam (decision 14) is enforced in code.
    deliberately disposable: a view preference, never evidence, never content, never read by
    anything that derives progress or moves a gate. Clearing it loses a preference and nothing
    else; a browser that refuses storage degrades to session-only and every screen still renders.
-   All of it - the fold, the match, the section assembly, the default-open rule, the pruning of
-   stale ids and the key scheme - lives in `app/client/src/courseList.ts`, a module with no React
+   A `toggle` event counts as the learner's own action only when the element's new state
+   disagrees with the state the last render gave it (v1.11). The browser fires `toggle` for every
+   change to the `open` attribute, React's own writes included, so a mount, a remount, or
+   `Collapse all` each produce one that no learner asked for - and writing those back is what used
+   to erase the stored preference on every page load. For the same reason the list waits for both
+   `/tree` and `/groups` before it renders a section at all: on the render where only the tree has
+   landed, every course falls back to one transient `Ungrouped` section, and pruning stale ids
+   against that list would drop the learner's real sections.
+   All of it - the fold, the match, the section assembly, the default-open rule, the toggle
+   decision, the pruning of stale ids and the key scheme - lives in
+   `app/client/src/courseList.ts`, a module with no React
    and no DOM references, so `node --test` covers it like the server. It is the one piece of
    client logic in this repository that is unit-tested rather than smoke-tested, and it is a `.ts`
    file among `.tsx` files on purpose: the root `tsconfig` compiles `app/**/*.ts` without the DOM
@@ -308,13 +317,24 @@ both run before routing so they cover writes and unrouted paths equally.
   releasing the force on the render that applied it and persisting over the learner's stored choice.
   The rule now lives as a pure decision (`decideToggle`) in `courseList.ts` with its own unit tests,
   so that regression is gate-covered even though the rendering is not.
-- **A pre-existing bug this change did not introduce and does not fix**, found by the same walk and
-  reproduced against `main`: the course-list collapse state (behavior 9, invariant 13) does not
-  survive a page reload. A section closed by the learner is stored correctly, but on the next load
-  the same mount-time `toggle` fires for every section, the handler persists `true`, normalization
-  drops `true` entries, the object empties, and `writeOpenState` calls `removeItem`. The stored
-  preference is gone and the list renders open, which looks correct and is why it went unnoticed
-  through v1.6 - the pure logic it is unit-tested on is right, and no test in the gate has a DOM.
+- **The collapse state surviving a reload (behavior 9, invariant 13), fixed at v1.11** after the
+  v1.10 walk found it broken and left it alone. It had never worked: closing a section stored the
+  preference correctly, and the next page load threw it away. The mechanism took a browser to see,
+  because two separate defects had to line up. React renders the list as soon as `/tree` resolves,
+  and on that render `/groups` may not have, so `ungrouped` falls back to every course and one
+  transient `Ungrouped` section renders. Setting `open` on it fires a mount-time `toggle`, the
+  handler read that as a click, and `writeOpenState` pruned the learner's real section ids against
+  a section list that held only `section:ungrouped` - emptying the object, so `removeItem` ran.
+  The remaining mount toggles then reported `true`, which normalization drops as the default, and
+  the list came back fully expanded looking entirely correct. That is why it survived v1.6 and the
+  v1.10 walk: the pure logic under it was right the whole time, and no test in the gate has a DOM.
+  Both halves are closed - `decideToggle` now discards any toggle whose value already matches what
+  was rendered, and the page waits for `/groups` as well as `/tree` before rendering a section.
+  The first half is gate-covered as a pure decision; the rendering that produces it is not, so this
+  was re-verified by a headless walk over the example tenant (collapse and reload, `Collapse all`
+  and `Expand all` and reload, filter forcing a stored-closed section open without writing it back,
+  Escape restoring it, and the deep link forcing, releasing and re-forcing). That walk is not
+  committed and does not run in CI, the same honest limit as the bullet above.
 - Invariants 11-12: by construction (no route reads outside the content root; both
   renderers import `GLOSSARY`). Not machine-asserted - a future contributor could add a
   second copy of a definition and nothing would fail.
@@ -343,10 +363,12 @@ both run before routing so they cover writes and unrouted paths equally.
   has been removed at v1.6 rather than verified - the browser automation available in that session
   could not reach a loopback page, and a panel nobody could drive was not worth keeping on the
   strength of the bundle carrying its copy.
-  **The v1.6 collapse and filter behaviour is unit-tested but not yet visually verified.** The
-  logic is covered by `app/test/course-list.test.ts`, but keyboard operation of the `<details>`
-  summaries, focus-visible rings, and both colour schemes are reasoned about rather than observed.
-  Worth one manual pass, as with the guidebook above.
+  **The v1.6 collapse and filter behaviour was driven in a browser at v1.11**, which is how the
+  reload bug above was pinned down and confirmed fixed: collapse, `Collapse all` / `Expand all`,
+  the filter's forced expansion, Escape, the no-results line, and the deep-link override were all
+  observed against the example tenant. Keyboard operation of the `<details>` summaries,
+  focus-visible rings, and both colour schemes still are not - that walk was scripted, not driven
+  by hand. Worth one manual pass, as with the guidebook above.
 
 ## Open questions
 
