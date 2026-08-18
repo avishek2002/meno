@@ -15,6 +15,32 @@ _None open._
 
 ## Done
 
+- 2026-08-18 - **`validate` gains a `spec-versions` check: two rows in `docs/architecture.md`'s
+  phase-to-spec table can no longer claim the same "Lands" version without failing the gate.**
+  Because the table's rows sit on different lines, two parallel worktrees each landing a new spec
+  and picking "the next version" for themselves merge cleanly with no git conflict, silently
+  leaving two specs claiming one version - this happened for real on 2026-08-12, when the graph
+  view and find-subjects both took v1.8, caught only by a human at merge time. The new check
+  (`checkSpecTableText` in `tools/validate.ts`, registry key `spec-versions`) finds the table by
+  its header row rather than a line number, so edits above it can't break the search, and errors
+  if the table can't be found at all rather than passing silently. Phase entries (`Phase 0`..
+  `Phase 8`) are excluded on purpose - phases were fixed once at bootstrap, not picked ad hoc, so
+  they can't collide the way version numbers do - and the "Amended by" column is left unchecked
+  because amendments legitimately repeat a version (app.md's row already lists four at once). A
+  version-sequence gap (e.g. v1.9 to v1.11) is left unflagged too: nothing else in the repo already
+  requires the Lands column to be sequential, so a gap rule here would invent a policy rather than
+  enforce one. Spec: `docs/specs/validation.md` (new `spec-versions` check row, `v1.12` since-tag,
+  data-touched entry for `docs/architecture.md`). Honest cost: proving the check fires meant hand-
+  editing a scratch copy of `docs/architecture.md` to duplicate `v1.9` and confirming
+  `checkSpecTableText` reported it - the real table itself has no duplicate today, so the positive
+  test only proves the check stays quiet on clean input, not that it can ever fire; that scratch
+  reproduction is the actual evidence.
+  Verifying it fired end to end also turned up a latent flaw in the runner: `runValidation`
+  runs every check once per target, and the default is two targets, so any repo-level check
+  reported its finding twice - `checkTenancy` had the same problem and nobody had noticed
+  because it so rarely fires. Findings are now deduplicated on level, check, path and
+  message, which is the honest identity of a defect.
+
 - 2026-08-18 - **`PROGRESS.md` now merges with the union driver, so parallel branches stop
   conflicting on it.** Every feature prepends its Done entry at the same anchor, which made this
   file the one guaranteed conflict in any parallel build - three in a single week, each resolved

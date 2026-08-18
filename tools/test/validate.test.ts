@@ -13,6 +13,8 @@ import {
   checkWorkspaceScan,
   checkWorkspaceFixture,
   absolutePathHits,
+  checkSpecTableText,
+  checkSpecVersions,
   runValidation,
 } from '../validate.ts';
 
@@ -466,4 +468,68 @@ test('duplicate lesson file within a module.yml is a warning', () => {
     ),
     'a duplicate lesson file within one module is a warning naming the file',
   );
+});
+
+// --- spec-versions: docs/architecture.md's phase-to-spec table, duplicate
+// "Lands" version detection (see checkSpecTableText's own doc comment for why
+// phases and the "Amended by" column are deliberately out of scope).
+
+const SPEC_TABLE_HEADER_LINE = '| Spec | Subsystem | Lands | Amended by |';
+const SPEC_TABLE_SEPARATOR = '|---|---|---|---|';
+
+const DUP_VERSION_TABLE = `# Fixture doc
+
+## Phase-to-spec table
+
+${SPEC_TABLE_HEADER_LINE}
+${SPEC_TABLE_SEPARATOR}
+| [a.md](a.md) | thing one | Phase 0 | - |
+| [b.md](b.md) | thing two | v1.8 | - |
+| [c.md](c.md) | thing three | v1.8 | - |
+`;
+
+const CLEAN_VERSION_TABLE = `# Fixture doc
+
+## Phase-to-spec table
+
+${SPEC_TABLE_HEADER_LINE}
+${SPEC_TABLE_SEPARATOR}
+| [a.md](a.md) | thing one | Phase 0 | - |
+| [a.md](a.md) | thing one, amended | Phase 0 | v1.1, v1.1 |
+| [b.md](b.md) | thing two | v1.8 | - |
+| [c.md](c.md) | thing three | v1.9 | - |
+`;
+
+const NO_TABLE_DOC = `# Fixture doc
+
+There is no spec table in this document at all.
+`;
+
+test('checkSpecTableText: two rows claiming the same Lands version is an error', () => {
+  const findings = checkSpecTableText(DUP_VERSION_TABLE, 'docs/architecture.md');
+  assert.equal(findings.length, 1);
+  assert.equal(findings[0].level, 'error');
+  assert.equal(findings[0].check, 'spec-versions');
+  assert.ok(findings[0].message.includes('v1.8'), 'names the clashing version');
+});
+
+test('checkSpecTableText: a repeated version inside Amended by is not an error (amendments legitimately repeat)', () => {
+  assert.deepEqual(checkSpecTableText(CLEAN_VERSION_TABLE, 'docs/architecture.md'), []);
+});
+
+test('checkSpecTableText: two rows sharing a Phase entry is not an error (phases are not picked ad hoc)', () => {
+  const table = `${SPEC_TABLE_HEADER_LINE}\n${SPEC_TABLE_SEPARATOR}\n| [a.md](a.md) | one | Phase 2 | - |\n| [b.md](b.md) | two | Phase 2 | - |\n`;
+  assert.deepEqual(checkSpecTableText(table, 'docs/architecture.md'), []);
+});
+
+test('checkSpecTableText: a missing table is an error rather than a silent pass', () => {
+  const findings = checkSpecTableText(NO_TABLE_DOC, 'docs/architecture.md');
+  assert.equal(findings.length, 1);
+  assert.equal(findings[0].level, 'error');
+  assert.equal(findings[0].check, 'spec-versions');
+  assert.ok(findings[0].message.includes('not found'));
+});
+
+test('checkSpecVersions: the real docs/architecture.md has no duplicate Lands version', () => {
+  assert.deepEqual(checkSpecVersions('', []), []);
 });

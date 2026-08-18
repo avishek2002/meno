@@ -1,6 +1,7 @@
 # Validation spec
 
-*Status: current as of Phase 2; amended at v1.5 (groups, pack-attribution). Canonical formats owned elsewhere: every format validate
+*Status: current as of Phase 2; amended at v1.5 (groups, pack-attribution) and v1.12
+(spec-versions). Canonical formats owned elsewhere: every format validate
 checks is owned by a skill reference or a schema - see
 [content-schema.md](../content-schema.md) for the index.*
 
@@ -60,6 +61,7 @@ validate and the renderer can never disagree about what a file says.
 | `groups` | wherever a `groups.yml` is found: schema-valid entries, unique group ids, no course in two groups, every listed slug is a course in that tenant (at either accepted depth, matching `lib/course-dirs.ts`). A course in no group is a warning, not an error - it renders under its domain, which is the normal case | v1.5 |
 | `pack-safety` | community content is markdown/YAML only; error-level patterns (scripts, inline handlers, credential-shaped strings, private-key blocks, curl-pipe-to-shell, mermaid click/href) and warning-level patterns (instruction-shaped phrases, plain-http URLs) | v1.2 |
 | `connects` | a hub's `## Connects to` block (`lib/connects.ts` grammar and diagnostics); an unresolvable target is an error, a one-sided pair (hub A names hub B but not the reverse) is a warning | v1.8 |
+| `spec-versions` | docs/architecture.md's phase-to-spec table (found by its header row, not a line number): no two rows claim the same "Lands" version. Phase entries and repeats inside "Amended by" are out of scope - see `checkSpecTableText` for why. An unfindable table is an error, never a silent pass | v1.12 |
 
 Planned: `vault` (wikilink resolution, orphan detection - needs the app's resolver).
 
@@ -70,6 +72,7 @@ Planned: `vault` (wikilink resolution, orphan detection - needs the app's resolv
 | target trees (examples/, content/tenants/<tenant>) | read | validate | all owned formats |
 | `schemas/*.schema.json` | read | validate | JSON Schema 2020-12 |
 | repo root (`CLAUDE.md`, `.gitignore`) | read | validate | tenancy contract |
+| `docs/architecture.md` | read | validate | phase-to-spec table |
 
 ## Invariants
 

@@ -186,6 +186,86 @@ export function checkTenancy(_target: string, _files: string[]): Finding[] {
   return findings;
 }
 
+const SPEC_TABLE_HEADER = '| Spec | Subsystem | Lands | Amended by |';
+
+/**
+ * Parses the "Lands" column out of docs/architecture.md's phase-to-spec table
+ * text and flags any two rows that claim the same version number. Two
+ * parallel worktrees each landing a new spec both pick "the next version" for
+ * themselves, and because their rows sit on different lines git merges them
+ * without a conflict - this is the only thing that catches the resulting
+ * clash (it happened for real: the graph view and find-subjects both took
+ * v1.8 on 2026-08-12, caught only by a human at merge time).
+ *
+ * Pure text in, findings out - kept separate from the file read below so
+ * fixture text can exercise it directly, the same shape absolutePathHits()
+ * uses for the workspace-scan checks.
+ *
+ * Phase entries ("Phase 0".."Phase 8") are deliberately excluded: phases were
+ * a one-time schedule fixed at repo bootstrap, not something a new feature
+ * picks for itself, so they cannot collide the way version numbers do.
+ *
+ * The "Amended by" column is deliberately not checked here: an amendment
+ * legitimately names the same version as another amendment's row (app.md's
+ * row already lists v1.5, v1.6, v1.10, v1.11 together), and a spec can also
+ * be amended more than once at the same version as a sibling spec amended
+ * elsewhere - repeats there are normal, not a clash.
+ *
+ * A gap in the version sequence (jumping from v1.9 to v1.11 with no v1.10
+ * row for it) is left unflagged on purpose - nothing in this repo already
+ * requires the Lands column to be sequential (v1.10 and v1.11 exist only
+ * inside app.md's "Amended by" list, never as a Lands entry of their own),
+ * so a gap rule here would be inventing a policy the table does not hold to,
+ * not enforcing one.
+ */
+export function checkSpecTableText(text: string, path: string): Finding[] {
+  const findings: Finding[] = [];
+  const lines = text.split('\n');
+  const headerIndex = lines.findIndex((l) => l.trim() === SPEC_TABLE_HEADER);
+  if (headerIndex === -1) {
+    // a check that silently finds nothing to say reads as a pass - a moved,
+    // retitled, or reformatted table must fail loudly instead
+    findings.push({
+      level: 'error',
+      check: 'spec-versions',
+      path,
+      message: `phase-to-spec table not found (expected a header row "${SPEC_TABLE_HEADER}")`,
+    });
+    return findings;
+  }
+  const counts = new Map<string, number>();
+  // headerIndex + 1 is the markdown "|---|---|---|---|" separator row; data
+  // rows start after it and run until the first line that is not a table row
+  for (let i = headerIndex + 2; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line.trim().startsWith('|')) break;
+    const cells = line.split('|').map((c) => c.trim());
+    if (cells.length < 5) continue; // malformed row, not this check's job to shape-validate
+    const lands = cells[3];
+    if (/^v\d+\.\d+$/.test(lands)) counts.set(lands, (counts.get(lands) ?? 0) + 1);
+  }
+  for (const [version, count] of counts) {
+    if (count > 1) {
+      findings.push({
+        level: 'error',
+        check: 'spec-versions',
+        path,
+        message: `"${version}" is claimed as the Lands version by ${count} rows in the phase-to-spec table - two specs cannot land the same version`,
+      });
+    }
+  }
+  return findings;
+}
+
+export function checkSpecVersions(_target: string, _files: string[]): Finding[] {
+  const archFile = join(repoRoot, 'docs', 'architecture.md');
+  const rel = relative(repoRoot, archFile);
+  if (!existsSync(archFile)) {
+    return [{ level: 'error', check: 'spec-versions', path: rel, message: 'docs/architecture.md does not exist' }];
+  }
+  return checkSpecTableText(readFileSync(archFile, 'utf8'), rel);
+}
+
 const BLOOM_ORDER = ['remember', 'understand', 'apply', 'analyze', 'evaluate', 'create'];
 
 function bloomAbove(bloom: string, ceiling: string): boolean {
@@ -1444,6 +1524,7 @@ const CHECKS: Record<string, Check> = {
   'course-layout': checkCourseLayout,
   tenancy: checkTenancy,
   connects: checkConnects,
+  'spec-versions': checkSpecVersions,
 };
 
 export function runValidation(targets: string[]): Finding[] {
@@ -1456,7 +1537,18 @@ export function runValidation(targets: string[]): Finding[] {
     const files = walk(target);
     for (const check of Object.values(CHECKS)) findings.push(...check(target, files));
   }
-  return findings;
+  // Repo-level checks (tenancy, spec-versions) inspect a fixed file rather than
+  // the target tree, so the per-target loop above runs them once per target and
+  // reports the same finding twice under the default two targets. Deduplicate on
+  // the full identity of a finding: two targets producing an identical
+  // level/check/path/message are describing one defect, not two.
+  const seen = new Set<string>();
+  return findings.filter((f) => {
+    const key = `${f.level}\u0000${f.check}\u0000${f.path}\u0000${f.message}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 const isMain = process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop() ?? '');
