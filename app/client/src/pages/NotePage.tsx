@@ -2,6 +2,8 @@
 // lesson file (home, hub, profile, etc).
 import { useResource } from '../useResource';
 import { useRegisterRevalidate } from '../RevalidateContext';
+import { AsyncStatus } from '../components/AsyncStatus';
+import { ErrorState } from '../components/ErrorState';
 import { RenderedHtml } from '../components/RenderedHtml';
 import type { NoteResponse } from '../../../shared/types.ts';
 
@@ -11,8 +13,17 @@ export function NotePage({ tenant, path }: { tenant: string; path: string }) {
   );
   useRegisterRevalidate(revalidate);
 
-  if (loading && !data) return <p className="status-line">Loading note...</p>;
-  if (error) return <p className="status-line status-error">Could not load note: {error}</p>;
+  if (loading && !data) return <AsyncStatus message="Loading note..." />;
+  if (error) {
+    return (
+      <ErrorState
+        title="Could not load note"
+        message="This note could not be loaded."
+        detail={error}
+        links={[{ label: 'Courses', href: `#/t/${encodeURIComponent(tenant)}` }]}
+      />
+    );
+  }
   if (!data) return null;
 
   return (

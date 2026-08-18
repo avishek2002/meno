@@ -1,0 +1,6 @@
+/* Track F - rendered content, todos and notes: wikilink rendering inside
+   todos, the hide-done control, and note-page headings (UI-13, UI-14, UI-15).
+
+   Owned by one implementer; nothing outside track F edits this file. Loaded
+   from main.tsx after styles.css, so a rule here wins a specificity tie with
+   the base sheet. New rules only - existing rules stay in styles.css. */

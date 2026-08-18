@@ -1,7 +1,7 @@
 // Route dispatch + the header shell. Holds the ref the "Re-read files" button
 // reads from - see RevalidateContext.tsx for how pages register into it.
-import { useCallback, useRef, type ReactNode } from 'react';
-import { useRoute } from './router';
+import { useCallback, useEffect, useRef, type ReactNode } from 'react';
+import { routeTitle, useRoute } from './router';
 import { RevalidateContext } from './RevalidateContext';
 import { Header } from './components/Header';
 import { TenantsPage } from './pages/TenantsPage';
@@ -23,6 +23,24 @@ export default function App() {
   const setRevalidate = useCallback((fn: (() => void) | null): void => {
     revalidateRef.current = fn;
   }, []);
+
+  // The one place a route change does what a page load does (UI-03): set the
+  // tab title, reset scroll, and move focus into the new view. `route` is a
+  // fresh object only when the hash actually changes (router.tsx's useRoute
+  // memoizes on the hash), so this never fires on a re-render that leaves the
+  // route alone.
+  const mainRef = useRef<HTMLElement | null>(null);
+  // Focus must move on a route CHANGE only, never on first paint - stealing
+  // focus on load would fight whatever the browser already decided to focus.
+  const hasNavigated = useRef(false);
+  useEffect(() => {
+    document.title = routeTitle(route);
+    // Every navigation resets to the top, including back - the decision
+    // recorded in the review: no prior-scroll restoration.
+    window.scrollTo(0, 0);
+    if (hasNavigated.current) mainRef.current?.focus();
+    hasNavigated.current = true;
+  }, [route]);
 
   let page: ReactNode;
   switch (route.name) {
@@ -77,7 +95,13 @@ export default function App() {
         route={route.name}
         onRefresh={() => revalidateRef.current?.()}
       />
-      <main className="content">{page}</main>
+      {/* tabIndex={-1}: not in tab order, but a valid programmatic focus
+          target - the landing spot the effect above moves focus to on every
+          route change, so a keyboard or screen-reader user gets a signal that
+          navigation happened. */}
+      <main className="content" ref={mainRef} tabIndex={-1}>
+        {page}
+      </main>
     </RevalidateContext.Provider>
   );
 }

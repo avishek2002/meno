@@ -5,7 +5,9 @@
 import { useState, type FormEvent } from 'react';
 import { useResource } from '../useResource';
 import { useRegisterRevalidate } from '../RevalidateContext';
+import { AsyncStatus } from '../components/AsyncStatus';
 import { EmptyState } from '../components/EmptyState';
+import { ErrorState } from '../components/ErrorState';
 import { postJson, patchJson, ApiError } from '../api';
 import type { TodoAudience, TodoKind, TodosResponse } from '../../../shared/types.ts';
 import { InfoTip } from '../components/InfoTip';
@@ -92,8 +94,17 @@ export function TodosPage({ tenant }: { tenant: string }) {
     }
   };
 
-  if (loading && !data) return <p className="status-line">Loading todos...</p>;
-  if (error) return <p className="status-line status-error">Could not load todos: {error}</p>;
+  if (loading && !data) return <AsyncStatus message="Loading todos..." />;
+  if (error) {
+    return (
+      <ErrorState
+        title="Could not load todos"
+        message={`Todos for ${tenant} could not be loaded.`}
+        detail={error}
+        links={[{ label: 'Courses', href: `#/t/${encodeURIComponent(tenant)}` }]}
+      />
+    );
+  }
 
   const sections = data?.sections ?? [];
   const totalTodos = sections.reduce((n, s) => n + s.todos.length, 0);

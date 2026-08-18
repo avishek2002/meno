@@ -19,7 +19,9 @@ import type { Simulation, SimulationLinkDatum, SimulationNodeDatum } from 'd3-fo
 import { navigate } from '../router.tsx';
 import { useResource } from '../useResource';
 import { useRegisterRevalidate } from '../RevalidateContext';
+import { AsyncStatus } from '../components/AsyncStatus';
 import { EmptyState } from '../components/EmptyState';
+import { ErrorState } from '../components/ErrorState';
 import { InfoTip } from '../components/InfoTip';
 import {
   EDGE_STROKE_WIDTH,
@@ -452,8 +454,17 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
     setTooltip(null);
   }
 
-  if (loading && !data) return <p className="status-line">Loading graph...</p>;
-  if (error) return <p className="status-line status-error">Could not load graph: {error}</p>;
+  if (loading && !data) return <AsyncStatus message="Loading graph..." />;
+  if (error) {
+    return (
+      <ErrorState
+        title="Could not load graph"
+        message={`The knowledge graph for ${tenant} could not be loaded.`}
+        detail={error}
+        links={[{ label: 'Courses', href: `#/t/${encodeURIComponent(tenant)}` }]}
+      />
+    );
+  }
   if (!data || !visibleGraph) return null;
   if (data.nodes.length === 0) {
     return (
@@ -463,7 +474,7 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
       />
     );
   }
-  if (!positions) return <p className="status-line">Laying out graph...</p>;
+  if (!positions) return <AsyncStatus message="Laying out graph..." />;
 
   // The highlight set: the hovered node's 1-hop neighborhood while hovering,
   // else the focused node's 2-hop neighborhood while a focus is resolved,

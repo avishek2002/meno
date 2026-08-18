@@ -1,15 +1,26 @@
 // #/ - tenant list.
 import { useResource } from '../useResource';
 import { useRegisterRevalidate } from '../RevalidateContext';
+import { AsyncStatus } from '../components/AsyncStatus';
 import { EmptyState } from '../components/EmptyState';
+import { ErrorState } from '../components/ErrorState';
 import type { TenantsResponse } from '../clientTypes';
 
 export function TenantsPage() {
   const { data, error, loading, revalidate } = useResource<TenantsResponse>('/api/v1/tenants');
   useRegisterRevalidate(revalidate);
 
-  if (loading && !data) return <p className="status-line">Loading tenants...</p>;
-  if (error) return <p className="status-line status-error">Could not load tenants: {error}</p>;
+  if (loading && !data) return <AsyncStatus message="Loading learners..." />;
+  if (error) {
+    return (
+      <ErrorState
+        title="Could not load learners"
+        message="The list of learners could not be loaded."
+        detail={error}
+        links={[{ label: 'Guide', href: '#/guide' }]}
+      />
+    );
+  }
   const tenants = data?.tenants ?? [];
 
   if (tenants.length === 0) {

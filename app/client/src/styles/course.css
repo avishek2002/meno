@@ -1,0 +1,6 @@
+/* Track B - the course page: the continue block, module cards, gate chips, and
+   the collapsed objectives/hub briefing (UI-07, and UI-01's gate chip).
+
+   Owned by one implementer; nothing outside track B edits this file. Loaded
+   from main.tsx after styles.css, so a rule here wins a specificity tie with
+   the base sheet. New rules only - existing rules stay in styles.css. */

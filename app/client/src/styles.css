@@ -1571,3 +1571,44 @@ th {
     border-width: 1px 0 0;
   }
 }
+
+/* --- shared navigation components -----------------------------------------
+   Base rules for Breadcrumb, ErrorState and AsyncStatus. All six tracks
+   consume these three components, so their rules stay in the shared sheet
+   rather than in any one track's file. A track needing a variant adds it under
+   styles/, which loads after this file. */
+
+.breadcrumb ol {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.breadcrumb li + li::before {
+  content: '/';
+  margin-right: 0.4rem;
+  color: var(--border);
+}
+
+.error-state {
+  padding: 1rem 0 2rem;
+}
+
+.error-detail {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.recovery-links {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 1rem 0 0;
+  padding: 0;
+}

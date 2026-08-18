@@ -3,6 +3,9 @@
 // change often enough to earn a dependency.
 import { useEffect, useMemo, useState } from 'react';
 import { decodeParams } from './routeParams.ts';
+import { type RouteName } from './routeTitles.ts';
+
+export { APP_TITLE, routeNames, routeTitle } from './routeTitles.ts';
 
 export interface Route {
   name: string;
@@ -10,7 +13,8 @@ export interface Route {
 }
 
 interface RouteDef {
-  name: string;
+  // Typed against ROUTE_NAMES so a new route without a title fails typecheck.
+  name: RouteName;
   pattern: RegExp;
 }
 

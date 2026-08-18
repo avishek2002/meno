@@ -10,6 +10,8 @@
 import type { ReactNode } from 'react';
 import { useResource } from '../useResource';
 import { useRegisterRevalidate } from '../RevalidateContext';
+import { AsyncStatus } from '../components/AsyncStatus';
+import { ErrorState } from '../components/ErrorState';
 import type { CostResponse } from '../../../shared/types.ts';
 
 function Stat({ label, children }: { label: string; children: ReactNode }) {
@@ -29,8 +31,17 @@ export function CostPage({ tenant }: { tenant: string }) {
   const { data, error, loading, revalidate } = useResource<CostResponse>(`/api/v1/${encodeURIComponent(tenant)}/cost`);
   useRegisterRevalidate(revalidate);
 
-  if (loading && !data) return <p className="status-line">Loading cost...</p>;
-  if (error) return <p className="status-line status-error">Could not load cost: {error}</p>;
+  if (loading && !data) return <AsyncStatus message="Loading cost..." />;
+  if (error) {
+    return (
+      <ErrorState
+        title="Could not load cost"
+        message={`Cost data for ${tenant} could not be loaded.`}
+        detail={error}
+        links={[{ label: 'Courses', href: `#/t/${encodeURIComponent(tenant)}` }]}
+      />
+    );
+  }
   if (!data) return null;
 
   if (data.reason === 'no-snapshot' || !data.snapshot) {

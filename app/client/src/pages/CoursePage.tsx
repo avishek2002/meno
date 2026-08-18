@@ -2,6 +2,8 @@
 // per-concept mastery summary when the course has any recorded progress.
 import { useResource } from '../useResource';
 import { useRegisterRevalidate } from '../RevalidateContext';
+import { AsyncStatus } from '../components/AsyncStatus';
+import { ErrorState } from '../components/ErrorState';
 import { RenderedHtml } from '../components/RenderedHtml';
 import { Meter } from '../components/Meter';
 import { asMastery } from '../clientTypes';
@@ -30,8 +32,17 @@ export function CoursePage({ tenant, course }: { tenant: string; course: string 
   );
   useRegisterRevalidate(revalidate);
 
-  if (loading && !data) return <p className="status-line">Loading course...</p>;
-  if (error) return <p className="status-line status-error">Could not load course: {error}</p>;
+  if (loading && !data) return <AsyncStatus message="Loading course..." />;
+  if (error) {
+    return (
+      <ErrorState
+        title="Could not load course"
+        message="This course could not be loaded."
+        detail={error}
+        links={[{ label: 'Courses', href: `#/t/${encodeURIComponent(tenant)}` }]}
+      />
+    );
+  }
   if (!data) return null;
 
   const mastery = asMastery(data.mastery);

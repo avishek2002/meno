@@ -16,7 +16,9 @@
 import { useEffect, useState } from 'react';
 import { useResource } from '../useResource';
 import { useRegisterRevalidate } from '../RevalidateContext';
+import { AsyncStatus } from '../components/AsyncStatus';
 import { EmptyState } from '../components/EmptyState';
+import { ErrorState } from '../components/ErrorState';
 import { InfoTip } from '../components/InfoTip';
 import {
   buildCourseListView,
@@ -74,8 +76,17 @@ export function TenantCoursesPage({ tenant }: { tenant: string }) {
 
   const [query, setQuery] = useState('');
 
-  if (tree.loading && !tree.data) return <p className="status-line">Loading courses...</p>;
-  if (tree.error) return <p className="status-line status-error">Could not load courses: {tree.error}</p>;
+  if (tree.loading && !tree.data) return <AsyncStatus message="Loading courses..." />;
+  if (tree.error) {
+    return (
+      <ErrorState
+        title="Could not load courses"
+        message={`The course list for ${tenant} could not be loaded.`}
+        detail={tree.error}
+        links={[{ label: 'Learners', href: '#/' }]}
+      />
+    );
+  }
 
   const courses = tree.data?.courses ?? [];
   if (courses.length === 0) return <EmptyState title={`No courses yet for ${tenant}`} />;

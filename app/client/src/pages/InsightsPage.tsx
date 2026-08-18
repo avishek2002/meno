@@ -7,7 +7,9 @@
 import type { ReactNode } from 'react';
 import { useResource } from '../useResource';
 import { useRegisterRevalidate } from '../RevalidateContext';
+import { AsyncStatus } from '../components/AsyncStatus';
 import { EmptyState } from '../components/EmptyState';
+import { ErrorState } from '../components/ErrorState';
 import type { InsightsResponse, Rate } from '../../../shared/types.ts';
 import { InfoTip } from '../components/InfoTip';
 import { TODO_KIND_INFO } from '../todoTags';
@@ -34,8 +36,17 @@ export function InsightsPage({ tenant }: { tenant: string }) {
   const { data, error, loading, revalidate } = useResource<InsightsResponse>(`/api/v1/${encodeURIComponent(tenant)}/insights`);
   useRegisterRevalidate(revalidate);
 
-  if (loading && !data) return <p className="status-line">Loading insights...</p>;
-  if (error) return <p className="status-line status-error">Could not load insights: {error}</p>;
+  if (loading && !data) return <AsyncStatus message="Loading insights..." />;
+  if (error) {
+    return (
+      <ErrorState
+        title="Could not load insights"
+        message={`Insights for ${tenant} could not be loaded.`}
+        detail={error}
+        links={[{ label: 'Courses', href: `#/t/${encodeURIComponent(tenant)}` }]}
+      />
+    );
+  }
   if (!data) return null;
 
   if (data.basis.ledger_lines === 0) {

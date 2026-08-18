@@ -3,6 +3,8 @@
 import { useEffect } from 'react';
 import { useResource } from '../useResource';
 import { useRegisterRevalidate } from '../RevalidateContext';
+import { AsyncStatus } from '../components/AsyncStatus';
+import { ErrorState } from '../components/ErrorState';
 import { RenderedHtml } from '../components/RenderedHtml';
 import { ReferencesPanel } from '../components/ReferencesPanel';
 import { postJson } from '../api';
@@ -18,7 +20,7 @@ interface LessonPageProps {
 
 export function LessonPage({ tenant, course, module, file }: LessonPageProps) {
   const url = `/api/v1/${encodeURIComponent(tenant)}/lesson/${encodeURIComponent(course)}/${encodeURIComponent(module)}/${encodeURIComponent(file)}`;
-  const { data, error, loading, revalidate } = useResource<LessonResponse>(url);
+  const { data, error, status, loading, revalidate } = useResource<LessonResponse>(url);
   useRegisterRevalidate(revalidate);
 
   useEffect(() => {
@@ -35,8 +37,24 @@ export function LessonPage({ tenant, course, module, file }: LessonPageProps) {
     return () => clearTimeout(timer);
   }, [tenant, course, module, file]);
 
-  if (loading && !data) return <p className="status-line">Loading lesson...</p>;
-  if (error) return <p className="status-line status-error">Could not load lesson: {error}</p>;
+  if (loading && !data) return <AsyncStatus message="Loading lesson..." />;
+  if (error) {
+    // A 404 here almost always means the module has not been generated yet -
+    // that is the app's own vocabulary for the failure, not the server's
+    // "no such lesson" string, which still goes in `detail` (UI-04).
+    const notFound = status === 404;
+    return (
+      <ErrorState
+        title={notFound ? 'Lesson not found' : 'Could not load lesson'}
+        message={notFound ? 'This lesson has not been generated yet.' : 'This lesson could not be loaded.'}
+        detail={error}
+        links={[
+          { label: 'Back to course', href: `#/t/${encodeURIComponent(tenant)}/c/${encodeURIComponent(course)}` },
+          { label: 'Courses', href: `#/t/${encodeURIComponent(tenant)}` },
+        ]}
+      />
+    );
+  }
   if (!data) return null;
 
   const sources = parseSources(data.frontmatter);

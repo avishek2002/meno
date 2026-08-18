@@ -2,7 +2,9 @@
 // humanized recent-activity feed.
 import { useResource } from '../useResource';
 import { useRegisterRevalidate } from '../RevalidateContext';
+import { AsyncStatus } from '../components/AsyncStatus';
 import { EmptyState } from '../components/EmptyState';
+import { ErrorState } from '../components/ErrorState';
 import { Meter } from '../components/Meter';
 import { InfoTip } from '../components/InfoTip';
 import { asMastery } from '../clientTypes';
@@ -13,8 +15,17 @@ export function ProgressPage({ tenant }: { tenant: string }) {
   const { data, error, loading, revalidate } = useResource<ProgressResponse>(`/api/v1/${encodeURIComponent(tenant)}/progress`);
   useRegisterRevalidate(revalidate);
 
-  if (loading && !data) return <p className="status-line">Loading progress...</p>;
-  if (error) return <p className="status-line status-error">Could not load progress: {error}</p>;
+  if (loading && !data) return <AsyncStatus message="Loading progress..." />;
+  if (error) {
+    return (
+      <ErrorState
+        title="Could not load progress"
+        message={`Progress for ${tenant} could not be loaded.`}
+        detail={error}
+        links={[{ label: 'Courses', href: `#/t/${encodeURIComponent(tenant)}` }]}
+      />
+    );
+  }
   if (!data) return null;
 
   const mastery = asMastery(data.mastery);

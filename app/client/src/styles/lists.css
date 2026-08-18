@@ -1,0 +1,7 @@
+/* Track C - the course list and the learner list: due counts, the labelled
+   progress line replacing the colour-only dot row, and full-card click targets
+   (UI-08, UI-09).
+
+   Owned by one implementer; nothing outside track C edits this file. Loaded
+   from main.tsx after styles.css, so a rule here wins a specificity tie with
+   the base sheet. New rules only - existing rules stay in styles.css. */

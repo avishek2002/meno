@@ -7,6 +7,13 @@
 // answers the back button, which makes them navigation.
 import { InfoTip } from './InfoTip';
 
+// course, lesson and note are reached only by drilling into Courses - there
+// is no other nav item for them - so all three carry the same aria-current as
+// the course list itself (UI-03). Without this, three levels into a course
+// reads to assistive tech as though the learner had left every section of the
+// app.
+const COURSES_SUB_ROUTES = new Set(['tenant', 'course', 'lesson', 'note']);
+
 export function Header({
   tenant,
   route,
@@ -17,7 +24,10 @@ export function Header({
   onRefresh: () => void;
 }) {
   const t = tenant ? encodeURIComponent(tenant) : '';
-  const current = (name: string): 'page' | undefined => (route === name ? 'page' : undefined);
+  const current = (name: string): 'page' | undefined => {
+    const match = name === 'tenant' ? COURSES_SUB_ROUTES.has(route) : route === name;
+    return match ? 'page' : undefined;
+  };
 
   return (
     <header className="app-header">

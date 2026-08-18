@@ -1,0 +1,6 @@
+/* Track A - the lesson page: breadcrumb placement, the prev/next pair, and any
+   other in-lesson chrome (UI-06).
+
+   Owned by one implementer; nothing outside track A edits this file. Loaded
+   from main.tsx after styles.css, so a rule here wins a specificity tie with
+   the base sheet. New rules only - existing rules stay in styles.css. */

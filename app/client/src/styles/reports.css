@@ -1,0 +1,5 @@
+/* Track D - the reporting pages: progress, insights and cost (UI-10, UI-11).
+
+   Owned by one implementer; nothing outside track D edits this file. Loaded
+   from main.tsx after styles.css, so a rule here wins a specificity tie with
+   the base sheet. New rules only - existing rules stay in styles.css. */

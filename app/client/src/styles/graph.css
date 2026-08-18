@@ -1,0 +1,6 @@
+/* Track E - the knowledge graph: node labels, minimum hit areas, the search
+   input, and the legend's placement (UI-12).
+
+   Owned by one implementer; nothing outside track E edits this file. Loaded
+   from main.tsx after styles.css, so a rule here wins a specificity tie with
+   the base sheet. New rules only - existing rules stay in styles.css. */

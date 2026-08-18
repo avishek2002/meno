@@ -15,6 +15,16 @@ _Last updated: 2026-08-13_
 
 ## Done
 
+- 2026-08-13 - **UI navigation review, wave 0 contract landed** (no behaviour yet). The shared seams
+  six parallel UI tracks build on: `app/client/src/courseContext.ts` (pure, unit-tested) plus
+  `useCourseContext.tsx` for UI-02; `asCourseMastery` in `clientTypes.tsx` for UI-01's live bug
+  (`/course/:course` sends `{concepts, modules}`, and `asMastery` rejected it, so mastery and gate
+  state have never rendered); `Breadcrumb`, `AsyncStatus` and `ErrorState` components; six
+  track-owned stylesheets under `styles/` so no two implementers edit `styles.css`; and
+  `routeTitle()` beside the `ROUTES` table for UI-03. Work order:
+  `docs/reviews/2026-08-13-ui-navigation-review.md`. Still open in wave 0: the route-change effect,
+  the response cache, and adopting `AsyncStatus`/`ErrorState` across the twelve pages.
+
 - 2026-08-12 - **The scanner counted scratch git repositories inside agent tool caches as real
   projects.** A real `find-subjects` run found 4 of 13 repositories were not projects, all under a
   coding agent's plugin cache, diluting every ratio in the report and reading a third-party
