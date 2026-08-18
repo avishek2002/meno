@@ -1,0 +1,19 @@
+# PROGRESS.md is the one file every parallel branch writes to, because every
+# feature prepends its Done entry at the same anchor. Three merges in one week
+# conflicted there and every resolution was the same: keep both sides. The
+# union driver does that automatically - for a conflicting region it takes all
+# of our lines, then all of theirs, so multi-line entries survive intact.
+#
+# What you give up, verified by merging two branches that both prepend here:
+# the blocks land in merge order rather than date order, so a newer entry can
+# sit below an older one, and the blank line between the two entries is
+# absorbed, leaving them adjacent. Both are cosmetic fixes on the next edit,
+# unlike a hand-resolved conflict, which blocks. It also means an edit to the
+# *same* line on both sides is kept twice rather than flagged - which is why
+# this is scoped to PROGRESS.md alone.
+#
+# Deliberately NOT applied elsewhere. Never put union on source: it produces
+# code that merges silently and compiles wrong. And not on docs/architecture.md
+# either, whose spec table collides on version numbers - two branches claiming
+# the same version is a semantic clash that has to be seen, not concatenated.
+PROGRESS.md merge=union
