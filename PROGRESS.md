@@ -11,24 +11,6 @@ _Last updated: 2026-08-18_
 
 ## Pending decisions (needs maintainer)
 
-- 2026-08-18 - **Interactive checks never render, in dev and in the production build alike.** The
-  app's core feature is dead and nothing reports it: no console error, no failing test. Three
-  `div.meno-check` mount points render empty on every lesson. **Two diagnoses have been tested and
-  disproven**, which is the useful part of this entry. It is *not* StrictMode: removing
-  `<StrictMode>` entirely changes nothing. It is *not* the missing `html` dependency on
-  `useCheckMounts` (a real omission - `useWikilinkNav` takes one for exactly this hazard and
-  documents why) - adding it, plus per-container idempotent roots and an `isConnected`-guarded
-  teardown, still rendered nothing; instrumentation confirmed the effect runs, finds all three
-  mounts, calls `root.render()`, and the cleanup correctly skips (`connected=true, children=0`).
-  That work was reverted rather than shipped, because it looked like a fix and fixed nothing.
-  **The live lead is the dev/prod split**: the production build *does* commit (mount points gain a
-  child at 488ms) and is then wiped when the whole `.prose` subtree is replaced 8ms later
-  (`+85 -85`), while dev never commits at all. A render that silently no-ops in dev but works in a
-  bundle usually means two React copies in the module graph - Vite pre-bundling `react-dom/client`
-  separately from the app's `react`, so a root from one copy renders elements created by the
-  other's JSX runtime. Check that first. **The decision:** this is a debugging session, not a
-  one-line fix, and it should be scheduled as one.
-
 - 2026-08-18 - **Audit findings not closed by v1.13**, from the same sweep, all measured, none
   yet fixed: todo checkboxes have no accessible name (AX `name: ""`); the check widget's cloze
   input is labelled by `placeholder` alone and its radio group has no `fieldset`/`legend`; nothing
@@ -45,6 +27,33 @@ _Last updated: 2026-08-18_
   a dedicated pass or should be absorbed opportunistically.
 
 ## Done
+
+- 2026-08-18 - **The interactive checks were never rendering, and the cause was one object
+  literal.** Every `div.meno-check` on every lesson was empty, in development and in the
+  production bundle, with no console error and nothing in the gate able to see it - the app's
+  core feature, gone for as long as it had existed. `RenderedHtml` passed
+  `dangerouslySetInnerHTML={{ __html: html }}`, a fresh literal on every render. **React compares
+  that prop by object identity, not by the markup inside it**, so it re-assigned `innerHTML` on
+  every re-render even when the string was byte-identical, and re-assigning `innerHTML` destroys
+  every child of the element - which is exactly where the check widgets are mounted. On the lesson
+  route the second of two fetches landing was enough: the widgets mounted at 470ms and were gone
+  at 473ms.
+  **Three wrong diagnoses were tested and discarded before this one**, which is worth recording
+  because each looked right. Not StrictMode (removing `<StrictMode>` changed nothing). Not a
+  synchronous `root.unmount()` racing an in-flight render (deferring it to a microtask silenced
+  the warning and rendered nothing). Not the missing `html` dependency alone (adding it changed
+  nothing, because `html` never changed - only the object's identity did). What settled it was an
+  isolation test rather than more reading: rendering a bare `<span>` into the same containers
+  failed while the identical `createRoot().render()` into a div appended to `document.body`
+  succeeded 6 of 6, which moved the search off the widget and onto the container. Trapping the
+  `innerHTML` setter then showed React's own `setProp` writing the same 12,699 characters twice.
+  `useCheckMounts` also gained the `html` dependency it had always been missing, for the case
+  where the markup genuinely changes and every placeholder is replaced by a fresh empty one -
+  the same hazard `useWikilinkNav` already documents. `app/test/rendered-html.test.ts` pins both,
+  and was confirmed to fail when the literal is put back. Verified operable end to end in a
+  browser, not just rendered: a flashcard reveals and takes a self-report, and a cloze answer
+  submits, grades server-side and returns its verdict.
+
 
 - 2026-08-18 - **v1.13: the four highest-leverage findings from an agent-run UI audit.** The audit
   itself is the interesting half. Because an agent cannot see a page, the review was scoped to what

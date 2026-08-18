@@ -16,7 +16,12 @@ interface CheckContext {
   lesson: string;
 }
 
-export function useCheckMounts(ref: RefObject<HTMLElement | null>, checks: PublicCheck[] | undefined, ctx: CheckContext | null): void {
+export function useCheckMounts(
+  ref: RefObject<HTMLElement | null>,
+  checks: PublicCheck[] | undefined,
+  ctx: CheckContext | null,
+  html?: string,
+): void {
   useEffect(() => {
     const el = ref.current;
     if (!el || !checks || checks.length === 0 || !ctx) return;
@@ -44,6 +49,11 @@ export function useCheckMounts(ref: RefObject<HTMLElement | null>, checks: Publi
     return () => {
       roots.forEach((r) => r.unmount());
     };
+    // `html` for the same reason useWikilinkNav takes it: RenderedHtml keeps
+    // one DOM node across renders and swaps its innerHTML, so when the markup
+    // genuinely changes every `div.meno-check` is replaced by a fresh, empty
+    // one while `checks` keeps its identity. Without this the effect would not
+    // re-run and the roots would be left rendering into detached nodes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ref, checks, ctx?.tenant, ctx?.course, ctx?.module, ctx?.lesson]);
+  }, [ref, checks, ctx?.tenant, ctx?.course, ctx?.module, ctx?.lesson, html]);
 }

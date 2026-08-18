@@ -44,6 +44,17 @@ write-authority seam (decision 14) is enforced in code.
    (mcq, cloze, flashcard). Grading is server-side: `answer` and `explain` never appear in
    any GET response - they return only in the submit response. Flashcards reveal the
    answer only after the learner self-reports.
+   Those widgets live inside HTML the server produced, so each one gets its own react-dom
+   root mounted into a `div.meno-check` placeholder rather than being a child of the page's
+   component tree. That arrangement has one sharp edge, and it is the reason this spec
+   mentions it at all (v1.13): **the object passed to `dangerouslySetInnerHTML` must be
+   memoized on the HTML string.** React compares that prop by object identity, not by the
+   markup inside it, so a fresh `{__html: html}` literal makes React re-assign `innerHTML`
+   on every render - and re-assigning `innerHTML` destroys every child of the element,
+   which is precisely where the mounted widgets are. One redundant re-assignment removed
+   every check on the page, silently and in both the development and production builds,
+   for as long as the feature had existed. `app/test/rendered-html.test.ts` pins it, because
+   the gate has no DOM and could not otherwise see it.
 5. Each graded submission appends one `scored` event (`source: ui`,
    `level: recognition`); dwelling on a lesson appends one `read` event. Transfer callouts
    render as styled prompts with a "graded in your next review session" badge and no
