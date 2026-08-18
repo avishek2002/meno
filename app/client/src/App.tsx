@@ -2,6 +2,7 @@
 // reads from - see RevalidateContext.tsx for how pages register into it.
 import { lazy, Suspense, useCallback, useEffect, useRef, type ReactNode } from 'react';
 import { routeTitle, useRoute } from './router';
+import { shouldSkipScrollReset } from './scrollReset.ts';
 import { RevalidateContext } from './RevalidateContext';
 import { Header } from './components/Header';
 import { AsyncStatus } from './components/AsyncStatus';
@@ -50,8 +51,12 @@ export default function App() {
   useEffect(() => {
     document.title = routeTitle(route);
     // Every navigation resets to the top, including back - the decision
-    // recorded in the review: no prior-scroll restoration.
-    window.scrollTo(0, 0);
+    // recorded in the review: no prior-scroll restoration. Except when the
+    // route itself names an in-page anchor (scrollReset.ts) - the page's own
+    // effect is about to scroll there, and resetting to the top first is a
+    // visible jump this used to dodge only by the accident of an async
+    // fetch landing its own effect in a later commit.
+    if (!shouldSkipScrollReset(route)) window.scrollTo(0, 0);
     if (hasNavigated.current) mainRef.current?.focus();
     hasNavigated.current = true;
   }, [route]);

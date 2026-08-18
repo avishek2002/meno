@@ -6,6 +6,7 @@
 // heading text). Pure - no React, no DOM - so it unit-tests directly against
 // the server contract shape (app/shared/types.ts) rather than through a
 // rendered component.
+import { tenantCourseHref, courseHref } from '../../shared/routeHrefs.ts';
 
 export interface PathSegment {
   text: string;
@@ -20,7 +21,6 @@ export function noteBreadcrumb(input: {
 }): PathSegment[] {
   const { tenant, path, course, domain } = input;
   const parts = path.split('/');
-  const t = encodeURIComponent(tenant);
 
   // The course segment sits right after the domain segment when there is
   // one, otherwise at the front. Only that one index may ever become a
@@ -44,11 +44,11 @@ export function noteBreadcrumb(input: {
       // - exactly the shape of the committed example tenant, where the link
       // would have been inert. Keying on the course instead always resolves,
       // because every course belongs to exactly one section by construction.
-      const href = course !== null && /^[\w-]+$/.test(course.slug) ? `#/t/${t}#course-${course.slug}` : null;
+      const href = course !== null && /^[\w-]+$/.test(course.slug) ? tenantCourseHref(tenant, course.slug) : null;
       return { text, href };
     }
     if (i === courseIndex && course !== null && text === course.slug) {
-      return { text, href: `#/t/${t}/c/${encodeURIComponent(course.slug)}` };
+      return { text, href: courseHref(tenant, course.slug) };
     }
     return { text, href: null };
   });

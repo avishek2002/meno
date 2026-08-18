@@ -5,6 +5,7 @@
 // app/**/*.ts without the DOM lib, so a stray browser global here fails
 // typecheck instead of failing review, and `node --test` covers it directly).
 // The DOM-touching half is useWikilinkNav in wikilinks.tsx.
+import { lessonHref, noteHref } from '../../shared/routeHrefs.ts';
 
 // <domain>/<course>/modules/<module>/<lesson>.md, with the domain optional so a vault
 // that predates the grouping still routes. Matching the course segment matters: a miss
@@ -19,9 +20,9 @@ export function resolveWikilinkPath(tenant: string, path: string): string {
   const lessonMatch = path.match(LESSON_PATH);
   if (lessonMatch) {
     const [, course, module, file] = lessonMatch;
-    return `#/t/${encodeURIComponent(tenant)}/c/${encodeURIComponent(course)}/m/${encodeURIComponent(module)}/l/${encodeURIComponent(file)}`;
+    return lessonHref(tenant, course, module, file);
   }
-  return `#/t/${encodeURIComponent(tenant)}/n/${encodeURIComponent(path)}`;
+  return noteHref(tenant, path);
 }
 
 const WIKILINK_TEXT = /\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|([^\]]*))?\]\]/g;

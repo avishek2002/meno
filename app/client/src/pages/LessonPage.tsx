@@ -15,6 +15,7 @@ import { writeResumeState, type SectionStore } from '../courseList.ts';
 import { postJson } from '../api';
 import { parseSources } from '../clientTypes';
 import type { LessonResponse } from '../../../shared/types.ts';
+import { tenantHref, graphHref, courseModulePathHref } from '../../../shared/routeHrefs.ts';
 
 // UI-16: the resume affordance persists to the same guarded localStorage
 // TenantCoursesPage already uses for open-state, under a second key
@@ -94,8 +95,8 @@ export function LessonPage({ tenant, course, module, file }: LessonPageProps) {
         message={notFound ? 'This lesson has not been generated yet.' : 'This lesson could not be loaded.'}
         detail={error}
         links={[
-          { label: 'Back to course', href: `#/t/${encodeURIComponent(tenant)}/c/${encodeURIComponent(course)}` },
-          { label: 'Courses', href: `#/t/${encodeURIComponent(tenant)}` },
+          { label: 'Back to course', href: courseHref(tenant, course) },
+          { label: 'Courses', href: tenantHref(tenant) },
         ]}
       />
     );
@@ -110,10 +111,18 @@ export function LessonPage({ tenant, course, module, file }: LessonPageProps) {
   // trip - it upgrades to the real title the moment useCourseContext resolves.
   const courseTitle = courseCtx.structure?.title ?? course;
   const moduleTitle = neighbours.current?.moduleTitle ?? module;
+  // The lesson title is the final segment so aria-current="page" (set by
+  // Breadcrumb on the last entry) lands on the lesson, not the module - a
+  // screen reader should hear "you are on the lesson", matching the <h1>.
+  // The module segment links to the course page truncated at that module
+  // (courseModulePathHref's path form, routes.ts's second `course`
+  // RouteDef) - the up-move a nested page's back control resolves to: one
+  // level up is the module's card on the course page, not the tenant root.
   const breadcrumbSegments: BreadcrumbSegment[] = [
-    { label: 'Courses', href: `#/t/${encodeURIComponent(tenant)}` },
+    { label: 'Courses', href: tenantHref(tenant) },
     { label: courseTitle, href: courseCtx.structure?.href ?? courseHref(tenant, course) },
-    { label: moduleTitle },
+    { label: moduleTitle, href: courseModulePathHref(tenant, course, module) },
+    { label: title },
   ];
 
   return (
@@ -121,7 +130,7 @@ export function LessonPage({ tenant, course, module, file }: LessonPageProps) {
       <Breadcrumb segments={breadcrumbSegments} />
       <header className="lesson-header">
         <h1>{title}</h1>
-        <a className="show-in-graph" href={`#/t/${encodeURIComponent(tenant)}/graph?focus=${encodeURIComponent(file)}`}>
+        <a className="show-in-graph" href={graphHref(tenant, file)}>
           Show in graph
         </a>
       </header>

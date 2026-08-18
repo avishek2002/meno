@@ -14,6 +14,7 @@ import { humanizeEvent } from '../humanize';
 import { buildCourseStructure, courseHref, type CourseStructure } from '../courseContext.ts';
 import { conceptHref, groupByCourse, todayIso, withDaysOverdue } from '../due.ts';
 import type { ProgressResponse, TreeResponse } from '../../../shared/types.ts';
+import { tenantHref, insightsHref } from '../../../shared/routeHrefs.ts';
 
 export function ProgressPage({ tenant }: { tenant: string }) {
   const { data, error, loading, revalidate } = useResource<ProgressResponse>(`/api/v1/${encodeURIComponent(tenant)}/progress`);
@@ -43,7 +44,7 @@ export function ProgressPage({ tenant }: { tenant: string }) {
         title="Could not load progress"
         message={`Progress for ${tenant} could not be loaded.`}
         detail={error}
-        links={[{ label: 'Courses', href: `#/t/${encodeURIComponent(tenant)}` }]}
+        links={[{ label: 'Courses', href: tenantHref(tenant) }]}
       />
     );
   }
@@ -64,7 +65,7 @@ export function ProgressPage({ tenant }: { tenant: string }) {
       <h1>Progress</h1>
       <p className="status-line">
         For the fuller study picture - session cadence, gate history, vault health - see{' '}
-        <a href={`#/t/${encodeURIComponent(tenant)}/insights`}>insights</a>.
+        <a href={insightsHref(tenant)}>insights</a>.
       </p>
 
       {data.due.length > 0 && (

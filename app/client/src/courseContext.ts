@@ -8,6 +8,14 @@
 // review, and `node --test` covers it like the server. No React import, no
 // browser global. The React half is useCourseContext.tsx.
 import type { CourseNode } from '../../shared/types.ts';
+import { courseHref, lessonHref, courseModuleHref, stripMd } from '../../shared/routeHrefs.ts';
+
+// Re-exported so existing importers (LessonNav.tsx, TenantCoursesPage.tsx,
+// CoursePage.tsx, InsightsPage.tsx, ProgressPage.tsx, LessonPage.tsx, and
+// course-context.test.ts) keep working unchanged now that the builders
+// themselves live in routeHrefs.ts alongside every other route builder -
+// this module still needs all four internally, below.
+export { courseHref, lessonHref, courseModuleHref, stripMd };
 
 /** A lesson as navigation sees it: lifted out of its module into course order. */
 export interface CourseLesson {
@@ -75,33 +83,6 @@ export interface LessonNeighbours {
   /** the nearest non-planned entry in that direction - what a link points at */
   previous: CourseLesson | null;
   next: CourseLesson | null;
-}
-
-/** Manifests carry lesson files with the suffix; every route segment is without it. */
-export function stripMd(file: string): string {
-  return file.replace(/\.md$/, '');
-}
-
-export function courseHref(tenant: string, course: string): string {
-  return `#/t/${encodeURIComponent(tenant)}/c/${encodeURIComponent(course)}`;
-}
-
-export function lessonHref(tenant: string, course: string, module: string, file: string): string {
-  return `${courseHref(tenant, course)}/m/${encodeURIComponent(module)}/l/${encodeURIComponent(stripMd(file))}`;
-}
-
-/**
- * A course link anchored at one of its modules (UI-10) - router.tsx's `course`
- * pattern tolerates the trailing #module fragment the same way it already
- * tolerates guide's #section, and CoursePage scrolls to the module card
- * carrying that id once its structure has loaded. Not percent-encoded: a
- * module slug is drawn from the same id grammar section ids use
- * (`/^[a-z0-9]+(-[a-z0-9]+)*$/`, lib/groups.ts), which contains nothing a
- * URL fragment needs escaped, and guide's own #section links skip encoding
- * for the same reason.
- */
-export function courseModuleHref(tenant: string, course: string, module: string): string {
-  return `${courseHref(tenant, course)}#${module}`;
 }
 
 /**

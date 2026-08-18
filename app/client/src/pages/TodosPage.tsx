@@ -13,6 +13,7 @@ import type { TodoAudience, TodoKind, TodosResponse } from '../../../shared/type
 import { InfoTip } from '../components/InfoTip';
 import { TODO_KIND_INFO, TODO_AUDIENCE_INFO, kindInfo, audienceInfo } from '../todoTags';
 import { useWikilinkNav, wikilinkTextToHtml } from '../wikilinks';
+import { tenantHref } from '../../../shared/routeHrefs.ts';
 
 export function TodosPage({ tenant }: { tenant: string }) {
   const base = `/api/v1/${encodeURIComponent(tenant)}/todos`;
@@ -113,7 +114,7 @@ export function TodosPage({ tenant }: { tenant: string }) {
         title="Could not load todos"
         message={`Todos for ${tenant} could not be loaded.`}
         detail={error}
-        links={[{ label: 'Courses', href: `#/t/${encodeURIComponent(tenant)}` }]}
+        links={[{ label: 'Courses', href: tenantHref(tenant) }]}
       />
     );
   }

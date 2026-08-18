@@ -15,6 +15,36 @@ _None open._
 
 ## Done
 
+- 2026-08-18 - **v1.12: going up a level, and a URL that truncates.** Asked for as "a native back
+  button in the top nav that goes back a page" plus "fix the url paths, what do `#`, `t`, `c`, `m`,
+  `l` mean". A UI/UX review pass rejected half of it and was right to. **Back and up are different
+  moves**, and the request described up while naming back: `←` in the top-left reads as temporal in
+  every browser and operating system, so rebinding it would make it the one control whose
+  destination cannot be guessed, and temporal back is already free on every gesture the platform
+  provides. Up went into the breadcrumb, which names its target in words - the lesson breadcrumb's
+  module segment now links to `#/t/:tenant/c/:course/m/:module`, a **real route segment** rather
+  than the old fragment-only anchor, and the course page gained the breadcrumb it never had. That
+  makes every meaningful prefix of a lesson URL a real page, which is the actual defect behind
+  "I can't navigate the sitemap from the URL" - hand-truncating the address bar used to give
+  not-found. **The rename was rejected**: `t`/`c`/`m`/`l` cost 88 construction sites across 29
+  files including a server-emitted contract field (`GraphResponse.route`), in exchange for
+  legibility one localhost user consumes approximately never. So was dropping the `#` - path
+  navigation fires `popstate` rather than `hashchange`, which would mean rebuilding the depth
+  guard shipped at v1.10, and this app's links are plain anchors with no `navigate()` funnel to
+  intercept clicks through. **Both stay reversible**: step 2 of the change put every route URL
+  behind builders in `app/shared/routeHrefs.ts`, imported by the server half too, so the rename is
+  now a one-file edit if the in-app fixes turn out not to dissolve the complaint. Round-trip tests
+  pin the builders to the route table, which were previously two independent transcriptions of one
+  grammar with nothing forcing them to agree. **Three shipped defects were found in the path of
+  this work and fixed first**: `.module-card` and `.group-section` had no `scroll-margin-top`, so
+  the module anchor from UI-10 and the deep-link scroll from v1.10 both landed *under* the sticky
+  header; the lesson breadcrumb's `aria-current="page"` sat on the module, so a screen reader
+  announced the wrong current page; and `App.tsx`'s scroll reset avoided clobbering anchors only
+  by promise-timing coincidence, now an explicit guard with its own test. Arrival at a module also
+  moves focus and highlights transiently - the highlight cannot be CSS `:target`, because a hash
+  router puts the whole route in the fragment so no element id ever matches it. 486 tests; the
+  rendering has no DOM in the gate, so it was browser-verified over the example tenant.
+
 - 2026-08-18 - **`validate` gains a `spec-versions` check: two rows in `docs/architecture.md`'s
   phase-to-spec table can no longer claim the same "Lands" version without failing the gate.**
   Because the table's rows sit on different lines, two parallel worktrees each landing a new spec

@@ -15,6 +15,7 @@ import { InfoTip } from '../components/InfoTip';
 import { TODO_KIND_INFO } from '../todoTags';
 import { buildCourseStructure, courseHref, courseModuleHref, type CourseStructure } from '../courseContext.ts';
 import { conceptHref, daysOverdue } from '../due.ts';
+import { tenantHref, progressHref, noteHref } from '../../../shared/routeHrefs.ts';
 
 /**
  * `usage.lessons_never_opened` entries are `${course}/${module}/${file}`
@@ -86,7 +87,7 @@ export function InsightsPage({ tenant }: { tenant: string }) {
         title="Could not load insights"
         message={`Insights for ${tenant} could not be loaded.`}
         detail={error}
-        links={[{ label: 'Courses', href: `#/t/${encodeURIComponent(tenant)}` }]}
+        links={[{ label: 'Courses', href: tenantHref(tenant) }]}
       />
     );
   }
@@ -105,7 +106,7 @@ export function InsightsPage({ tenant }: { tenant: string }) {
       </h1>
       <p className="status-line">As of {data.as_of}, over {data.basis.ledger_lines} ledger lines.</p>
       <p className="status-line">
-        For the due list ordered by urgency and grouped by course, see <a href={`#/t/${encodeURIComponent(tenant)}/progress`}>progress</a>.
+        For the due list ordered by urgency and grouped by course, see <a href={progressHref(tenant)}>progress</a>.
       </p>
 
       <section className="insights-section">
@@ -360,7 +361,7 @@ export function InsightsPage({ tenant }: { tenant: string }) {
           <ul className="insights-notes-list">
             {notes.map((n) => (
               <li key={n}>
-                <a href={`#/t/${encodeURIComponent(tenant)}/n/${encodeURIComponent(n)}`}>{n}</a>
+                <a href={noteHref(tenant, n)}>{n}</a>
               </li>
             ))}
           </ul>

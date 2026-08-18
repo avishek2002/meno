@@ -29,6 +29,26 @@ export const ROUTES: RouteDef[] = [
   // to exclude '#' from its character class or it would swallow the fragment
   // into the slug instead of leaving it for the named group.
   { name: 'course', pattern: /^#\/t\/(?<tenant>[^/]+)\/c\/(?<course>[^/#]+)(?:#(?<module>[\w-]+))?$/ },
+  // Truncating a lesson URL down to its module (deleting `/l/<file>`) has to
+  // land on the course page at that module, not not-found - the same
+  // destination the #module fragment above already reaches, just spelled as
+  // a path segment instead of a fragment. This is a second RouteDef, not a
+  // second named group added to the pattern above: a single pattern can only
+  // declare one `(?<module>...)` per alternative, and JavaScript historically
+  // rejected the same group name repeated across `|` alternatives in one
+  // pattern (support for that is too recent to rely on here). Two RouteDef
+  // entries sharing the name 'course' keeps the fragment form above
+  // untouched - courseModuleHref keeps emitting it, so no existing bookmark
+  // or generated link breaks - while giving the truncated path form its own
+  // pattern. `course` excludes '/' the same way every other course-slug
+  // group in this file does, and this pattern has no trailing fragment
+  // group, so it never competes with the fragment-form entry above: that one
+  // cannot consume a `/m/...` suffix (its `course` group excludes '/' and
+  // `$` anchors right after the optional fragment), and this one has no `/l/`
+  // to consume, so the `lesson` pattern above still matches first whenever
+  // one is present. Order relative to the fragment-form entry does not
+  // matter for the same reason; it sits here only to stay next to it.
+  { name: 'course', pattern: /^#\/t\/(?<tenant>[^/]+)\/c\/(?<course>[^/]+)\/m\/(?<module>[^/]+)$/ },
   { name: 'todos', pattern: /^#\/t\/(?<tenant>[^/]+)\/todos$/ },
   { name: 'progress', pattern: /^#\/t\/(?<tenant>[^/]+)\/progress$/ },
   { name: 'insights', pattern: /^#\/t\/(?<tenant>[^/]+)\/insights$/ },

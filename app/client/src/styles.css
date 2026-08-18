@@ -28,6 +28,10 @@
   --code-bg: #f2f1ec;
   --shadow: 0 1px 2px rgba(20, 20, 15, 0.08);
   --radius: 8px;
+  /* Shared by every scroll target the sticky .app-header can land on top of
+     (.guide-section, .module-card, .group-section): one number so a header
+     height change only has to be made here, not re-copied at each target. */
+  --scroll-clearance: 4.5rem;
   /* Todo kind colors: a plain categorical palette, deliberately not the
      pass/fail set above (accent/warning/correct/incorrect) - a kind is a
      category, not a judgment. admin reuses the neutral badge colors below. */
@@ -206,6 +210,17 @@ h3 {
 .tenant-name {
   color: var(--text-muted);
   font-size: 0.9rem;
+}
+
+/* Every in-page scroll target that can land underneath the sticky
+   .app-header shares this clearance: the guidebook's #section anchors, the
+   UI-10 module anchor within a course page, and the v1.10 course-list group
+   deep link. One grouped rule so a new scroll target only has to join this
+   selector list, not copy the magic number again. */
+.guide-section,
+.module-card,
+.group-section {
+  scroll-margin-top: var(--scroll-clearance);
 }
 
 /* Guarded back button - rendered only once there is in-app history to return
@@ -586,6 +601,24 @@ h3 {
   border-radius: var(--radius);
   padding: 0.9rem 1.1rem;
   margin-bottom: 0.75rem;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Transient arrival signal (CoursePage.tsx's #module scroll-and-focus
+   effect): applied on landing, removed on a timer. Not CSS `:target` -
+   the browser treats a hash router's whole hash as one fragment, so no
+   element id here can ever match it - and not relied on to double as the
+   focus ring either, since :focus-visible frequently withholds on a
+   programmatic focus() the way it would not on a real click or Tab. */
+.module-card-arrived {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .module-card {
+    transition: none;
+  }
 }
 
 .module-card h3 {
@@ -1454,7 +1487,6 @@ th {
 
 .guide-section {
   margin-bottom: 2rem;
-  scroll-margin-top: 4.5rem; /* clears the sticky header */
 }
 
 .guide-list {

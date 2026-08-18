@@ -72,6 +72,62 @@ test('the lesson route still matches all four segments', () => {
   });
 });
 
+test('#/t/alice/c/git-fundamentals#01-commits still matches course with the fragment form of the module anchor', () => {
+  // The pre-existing #module fragment (UI-10) - courseModuleHref's output,
+  // and any bookmark made before the /m/<module> path form below existed -
+  // must keep resolving exactly as it did.
+  const route = matchRoute('#/t/alice/c/git-fundamentals#01-commits');
+  assert.equal(route.name, 'course');
+  assert.deepEqual(route.params, { tenant: 'alice', course: 'git-fundamentals', module: '01-commits' });
+});
+
+test('#/t/alice/c/git-fundamentals/m/01-commits matches course with the path form of the module', () => {
+  // The truncation case this route addition exists for: deleting
+  // `/l/<file>` off the end of a lesson URL used to land on not-found. It
+  // has to resolve to the same route (and the same param shape) the
+  // fragment form above does, just spelled as a path segment.
+  const route = matchRoute('#/t/alice/c/git-fundamentals/m/01-commits');
+  assert.equal(route.name, 'course');
+  assert.deepEqual(route.params, { tenant: 'alice', course: 'git-fundamentals', module: '01-commits' });
+});
+
+test('#/t/alice/c/git-fundamentals still matches course with no module at all', () => {
+  const route = matchRoute('#/t/alice/c/git-fundamentals');
+  assert.equal(route.name, 'course');
+  assert.deepEqual(route.params, { tenant: 'alice', course: 'git-fundamentals' });
+});
+
+test('every meaningful prefix of a lesson route matches a named route', () => {
+  // "Meaningful prefix" means truncated at a /<letter>/<value> pair
+  // boundary, not at an arbitrary character - deleting `/l/01-the-commit-
+  // graph` off the end must not land on not-found (this is the module-
+  // truncation defect this route addition fixes), and neither must deleting
+  // `/m/01-commits/l/01-the-commit-graph` (the pre-existing course
+  // truncation) or `/c/git-fundamentals/m/01-commits/l/01-the-commit-graph`
+  // (tenant). Built from the pair list itself, not copied out as literal
+  // strings, so a future segment added to the lesson route is covered by
+  // this same test without anyone having to remember to extend it.
+  const pairs: Array<[string, string]> = [
+    ['t', 'alice'],
+    ['c', 'git-fundamentals'],
+    ['m', '01-commits'],
+    ['l', '01-the-commit-graph'],
+  ];
+  let hash = '#';
+  for (const [letter, value] of pairs) {
+    hash += `/${letter}/${value}`;
+    const route = matchRoute(hash);
+    assert.notEqual(route.name, 'not-found', `${hash} must resolve to a named route`);
+  }
+  // The full hash above is the lesson route specifically, and the pair
+  // immediately before it (the /m/ truncation) is the new course-module
+  // route this change adds - pin both by name so the invariant loop above
+  // can't accidentally pass by matching the wrong route.
+  assert.equal(matchRoute(hash).name, 'lesson');
+  const truncatedToModule = hash.replace(/\/l\/01-the-commit-graph$/, '');
+  assert.equal(matchRoute(truncatedToModule).name, 'course');
+});
+
 test('routes.ts names no browser global and imports no React', () => {
   const src = readFileSync(fileURLToPath(new URL('../client/src/routes.ts', import.meta.url)), 'utf8');
   assert.equal(src.includes("from 'react'"), false);

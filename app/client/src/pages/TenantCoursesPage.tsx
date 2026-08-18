@@ -44,6 +44,8 @@ import {
   type SectionStore,
 } from '../courseList.ts';
 import type { CourseNode, GroupsResponse, ProgressResponse, TreeResponse } from '../../../shared/types.ts';
+import { homeHref, courseHref, progressHref } from '../../../shared/routeHrefs.ts';
+import { prefersReducedMotion } from '../reducedMotion.tsx';
 
 // Accessing localStorage can throw when storage is blocked (private mode,
 // locked-down browser settings) - fall back to session-only rather than a
@@ -93,7 +95,7 @@ function CourseCard({
     // The whole card is the click target (UI-09), not just the heading -
     // everything below lives inside this one <a>.
     <a
-      href={`#/t/${encodeURIComponent(tenant)}/c/${encodeURIComponent(course.slug)}`}
+      href={courseHref(tenant, course.slug)}
       className="course-card-link"
     >
       <h3>{course.title}</h3>
@@ -235,7 +237,7 @@ export function TenantCoursesPage({ tenant, section }: { tenant: string; section
     if (!sectionExists || !forcedSectionId) return;
     const el = sectionEls.current.get(forcedSectionId);
     if (!el) return;
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reduced = prefersReducedMotion();
     el.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
     // Move focus to the section itself, not just the viewport - without this
     // a keyboard user following the breadcrumb's domain link lands with focus
@@ -265,7 +267,7 @@ export function TenantCoursesPage({ tenant, section }: { tenant: string; section
         title="Could not load courses"
         message={`The course list for ${tenant} could not be loaded.`}
         detail={tree.error}
-        links={[{ label: 'Learners', href: '#/' }]}
+        links={[{ label: 'Learners', href: homeHref() }]}
       />
     );
   }
@@ -333,7 +335,7 @@ export function TenantCoursesPage({ tenant, section }: { tenant: string; section
             : `${totalDue} ${totalDue === 1 ? 'review' : 'reviews'} due across ${dueCourseCount} ${
                 dueCourseCount === 1 ? 'course' : 'courses'
               }.`}{' '}
-          <a href={`#/t/${t}/progress`}>See progress</a>.
+          <a href={progressHref(tenant)}>See progress</a>.
         </p>
       )}
       {warnings.length > 0 && (

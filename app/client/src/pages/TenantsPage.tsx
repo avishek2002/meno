@@ -8,6 +8,7 @@ import { EmptyState } from '../components/EmptyState';
 import { ErrorState } from '../components/ErrorState';
 import type { TenantsResponse } from '../clientTypes';
 import type { ProgressResponse } from '../../../shared/types.ts';
+import { tenantHref, guideHref } from '../../../shared/routeHrefs.ts';
 
 // UI-08: a due count on the learner card, fetched independently per card so a
 // slow or failing /progress for one learner never blocks the others or the
@@ -34,7 +35,7 @@ function LearnerCard({
   }, [id, progress.revalidate, onRevalidateReady]);
   const due = progress.data?.due.length ?? 0;
   return (
-    <a href={`#/t/${encodeURIComponent(id)}`} className="tenant-card">
+    <a href={tenantHref(id)} className="tenant-card">
       <span className="tenant-card-id">{id}</span>
       <span className="tenant-card-meta">
         {courses} {courses === 1 ? 'course' : 'courses'}
@@ -70,7 +71,7 @@ export function TenantsPage() {
   // every session - skip it and land straight on their course list, where
   // the due-review summary this same finding adds is the first thing seen.
   useEffect(() => {
-    if (data && data.tenants.length === 1) navigate(`#/t/${encodeURIComponent(data.tenants[0].id)}`);
+    if (data && data.tenants.length === 1) navigate(tenantHref(data.tenants[0].id));
   }, [data]);
 
   if (loading && !data) return <AsyncStatus message="Loading learners..." />;
@@ -80,7 +81,7 @@ export function TenantsPage() {
         title="Could not load learners"
         message="The list of learners could not be loaded."
         detail={error}
-        links={[{ label: 'Guide', href: '#/guide' }]}
+        links={[{ label: 'Guide', href: guideHref() }]}
       />
     );
   }
