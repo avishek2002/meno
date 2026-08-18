@@ -33,10 +33,14 @@ Shared rule for all of them: a proposal the user declines becomes an unchecked t
 - **Orphan sweep**: list notes unreachable from the home note, propose a hub or lateral home for each; delete nothing without the user's say.
 - **Connect courses** (explicit sweep, never automatic): author or refresh the `## Connects to`
   section of a course hub - the cross-course edges the knowledge-graph view draws (format, grammar,
-  and reciprocity rule: [references/vault-conventions.md](references/vault-conventions.md)). Read
-  the target hub's actual content before writing the reason; a connection is a claim about how the
-  material relates, not a guess from titles alone. Reciprocate in the other hub too when it makes
-  sense, so the pair does not sit as a one-sided `connects` validate warning.
+  and reciprocity rule: [references/vault-conventions.md](references/vault-conventions.md)).
+  **Gate every candidate pair before writing a word of it: name the module in the other course a
+  learner would be stuck in without this one. Cannot name one? No bullet, in either hub.** A shared
+  subject is not a connection however true the observation - two courses whose topics meet but whose
+  work does not stop without each other fail the gate. Then, for pairs that pass, read the target
+  hub's actual content before writing the reason and cite that module in it; a connection is a claim
+  about how the material relates, not a guess from titles alone. Reciprocate in the other hub too,
+  so the pair does not sit as a one-sided `connects` validate warning.
 - **Group operations**: create, rename, or delete a group in `groups.yml`, and file or move a course between groups (format and rules: [references/vault-conventions.md](references/vault-conventions.md)). **You and the learner's text editor are the only writers** - the study app reads this file and never writes it, so there is no content-hash guard to lean on and nothing racing you except a human in Obsidian. Read the file immediately before writing it, and write it whole. Read the existing groups before minting a new one - reuse beats a near-duplicate - and say which group a course landed in rather than filing it silently. Deleting a group returns its courses to their domains; it never touches a course file.
 - **Todo processing** (session start, per AGENTS.md): read `content/tenants/<tenant>/todos.md` (format: [references/todo-format.md](references/todo-format.md)), surface actionable items, propose - "shall I generate that?", "want me to make that change?" - and act only on explicit confirmation. Completing an item: check it off, append the date; never delete lines.
 

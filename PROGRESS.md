@@ -116,6 +116,19 @@ _None open._
   pure decision (`decideToggle`) in `courseList.ts` with unit tests, so the regression is
   gate-covered even though the rendering around it still is not.
 
+- 2026-08-13 - **`meno:connects` had no eligibility rule, so the graph drew every course against
+  every other.** The convention asked only that a reason state "the actual causal or structural
+  link", which any two courses sharing a subject can satisfy - a real vault reached 13 connection
+  edges across 9 courses, and the accented edge stopped distinguishing anything. `second-brain` now
+  gates each candidate pair on a dependency test: name the module in the other course a learner
+  would be stuck in without this one, or write no bullet in either hub. Adjacency belongs in hub
+  prose, where a wikilink already draws a thin `reference` edge. The rationale and the worked
+  counter-example live in `references/vault-conventions.md`; the gate itself is stated in `SKILL.md`
+  ahead of the writing instructions, because the first smoke run proved an agent reads the skill and
+  never opens the reference - it approved the very pair the reference rejects by name.
+  `docs/specs/graph.md` is unchanged: it owns rendering, and already delegates the block's content
+  rules to vault-conventions.md.
+
 - 2026-08-12 - **The scanner counted scratch git repositories inside agent tool caches as real
   projects.** A real `find-subjects` run found 4 of 13 repositories were not projects, all under a
   coding agent's plugin cache, diluting every ratio in the report and reading a third-party

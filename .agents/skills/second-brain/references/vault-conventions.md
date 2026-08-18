@@ -98,6 +98,16 @@ Grammar, one bullet per line, machine-checked by `lib/connects.ts` and `tools/va
   anchor (`[[hub#section]]`) is not a note and is malformed.
 - The reason is required, one line, and says *why* the two courses connect - not "related",
   the actual causal or structural link a learner would want surfaced.
+- **A bullet requires a dependency, not a shared subject.** The test: name the module in the
+  other course a learner would be stuck in without this one, and put that module in the reason.
+  A pair that cannot pass it gets no bullet in either hub. Two courses that merely meet at a
+  topic do not qualify however true the observation - "the token bill measured in one course
+  lands on the hosting bill in the other" is a real structural link and still not a bullet,
+  because neither course's work stops without the other. Adjacency belongs in a hub's ordinary
+  prose, where the wikilink draws a thin `reference` edge and says the same thing without
+  claiming more. The accented `connection` edge means one thing, and it stops meaning it the
+  moment everything qualifies: a graph where every course touches every other is the same
+  picture as no graph at all.
 - **Edges are undirected, and reciprocating is preferred.** Write the bullet in both hubs. One
   bullet is enough for the graph - it draws a single edge either way, and a second bullet
   naming the same pair collapses into that same edge rather than doubling it - but the vault
