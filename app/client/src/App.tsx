@@ -65,7 +65,7 @@ export default function App() {
       page = <GuidePage section={route.params.section} />;
       break;
     case 'tenant':
-      page = <TenantCoursesPage tenant={route.params.tenant} />;
+      page = <TenantCoursesPage tenant={route.params.tenant} section={route.params.section} />;
       break;
     case 'course':
       // route.params.module is the optional #module anchor (UI-10), mirroring

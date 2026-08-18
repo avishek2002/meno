@@ -208,6 +208,29 @@ h3 {
   font-size: 0.9rem;
 }
 
+/* Guarded back button - rendered only once there is in-app history to return
+   to (Header.tsx), so absent, not disabled, when hidden; app-header-left is
+   already a flex row and lays out the same with or without it. */
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.back-btn:hover {
+  background: var(--bg-subtle);
+  color: var(--text);
+}
+
 .main-nav {
   display: flex;
   gap: 1rem;
@@ -608,6 +631,34 @@ h3 {
 .lesson,
 .note-page {
   line-height: 1.75;
+}
+
+/* note breadcrumb <h1> - a full vault path can run long, so it wraps rather
+   than overflowing the reading column; a link is underlined (not color
+   alone) so it stays distinguishable from a plain segment for a reader who
+   cannot see the color difference. */
+.note-breadcrumb {
+  overflow-wrap: break-word;
+  font-size: 1.35rem;
+}
+
+.note-breadcrumb a {
+  text-decoration: underline;
+  /* currentColor, not --border: --border is a hairline-divider color, well
+     under the 3:1 contrast floor against --bg (1.32:1 light, 1.44:1 dark) -
+     invisible in practice, which defeats the whole point of the underline
+     being the non-color cue that tells a link apart from a plain segment. */
+  text-decoration-color: currentColor;
+  text-underline-offset: 3px;
+}
+
+.note-breadcrumb-plain {
+  color: var(--text-muted);
+}
+
+.note-breadcrumb-sep {
+  color: var(--text-muted);
+  padding: 0 0.15em;
 }
 
 .prose h1,
