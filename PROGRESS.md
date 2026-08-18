@@ -15,6 +15,48 @@ _None open._
 
 ## Done
 
+- 2026-08-18 - **Merged the note-breadcrumb PR (#43) against wave 2's own UI-15 work; the
+  "two `<h1>`s" call below is superseded.** Both sessions touched `NotePage`: #43 built
+  server-side course/domain resolution (`resolveNoteCourse` in `app/server/tree.ts`,
+  `NoteResponse.course`/`domain`) and kept the vault path as the page's `<h1>`, deliberately
+  accepting two `<h1>`s; wave 2 (UI-15 below) dropped the path heading and promoted the note
+  body's own heading instead, with a separate `Breadcrumb`. The maintainer ruling kept both:
+  `notePath.ts`'s `noteBreadcrumb()` and the server-confirmed segments moved into
+  `<nav aria-label="Breadcrumb">` rather than the `<h1>`, and the note body's own heading (already
+  inside the rendered HTML) is the page's only `<h1>`. Net result: one `<h1>`, plus a breadcrumb
+  that can never link to a course the tree does not contain - the data model #43 built, rendered
+  the way UI-15 asked for. `historyDepth.ts` and the guarded back control are unchanged. The route
+  table also merged: `routes.ts` (extracted by #43 for the same DOM-less-`node --test`
+  reason `routeTitles.ts` was) now carries both the `course` route's `#module` fragment and the
+  `tenant` route's `#course-<slug>` fragment; `routeTitle`/`routeNames`/`APP_TITLE` still source
+  from `routeTitles.ts`. Course list, header nav-current, and both `course-list.test.ts` suites
+  kept everything from both sides.
+
+- 2026-08-18 - **UI navigation review, wave 2 plus three cross-track gaps closed.** UI-16: a
+  second `localStorage` key (`meno.courseList.resume.v1:<tenant>`, `courseList.ts`) records the
+  last lesson opened; the course list renders a "Resume: <lesson>" link. UI-17: eight pages
+  (course, lesson, graph, todos, progress, insights, cost, note, guide) moved to route-level
+  `React.lazy` in `App.tsx`, wrapped in one `Suspense` reusing `AsyncStatus`; entry chunk
+  279.54 KB raw / 86.63 KB gzip -> 200.46 KB raw / 64.00 KB gzip. Cross-track gaps six tracks
+  correctly left alone: `courseCtx.revalidate` now composes into the lesson page's registered
+  revalidate, and `TenantsPage` collects every learner card's `/progress` revalidate so "Re-read
+  files" reaches both; the `course` route gained an optional trailing `#module` fragment
+  (mirroring `guide`'s `#section`) and module cards carry `id`, so `InsightsPage`'s planned-debt
+  table can link a module cell to it via `courseModuleHref` (`CostPage` has no module-level rows,
+  so nothing to anchor there); the dir-versus-slug hazard is now a comment on
+  `courseDirOfPath`. Spec: `docs/specs/app.md` (course-list item, guide-fragment item, invariant
+  13, data table, revalidate composition). Review: `docs/reviews/2026-08-13-ui-navigation-review.md`.
+
+- 2026-08-13 - **UI navigation review, wave 0 contract landed** (no behaviour yet). The shared seams
+  six parallel UI tracks build on: `app/client/src/courseContext.ts` (pure, unit-tested) plus
+  `useCourseContext.tsx` for UI-02; `asCourseMastery` in `clientTypes.tsx` for UI-01's live bug
+  (`/course/:course` sends `{concepts, modules}`, and `asMastery` rejected it, so mastery and gate
+  state have never rendered); `Breadcrumb`, `AsyncStatus` and `ErrorState` components; six
+  track-owned stylesheets under `styles/` so no two implementers edit `styles.css`; and
+  `routeTitle()` beside the `ROUTES` table for UI-03. Work order:
+  `docs/reviews/2026-08-13-ui-navigation-review.md`. Still open in wave 0: the route-change effect,
+  the response cache, and adopting `AsyncStatus`/`ErrorState` across the twelve pages.
+
 - 2026-08-18 - **v1.11: the course-list collapse state now survives a reload.** It never had. The
   decision logged here was to fix it rather than write the limitation into the spec, and the fix
   turned out to need two changes, not the one the note predicted, because two defects were lining
@@ -60,13 +102,12 @@ _None open._
   the repo's existing discipline: `app/client/src/routes.ts` and `notePath.ts` are DOM-free `.ts`
   modules so `node --test` covers the route table and the breadcrumb rules the way it already covers
   `courseList.ts`. Spec: `docs/specs/app.md` behavior 13 + invariant 14.
-  **Knowingly accepted:** the path stays the `<h1>` while the note body keeps its own heading, so the
-  page carries two `<h1>`s. That diverges from UI-15 in
-  `docs/reviews/2026-08-13-ui-navigation-review.md`, which prescribes dropping the path heading -
-  Avishek chose legibility of location over the duplicate-heading fix after being shown both. UI-15
-  is therefore **partly addressed** (links added, orphan status fixed, double `<h1>` retained), and
-  UI-06's planned shared `Breadcrumb` component will have to reconcile with this page rather than
-  assume it owns the pattern.
+  **Accepted then, reconciled since:** at the time this landed, the path stayed the `<h1>` while
+  the note body kept its own heading, so the page carried two `<h1>`s - a deliberate divergence
+  from UI-15 in `docs/reviews/2026-08-13-ui-navigation-review.md`, which prescribes dropping the
+  path heading. Merging this against wave 2's own UI-15 work (see the entry above) resolved that:
+  the note body's heading is now the page's only `<h1>`, and this PR's server-confirmed breadcrumb
+  segments render in a `<nav>` instead. UI-15 is fully addressed as of that merge.
   **What the gate could not see.** The whole suite was green before the one real defect turned up:
   the browser fires `toggle` when React sets `open` on the remounted `<details>`, so the deep link's
   own forced open was read as a user action - releasing the force on the very render that applied it

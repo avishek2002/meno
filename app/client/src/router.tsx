@@ -8,6 +8,7 @@ import { matchRoute, type Route } from './routes.ts';
 // Re-exported so existing importers of `Route` from this module keep working
 // unchanged now that its definition moved to routes.ts.
 export type { Route };
+export { APP_TITLE, routeNames, routeTitle } from './routeTitles.ts';
 
 function readHash(): string {
   return window.location.hash || '#/';

@@ -1,0 +1,44 @@
+/* Track A - the lesson page: breadcrumb placement, the prev/next pair, and any
+   other in-lesson chrome (UI-06).
+
+   Owned by one implementer; nothing outside track A edits this file. Loaded
+   from main.tsx after styles.css, so a rule here wins a specificity tie with
+   the base sheet. New rules only - existing rules stay in styles.css. */
+
+.lesson-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin: 1.5rem 0 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.lesson-nav-prev,
+.lesson-nav-next {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  max-width: 48%;
+}
+
+.lesson-nav-next {
+  text-align: right;
+  margin-left: auto;
+}
+
+.lesson-nav-link {
+  font-weight: 600;
+}
+
+.lesson-nav-pending {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.lesson-nav-skip {
+  font-size: 0.9rem;
+  font-weight: 400;
+}

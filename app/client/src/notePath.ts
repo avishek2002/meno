@@ -1,7 +1,11 @@
 // Turns NoteResponse's path/course/domain into the clickable breadcrumb
-// NotePage renders as its <h1>. Pure - no React, no DOM - so it unit-tests
-// directly against the server contract shape (app/shared/types.ts) rather
-// than through a rendered component.
+// NotePage renders in a <nav aria-label="Breadcrumb"> above the note body
+// (UI-15 makes the note's own heading the page's single <h1>, so the vault
+// path moved out of the heading rather than out of the page - it is still
+// what disambiguates a note from every other note that could share a
+// heading text). Pure - no React, no DOM - so it unit-tests directly against
+// the server contract shape (app/shared/types.ts) rather than through a
+// rendered component.
 
 export interface PathSegment {
   text: string;

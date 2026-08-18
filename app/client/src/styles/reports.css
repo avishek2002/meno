@@ -1,0 +1,55 @@
+/* Track D - the reporting pages: progress, insights and cost (UI-10, UI-11).
+
+   Owned by one implementer; nothing outside track D edits this file. Loaded
+   from main.tsx after styles.css, so a rule here wins a specificity tie with
+   the base sheet. New rules only - existing rules stay in styles.css. */
+
+/* ---------- progress: due list (UI-11) ----------
+   18 rows read as six courses: one heading per course, a count beside it,
+   and the action line that names the real next step - matching
+   EmptyState.tsx's own phrasing so the app is consistent about what it
+   cannot do itself and where that happens instead. */
+
+.due-action-line {
+  color: var(--text-muted);
+  margin: 0 0 1rem;
+}
+
+.due-course-group {
+  margin-bottom: 1.25rem;
+}
+
+.due-course-group h3 {
+  font-size: 0.98rem;
+  margin-bottom: 0.25rem;
+}
+
+.due-course-count {
+  color: var(--text-muted);
+  font-weight: 400;
+  font-size: 0.85rem;
+}
+
+/* ---------- insights: linked lists (UI-10) ----------
+   The "lessons never opened" list is long at density (18+ rows) and reads
+   once, not every visit - a closed-by-default <details>, the same
+   affordance CoursePage's objectives/hub map use for the same reason. */
+
+.insights-detail-list {
+  margin: 0.75rem 0 1rem;
+}
+
+.insights-detail-list summary {
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.insights-detail-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}

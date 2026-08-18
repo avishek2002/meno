@@ -1,9 +1,10 @@
-// Course-list view state: which sections are open, and what a filter query
-// leaves visible. Pure on purpose - no React, no DOM - so `node --test` can
-// cover it, which is the only client-side logic in this repo that gets that.
-// The page hands its browser storage in as a two-method store; this module
-// never names a browser global itself (the root tsconfig compiles it without
-// the DOM lib, so naming one is a typecheck failure, not a convention).
+// Course-list view state: which sections are open, what a filter query leaves
+// visible, and which lesson to resume (UI-16). Pure on purpose - no React, no
+// DOM - so `node --test` can cover it, which is the only client-side logic in
+// this repo that gets that. The page hands its browser storage in as a
+// two-method store; this module never names a browser global itself (the
+// root tsconfig compiles it without the DOM lib, so naming one is a
+// typecheck failure, not a convention).
 
 /** A section as the server resolved it: GroupsResponse.groups entries. */
 export interface ListSection {
@@ -34,8 +35,13 @@ export interface VisibleSection {
   title: string;
   /** render the "by domain" marker: a derived domain section, never Ungrouped */
   byDomain: boolean;
-  /** slugs to render, in section order, filter-applied; every one is present in `courses` */
+  /** slugs to render, in section order, filter-applied; due-first (UI-08), stable
+   *  otherwise; every one is present in `courses` */
   courses: string[];
+  /** how many of the leading entries in `courses` have a due review - the page
+   *  renders these under a "Due now" sub-heading so the reordering is explained
+   *  rather than mysterious, per the review's own phrasing */
+  dueCount: number;
   /** whether the <details> renders open */
   open: boolean;
 }
@@ -277,6 +283,87 @@ export function assembleSections(input: {
   ];
 }
 
+// --- UI-16: resume where you left off ---
+//
+// Same storage, same guard, a second key rather than a second mechanism:
+// the last lesson opened, per tenant. LessonPage writes it on mount,
+// TenantCoursesPage reads it to render the resume card. Pure here for the
+// same reason open state is - `node --test` covers the shape and the
+// degrade paths without a browser.
+
+/** What the course list needs to render "Resume: <lesson>" and link straight
+ *  back to it. `lessonTitle` travels with the record rather than being
+ *  looked up again later, because the course list would otherwise have to
+ *  fetch that course's structure just to label one card. */
+export interface ResumeState {
+  course: string;
+  module: string;
+  file: string;
+  lessonTitle: string;
+}
+
+/** Versioned, app-namespaced, distinct from OPEN_STATE_PREFIX - a stale or
+ *  future-shaped resume record must never collide with open-state reads. */
+export const RESUME_STATE_PREFIX = 'meno.courseList.resume.v1';
+
+export function resumeStateKey(tenant: string): string {
+  return `${RESUME_STATE_PREFIX}:${encodeURIComponent(tenant)}`;
+}
+
+/** Reads and validates; null for a missing key, unparseable JSON, a non-object,
+ *  a null or throwing store, or a shape missing any of the four string fields -
+ *  the course list must never render a resume card off a half-written record. */
+export function readResumeState(store: SectionStore | null, tenant: string): ResumeState | null {
+  if (!store) return null;
+  let raw: string | null;
+  try {
+    raw = store.getItem(resumeStateKey(tenant));
+  } catch {
+    return null;
+  }
+  if (raw === null) return null;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+  const p = parsed as Record<string, unknown>;
+  if (
+    typeof p.course !== 'string' ||
+    typeof p.module !== 'string' ||
+    typeof p.file !== 'string' ||
+    typeof p.lessonTitle !== 'string'
+  ) {
+    return null;
+  }
+  return { course: p.course, module: p.module, file: p.file, lessonTitle: p.lessonTitle };
+}
+
+/** Never throws: a quota or private-mode failure downgrades resume to
+ *  session-only, the same as open state - a lesson page must not break
+ *  because a resume card could not be written. */
+export function writeResumeState(store: SectionStore | null, tenant: string, resume: ResumeState): void {
+  if (!store) return;
+  try {
+    store.setItem(resumeStateKey(tenant), JSON.stringify(resume));
+  } catch {
+    // quota or private-mode failure - resume just does not persist this session
+  }
+}
+
+/** slug -> number of due entries for that course. Pure aggregation over
+ *  whatever course-bearing array the caller has (ProgressResponse.due, or a
+ *  test fixture shaped like it) - this module names no server type. */
+export function dueCountsByCourse(due: readonly { course: string }[]): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const d of due) {
+    counts[d.course] = (counts[d.course] ?? 0) + 1;
+  }
+  return counts;
+}
+
 /** The whole list, assembled: join to the tree, append Ungrouped, apply the filter,
  *  resolve open state. The page renders the result and holds no list logic of its own. */
 export function buildCourseListView(input: {
@@ -285,6 +372,9 @@ export function buildCourseListView(input: {
   courses: readonly FilterableCourse[]; // TreeResponse.courses
   query: string; // raw input value
   openState: OpenState;
+  /** slug -> due count (UI-08); defaults to empty, which leaves section order
+   *  exactly as before - existing callers and tests are unaffected. */
+  dueCounts?: Record<string, number>;
 }): CourseListView {
   const bySlug = new Map(input.courses.map((c) => [c.slug, c]));
   const assembled = assembleSections(input);
@@ -292,6 +382,7 @@ export function buildCourseListView(input: {
 
   const foldedQuery = foldForSearch(input.query);
   const filtering = foldedQuery !== '';
+  const dueCounts = input.dueCounts ?? {};
 
   let matches = 0;
   const sections: VisibleSection[] = [];
@@ -311,11 +402,19 @@ export function buildCourseListView(input: {
 
     matches += visibleCourses.length;
 
+    // Due-first, stable otherwise: partition rather than sort, so two courses
+    // that are both due (or both not) keep their server/filter order. The
+    // partition point is `dueCount`, which is what tells the page where to
+    // draw the "Due now" sub-heading.
+    const due = visibleCourses.filter((slug) => (dueCounts[slug] ?? 0) > 0);
+    const notDue = visibleCourses.filter((slug) => (dueCounts[slug] ?? 0) === 0);
+
     sections.push({
       id: section.id,
       title: section.title,
       byDomain: section.source === 'domain' && section.id !== UNGROUPED_ID,
-      courses: visibleCourses,
+      courses: [...due, ...notDue],
+      dueCount: due.length,
       open: filtering ? true : isSectionOpen(input.openState, section.id),
     });
   }

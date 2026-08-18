@@ -21,7 +21,7 @@ interface RenderedHtmlProps {
 
 export function RenderedHtml({ html, tenant, className, checks, course, module, lesson }: RenderedHtmlProps) {
   const ref = useRef<HTMLDivElement>(null);
-  useWikilinkNav(ref, tenant);
+  useWikilinkNav(ref, tenant, html);
   useMermaidRender(ref, html);
   useTransferBadges(ref, html);
   const ctx = course && module && lesson ? { tenant, course, module, lesson } : null;

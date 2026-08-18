@@ -30,7 +30,12 @@ write-authority seam (decision 14) is enforced in code.
    `--root` to override - the app browses tenants only, never the community or org
    tiers) fresh on every request - new courses,
    modules, and lessons appear with no registration step. There is no watcher and no
-   cache; a "Re-read files" action re-fetches, and files remain the only truth.
+   cache; a "Re-read files" action re-fetches, and files remain the only truth. A page
+   registers one revalidate function with `RevalidateContext` (`app/client/src/RevalidateContext.tsx`)
+   and must compose every fetch it depends on into it, not only its own - the lesson page's own
+   lesson fetch and its `useCourseContext` course fetch both run, and the learner list's own
+   `/tenants` fetch and every card's independent `/progress` fetch all run, so "Re-read files"
+   never leaves part of a page stale against the rest.
 3. With no tenant content, every screen shows the onboarding empty state pointing at the
    interview as the way to begin.
 4. Lesson pages render sanitized HTML; recognition checks mount as interactive widgets
@@ -88,10 +93,16 @@ write-authority seam (decision 14) is enforced in code.
    anywhere gets a no-results line naming the query, never a blank page.
    Open and closed state persists in the browser's `localStorage` under one versioned key per
    tenant (`meno.courseList.open.v1:<url-encoded tenant>`), holding only the sections that differ
-   from the default, which is open. This is the app's only browser-persisted state and it is
-   deliberately disposable: a view preference, never evidence, never content, never read by
-   anything that derives progress or moves a gate. Clearing it loses a preference and nothing
-   else; a browser that refuses storage degrades to session-only and every screen still renders.
+   from the default, which is open. A second, distinct key
+   (`meno.courseList.resume.v1:<url-encoded tenant>`) holds the lesson last opened - course,
+   module, file, and its title - which the course list reads to render a "Resume: <lesson>" link.
+   It is written from the lesson page on mount and read from the course list, so it is the one
+   piece of view state with two owning pages rather than one: `app/client/src/pages/LessonPage.tsx`
+   writes it, `app/client/src/pages/TenantCoursesPage.tsx` reads and writes open state as before.
+   Both browser-persisted keys are deliberately disposable: a view preference, never evidence,
+   never content, never read by anything that derives progress or moves a gate. Clearing either
+   loses a preference and nothing else; a browser that refuses storage degrades to session-only
+   and every screen still renders, the resume link simply absent.
    A `toggle` event counts as the learner's own action only when the element's new state
    disagrees with the state the last render gave it (v1.11). The browser fires `toggle` for every
    change to the `open` attribute, React's own writes included, so a mount, a remount, or
@@ -100,13 +111,13 @@ write-authority seam (decision 14) is enforced in code.
    `/tree` and `/groups` before it renders a section at all: on the render where only the tree has
    landed, every course falls back to one transient `Ungrouped` section, and pruning stale ids
    against that list would drop the learner's real sections.
-   All of it - the fold, the match, the section assembly, the default-open rule, the toggle
-   decision, the pruning of stale ids and the key scheme - lives in
-   `app/client/src/courseList.ts`, a module with no React
-   and no DOM references, so `node --test` covers it like the server. It is the one piece of
-   client logic in this repository that is unit-tested rather than smoke-tested, and it is a `.ts`
-   file among `.tsx` files on purpose: the root `tsconfig` compiles `app/**/*.ts` without the DOM
-   lib, so naming a browser global there fails typecheck instead of failing review.
+   All of the pure logic - the fold, the match, the section assembly, the default-open rule, the
+   toggle decision, the pruning of stale ids, and both key schemes - lives in
+   `app/client/src/courseList.ts`, a module with no React and no DOM references, so `node --test`
+   covers it like the server. It is the one piece of client logic in this repository that is
+   unit-tested rather than smoke-tested, and it is a `.ts` file among `.tsx` files on purpose: the
+   root `tsconfig` compiles `app/**/*.ts` without the DOM lib, so naming a browser global there
+   fails typecheck instead of failing review.
 10. Degraded paths: malformed YAML or check payloads render inert with a warning attached
    to the response; a partial curriculum never breaks a page.
 11. Self-explanation, in two layers. **Tooltips**: an `InfoTip` disclosure sits beside the
@@ -123,21 +134,29 @@ write-authority seam (decision 14) is enforced in code.
    (`#/guide#glossary`), so the route pattern tolerates one trailing fragment and the page
    scrolls to it, honoring `prefers-reduced-motion`. A "Guide" nav link is present on every
    screen including the no-tenant empty state, which is exactly when help is most wanted.
+   `#/t/:tenant/c/:course` tolerates the same shape of trailing fragment
+   (`#/t/:tenant/c/:course#<module-slug>`) as a module anchor: each module card on the course
+   page carries `id={module.slug}`, `CoursePage` scrolls to it on load the same way `GuidePage`
+   does for a section, and a module cell elsewhere in the app (the insights page's planned-debt
+   table) links through `courseContext.ts`'s `courseModuleHref` instead of landing on the top of
+   the course.
 12. `#/t/:tenant/graph` renders the whole tenant vault as one picture, joined to the ledger -
     what is planned but unwritten, what is mastered, and how courses connect. See
     [graph.md](graph.md) for the full behavior.
 13. Getting out of a note, and one step back (v1.10). A note is reached by following a wikilink
     from anywhere in the vault, so it is the screen most likely to be entered with no idea where
-    it sits. It keeps its vault path as its `<h1>` and renders that path as segments, where a
-    segment the server confirmed is a real place becomes a link: the domain directory to the
-    course list deep-linked at the course's own section (`#/t/:tenant#course-<slug>`, the same
-    one-trailing-fragment shape the guidebook's section links already use), and the course
-    directory to the course page. Every other segment - the intermediate directories, and the
-    file itself - is plain text, styled so the reader can tell what is clickable before
-    clicking. **Resolution is server-side**: `GET :tenant/note` returns the owning course and
+    it sits. The note body's own heading (already inside the rendered HTML) is the page's only
+    `<h1>` (UI-15); the vault path renders below it as a breadcrumb in a `<nav aria-label="Breadcrumb">`,
+    with one segment per path component, where a segment the server confirmed is a real place
+    becomes a link: the domain directory to the course list deep-linked at the course's own
+    section (`#/t/:tenant#course-<slug>`, the same one-trailing-fragment shape the guidebook's
+    section links already use), and the course directory to the course page. Every other segment -
+    the intermediate directories, and the file itself - is plain text; the breadcrumb's own link
+    styling (not colour alone) is what tells the reader what is clickable before clicking.
+    **Resolution is server-side**: `GET :tenant/note` returns the owning course and
     its domain from the same walk that answers every other route, so the client links only what
     exists, and a note outside every course (`home.md`, `insights/`, `sources/`) degrades to a
-    wholly plain path rather than a confident link to a 404. The deep link forces the section
+    wholly plain breadcrumb rather than a confident link to a 404. The deep link forces the section
     holding that course open over the stored collapse state and scrolls to it, moving focus
     there and honoring `prefers-reduced-motion`; that forcing is never written back, exactly as
     the filter's is not (item 9), because a visit is not a preference. A fragment naming a
@@ -152,12 +171,6 @@ write-authority seam (decision 14) is enforced in code.
     (`#/t/:tenant/c/:course`), while an arbitrary group id from a hand-edited file never becomes
     one - not in a URL, and not as a DOM id either, which is why the scroll target is held as an
     element reference rather than looked up by id.
-    **The path stays the `<h1>` while the note body keeps its own heading, so the page carries
-    two `<h1>`s.** That is a knowingly accepted cost, taken against
-    [the v1.10 navigation review](../reviews/2026-08-13-ui-navigation-review.md)'s UI-15, which
-    prescribes dropping the path heading instead: the path as the title is what makes the
-    location legible at a glance, and the review's own shared breadcrumb component (UI-06) has
-    to reconcile with this page when it lands.
     The header carries a back control alongside the wordmark: `history.back()`, hidden entirely
     at in-app depth 0, so a bookmark or a deep link cannot eject the reader out of Meno on their
     first click. Depth is stamped per history entry on `history.state` rather than counted,
@@ -240,6 +253,7 @@ both run before routing so they cover writes and unrouted paths equally.
 | `content/tenants/<tenant>/progress/mastery.yml` | never (derives in memory) | tutor only | progress.md |
 | `app/client/dist` | read (static) | build | - |
 | browser `localStorage`, key `meno.courseList.open.v1:<tenant>` | replace | client | one JSON object, section id to open flag |
+| browser `localStorage`, key `meno.courseList.resume.v1:<tenant>` | replace | client | one JSON object: course, module, file, lesson title |
 
 ## Invariants
 
@@ -270,9 +284,9 @@ both run before routing so they cover writes and unrouted paths equally.
 12. Every explained term has exactly one definition, in `src/guide/glossary.ts`; tooltips
     and the guidebook glossary both render from it rather than restating it.
 13. The client persists nothing but disposable view state, in `localStorage`, under keys prefixed
-    `meno.courseList.open.v1`. No content, evidence, progress, or todo is ever kept in the
-    browser, and every screen renders correctly with the store empty, full of stale ids, or
-    unavailable entirely.
+    `meno.courseList.open.v1` or `meno.courseList.resume.v1`. No content, evidence, progress, or
+    todo is ever kept in the browser, and every screen renders correctly with the store empty,
+    full of stale ids, missing a resume record, or unavailable entirely.
 14. The note breadcrumb links only what the server resolved. The client never infers a course
     from the shape of a path; `GET :tenant/note` answers with the owning course and domain or
     with nulls, and any segment without a server-confirmed target renders as text. A course slug
@@ -352,8 +366,10 @@ both run before routing so they cover writes and unrouted paths equally.
   substring matching on title and slug, diacritic folding both directions, section hiding, forced
   expansion while filtering with the stored state left intact, stale-id pruning measured against
   every section rather than the visible ones, prototype-shaped keys in a stored value, an absent
-  and a throwing store, and a source grep asserting that `localStorage` appears in exactly one
-  client file and that `courseList.ts` names no browser global and imports no React.
+  and a throwing store, the resume-state round trip and its own degraded paths, and a source grep
+  asserting that `localStorage` appears only in `LessonPage.tsx` and `TenantCoursesPage.tsx` (the
+  two owners UI-16 gives it) and that `courseList.ts` names no browser global and imports no
+  React.
 
 - The grouped course list was driven live in a browser against a five-course vault at v1.5: three
   groups plus a fallback section, correct counts and ordering, dark mode, and the `Groups`

@@ -152,6 +152,16 @@ a {
   border-radius: 3px;
 }
 
+/* The route-change effect focuses <main> so assistive tech lands in the new
+   view. It is tabIndex={-1}, so it can never be reached by tabbing - the only
+   way in is that programmatic move. Drawing a ring around the whole content
+   column on every navigation is therefore noise, not a focus indicator: the
+   changed title and heading are what tell the user where they are. */
+main.content:focus,
+main.content:focus-visible {
+  outline: none;
+}
+
 button,
 input,
 select {
@@ -1621,4 +1631,45 @@ th {
     border-radius: 0;
     border-width: 1px 0 0;
   }
+}
+
+/* --- shared navigation components -----------------------------------------
+   Base rules for Breadcrumb, ErrorState and AsyncStatus. All six tracks
+   consume these three components, so their rules stay in the shared sheet
+   rather than in any one track's file. A track needing a variant adds it under
+   styles/, which loads after this file. */
+
+.breadcrumb ol {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.breadcrumb li + li::before {
+  content: '/';
+  margin-right: 0.4rem;
+  color: var(--border);
+}
+
+.error-state {
+  padding: 1rem 0 2rem;
+}
+
+.error-detail {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.recovery-links {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 1rem 0 0;
+  padding: 0;
 }

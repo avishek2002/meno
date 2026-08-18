@@ -4,6 +4,7 @@
 // routeParams.ts, courseList.ts, and graphLayout.ts already follow beside
 // their .tsx consumer.
 import { decodeParams } from './routeParams.ts';
+import { type RouteName } from './routeTitles.ts';
 
 export interface Route {
   name: string;
@@ -11,7 +12,9 @@ export interface Route {
 }
 
 export interface RouteDef {
-  name: string;
+  // Typed against ROUTE_NAMES (routeTitles.ts) so a new route without a
+  // title fails typecheck instead of silently rendering "meno".
+  name: RouteName;
   pattern: RegExp;
 }
 
@@ -21,7 +24,11 @@ export const ROUTES: RouteDef[] = [
   // one hash router plus one document fragment, so a section stays linkable.
   { name: 'guide', pattern: /^#\/guide(?:#(?<section>[\w-]+))?$/ },
   { name: 'lesson', pattern: /^#\/t\/(?<tenant>[^/]+)\/c\/(?<course>[^/]+)\/m\/(?<module>[^/]+)\/l\/(?<file>[^/]+)$/ },
-  { name: 'course', pattern: /^#\/t\/(?<tenant>[^/]+)\/c\/(?<course>[^/]+)$/ },
+  // The optional trailing #module fragment (UI-10) is a module anchor within
+  // the course page, the same shape as guide's #section above - `course` has
+  // to exclude '#' from its character class or it would swallow the fragment
+  // into the slug instead of leaving it for the named group.
+  { name: 'course', pattern: /^#\/t\/(?<tenant>[^/]+)\/c\/(?<course>[^/#]+)(?:#(?<module>[\w-]+))?$/ },
   { name: 'todos', pattern: /^#\/t\/(?<tenant>[^/]+)\/todos$/ },
   { name: 'progress', pattern: /^#\/t\/(?<tenant>[^/]+)\/progress$/ },
   { name: 'insights', pattern: /^#\/t\/(?<tenant>[^/]+)\/insights$/ },
