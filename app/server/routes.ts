@@ -7,7 +7,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { readFileSync, existsSync, statSync } from 'node:fs';
 import { join, extname } from 'node:path';
 import { listTenants, safePath } from './tenant.ts';
-import { walkTenant, vaultIndex } from './tree.ts';
+import { walkTenant, vaultIndex, resolveNoteCourse } from './tree.ts';
 import { renderMarkdown } from './markdown.ts';
 import { gradeCheck } from './checks.ts';
 import { appendUiEvent, readLedgerEvents } from './ledger.ts';
@@ -21,7 +21,7 @@ import { loadInsightsInputs } from '../../lib/insights-io.ts';
 import { readCostSnapshot } from '../../lib/cost-io.ts';
 import { loadVaultFiles, buildVaultGraph } from '../../lib/vault.ts';
 import { buildGraph } from '../../lib/graph.ts';
-import type { LessonResponse, PublicCheck, SubmitRequest, SubmitResponse, InsightsResponse, GroupsResponse, CostResponse, GraphResponse, TodoKind, TodoAudience } from '../shared/types.ts';
+import type { LessonResponse, PublicCheck, SubmitRequest, SubmitResponse, InsightsResponse, GroupsResponse, CostResponse, GraphResponse, TodoKind, TodoAudience, NoteResponse } from '../shared/types.ts';
 import { writeFileAtomic } from './atomic.ts';
 
 interface Ctx {
@@ -145,7 +145,17 @@ const getNote: Handler = (req, res, p, ctx) => {
   if (!existsSync(file) || !file.endsWith('.md')) throw Object.assign(new Error('no such note'), { status: 404 });
   const tenantDir = safePath(ctx.root, p.tenant);
   const { html, links } = renderMarkdown(readFileSync(file, 'utf8'), vaultIndex(tenantDir));
-  json(res, 200, { path: notePath, html, links });
+  // same walk resolveCourse uses elsewhere, so the breadcrumb can never point
+  // at a course the tree does not actually contain
+  const resolved = resolveNoteCourse(walkTenant(tenantDir, p.tenant).courses, notePath);
+  const payload: NoteResponse = {
+    path: notePath,
+    html,
+    links,
+    course: resolved?.course ?? null,
+    domain: resolved?.domain ?? null,
+  };
+  json(res, 200, payload);
 };
 
 const getTodos: Handler = (_req, res, p, ctx) => {

@@ -18,6 +18,10 @@ import {
   readOpenState,
   writeOpenState,
   buildCourseListView,
+  assembleSections,
+  courseSlugFromFragment,
+  sectionForCourse,
+  decideToggle,
   type ListSection,
   type FilterableCourse,
   type OpenState,
@@ -352,3 +356,128 @@ test('byDomain is true only for a derived domain section, never for Ungrouped', 
   assert.equal(domain.byDomain, true);
   assert.equal(ungrouped.byDomain, false);
 });
+
+// --- courseSlugFromFragment: the deep-link fragment -> course slug ---
+
+test('courseSlugFromFragment maps a valid course fragment to its slug', () => {
+  assert.equal(courseSlugFromFragment('course-llm-cost-and-token-engineering'), 'llm-cost-and-token-engineering');
+});
+
+test('courseSlugFromFragment returns null for an absent fragment', () => {
+  assert.equal(courseSlugFromFragment(undefined), null);
+});
+
+test('courseSlugFromFragment returns null for the retired domain-<x> shape and other non-course fragments', () => {
+  // the old scheme never shipped and carries no meaning now - it must not
+  // resolve to anything, not even by accident
+  assert.equal(courseSlugFromFragment('domain-ai-and-agents'), null);
+  assert.equal(courseSlugFromFragment('glossary'), null, 'guide section fragments are not course fragments');
+  assert.equal(courseSlugFromFragment('course-'), null, 'a course prefix with nothing after it names no slug');
+});
+
+// --- assembleSections / sectionForCourse: the assembled list a deep link resolves against ---
+
+const GROUP_SECTIONS: ListSection[] = [
+  { id: 'version-control', title: 'Version Control', courses: ['git', 'gh-flow'], source: 'explicit' },
+  { id: 'domain:backend', title: 'Backend', courses: ['rust-for-backend'], source: 'domain' },
+];
+
+const GROUP_COURSES: FilterableCourse[] = [
+  { slug: 'git', title: 'Git Fundamentals' },
+  { slug: 'gh-flow', title: 'GitHub Flow' },
+  { slug: 'rust-for-backend', title: 'Rust for Backend' },
+  { slug: 'unfiled-one', title: 'Solo Course' },
+];
+
+test("sectionForCourse resolves a course in an explicit group to that group's id", () => {
+  const assembled = assembleSections({ sections: GROUP_SECTIONS, ungrouped: ['unfiled-one'], courses: GROUP_COURSES });
+  assert.equal(sectionForCourse(assembled, 'git'), 'version-control');
+});
+
+test('sectionForCourse resolves a course in a derived domain section to the domain section id', () => {
+  const assembled = assembleSections({ sections: GROUP_SECTIONS, ungrouped: ['unfiled-one'], courses: GROUP_COURSES });
+  assert.equal(sectionForCourse(assembled, 'rust-for-backend'), 'domain:backend');
+});
+
+test('sectionForCourse resolves a course with no group and no domain to Ungrouped', () => {
+  const assembled = assembleSections({ sections: GROUP_SECTIONS, ungrouped: ['unfiled-one'], courses: GROUP_COURSES });
+  assert.equal(sectionForCourse(assembled, 'unfiled-one'), UNGROUPED_ID);
+});
+
+test('sectionForCourse returns null for a slug no section contains', () => {
+  const assembled = assembleSections({ sections: GROUP_SECTIONS, ungrouped: ['unfiled-one'], courses: GROUP_COURSES });
+  assert.equal(sectionForCourse(assembled, 'does-not-exist'), null);
+});
+
+test('assembleSections drops a slug an explicit group still lists after its course no longer exists', () => {
+  const stale: ListSection[] = [{ id: 'version-control', title: 'Version Control', courses: ['git', 'deleted-course'], source: 'explicit' }];
+  const assembled = assembleSections({ sections: stale, ungrouped: [], courses: [{ slug: 'git', title: 'Git' }] });
+  assert.deepEqual(assembled[0].courses, ['git']);
+  assert.equal(sectionForCourse(assembled, 'deleted-course'), null, 'a stale slug must not resolve to a section that no longer renders it');
+});
+
+// --- decideToggle: the release/persist decision behind a <details> toggle event ---
+// (TenantCoursesPage.toggleSection's only call site - see decideToggle's own
+// comment in courseList.ts for the two browser-only regressions this covers)
+
+test("decideToggle: the forced section's own programmatic open releases nothing and persists nothing", () => {
+  assert.deepEqual(
+    decideToggle({ sectionId: 'domain:ai-and-agents', activeForcedId: 'domain:ai-and-agents', next: true, filtering: false }),
+    { release: false, persist: false },
+  );
+});
+
+test('decideToggle: the user closing a forced section releases the force and persists the close', () => {
+  assert.deepEqual(
+    decideToggle({ sectionId: 'domain:ai-and-agents', activeForcedId: 'domain:ai-and-agents', next: false, filtering: false }),
+    { release: true, persist: true },
+  );
+});
+
+test('decideToggle: a toggle on a section that is not the active forced one always persists, never releases', () => {
+  assert.deepEqual(
+    decideToggle({ sectionId: 'version-control', activeForcedId: 'domain:ai-and-agents', next: true, filtering: false }),
+    { release: false, persist: true },
+  );
+  assert.deepEqual(
+    decideToggle({ sectionId: 'version-control', activeForcedId: 'domain:ai-and-agents', next: false, filtering: false }),
+    { release: false, persist: true },
+  );
+});
+
+test('decideToggle: a toggle when nothing is forced always persists, never releases', () => {
+  assert.deepEqual(
+    decideToggle({ sectionId: 'domain:ai-and-agents', activeForcedId: null, next: true, filtering: false }),
+    { release: false, persist: true },
+  );
+  assert.deepEqual(
+    decideToggle({ sectionId: 'domain:ai-and-agents', activeForcedId: null, next: false, filtering: false }),
+    { release: false, persist: true },
+  );
+});
+
+test('decideToggle: filtering discards a toggle on the forced section completely - release included, not only persist', () => {
+  // regression: closing a forced section while filtering used to release the
+  // force (making it look closed on this render) without persisting the
+  // close, so the very next render fell back to the filter's own forced-open
+  // (buildCourseListView pins open: true while filtering) and the section
+  // popped back open on its own. filtering must gate release exactly like it
+  // already gates persist, so this is the same {false, false} regardless of
+  // which way `next` points.
+  assert.deepEqual(
+    decideToggle({ sectionId: 'domain:ai-and-agents', activeForcedId: 'domain:ai-and-agents', next: false, filtering: true }),
+    { release: false, persist: false },
+  );
+  assert.deepEqual(
+    decideToggle({ sectionId: 'domain:ai-and-agents', activeForcedId: 'domain:ai-and-agents', next: true, filtering: true }),
+    { release: false, persist: false },
+  );
+});
+
+test('decideToggle: filtering discards a toggle on a non-forced section too', () => {
+  assert.deepEqual(
+    decideToggle({ sectionId: 'version-control', activeForcedId: null, next: true, filtering: true }),
+    { release: false, persist: false },
+  );
+});
+

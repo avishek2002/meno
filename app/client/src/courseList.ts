@@ -59,6 +59,89 @@ export interface CourseListView {
 export const UNGROUPED_ID = 'section:ungrouped';
 export const UNGROUPED_TITLE = 'Ungrouped';
 
+const COURSE_FRAGMENT_PREFIX = 'course-';
+
+/** URL fragment ("course-<slug>", the `section` route param) -> course slug -
+ *  what TenantCoursesPage resolves against sectionForCourse below. The
+ *  fragment keys on the course, not the domain, even though the domain is
+ *  the more obvious reading of "where does this note live": a domain gets a
+ *  derived section only for whatever courses fall back to it, so a domain
+ *  where every course is claimed by an explicit group in groups.yml (the
+ *  committed example tenant's own shape) has no section for a #domain-<x>
+ *  link to open at all - it would be inert on exactly the fixture meant to
+ *  demonstrate it. A course slug always resolves, because every course
+ *  belongs to exactly one section by construction, and it is already a URL
+ *  surface elsewhere (#/t/x/c/<slug>), while an arbitrary groups.yml id
+ *  still never appears in one. `undefined` (no fragment), the retired
+ *  "domain-<x>" shape (never shipped, means nothing now), and an empty slug
+ *  all mean "no forced course", not a thrown error - a stale or hand-edited
+ *  link must degrade to the ordinary list. */
+export function courseSlugFromFragment(fragment: string | undefined): string | null {
+  if (fragment === undefined || !fragment.startsWith(COURSE_FRAGMENT_PREFIX)) return null;
+  const slug = fragment.slice(COURSE_FRAGMENT_PREFIX.length);
+  return slug === '' ? null : slug;
+}
+
+/** Which assembled section - explicit group, derived domain, or Ungrouped -
+ *  currently claims a course, or null when none does (a stale slug, or one
+ *  this tenant never had). `sections` must already be joined against the
+ *  courses that actually exist (assembleSections below does exactly that),
+ *  or a slug an explicit group still lists after its course was deleted
+ *  could resolve to a section that no longer renders it. First match wins:
+ *  a course belongs to exactly one section by construction, so there is
+ *  nothing further to disambiguate. */
+export function sectionForCourse(sections: readonly ListSection[], slug: string): string | null {
+  for (const section of sections) {
+    if (section.courses.includes(slug)) return section.id;
+  }
+  return null;
+}
+
+/** What a native <details> toggle event should do to force-release state and
+ *  to persisted open/collapse state, given everything the decision depends
+ *  on. Two failure modes this function exists to rule out, both found by
+ *  browser testing rather than the gate, which is why the whole decision
+ *  lives here instead of as inline conditionals in TenantCoursesPage:
+ *
+ *  1. TenantCoursesPage forces a deep-linked section's `open` attribute to
+ *     true by remounting the element (see the `key` comment there) - the
+ *     browser fires a `toggle` event for that programmatic open exactly as
+ *     it would for a real click. Treating it as user input would release
+ *     the force and persist `true` on the very render that applied it,
+ *     silently erasing whatever collapse state the user had actually saved
+ *     for that section. `next === true` on the currently-forced id is that
+ *     event, and it releases nothing and persists nothing.
+ *
+ *  2. While filtering, every matching section renders forced open by the
+ *     filter itself (buildCourseListView pins `open: true`), and a toggle
+ *     during filtering is already discarded rather than persisted - but if
+ *     the toggled section also happens to be the deep-link's forced one,
+ *     releasing the force without persisting anything makes the *next*
+ *     render fall back to `s.open`, which is still pinned true by the
+ *     filter, so the section pops back open on its own. The filtering check
+ *     has to gate the release exactly as it already gates the persist, or
+ *     "discarded" stops being true for the release half of the decision.
+ *     That is why filtering is checked first, before the forced-id case
+ *     above even runs. */
+export interface ToggleDecision {
+  /** call setReleasedSection(sectionId) */
+  release: boolean;
+  /** write next into persisted open state */
+  persist: boolean;
+}
+
+export function decideToggle(input: {
+  sectionId: string;
+  activeForcedId: string | null;
+  next: boolean;
+  filtering: boolean;
+}): ToggleDecision {
+  const { sectionId, activeForcedId, next, filtering } = input;
+  if (filtering) return { release: false, persist: false };
+  if (sectionId === activeForcedId && next === true) return { release: false, persist: false };
+  return { release: sectionId === activeForcedId, persist: true };
+}
+
 /** Versioned, app-namespaced storage-key prefix. Bump the version, never the meaning. */
 export const OPEN_STATE_PREFIX = 'meno.courseList.open.v1';
 
@@ -158,6 +241,30 @@ export function writeOpenState(
   }
   return normalized;
 }
+/** Sections joined against the courses that actually exist: explicit groups
+ *  and Ungrouped as the registry says, with any slug the tree no longer
+ *  knows about already dropped (a warning for that is raised upstream, in
+ *  lib/groups.ts's resolveGroups - this module only ever renders, never
+ *  warns). Ungrouped is appended only once that join leaves it non-empty.
+ *  buildCourseListView and sectionForCourse both start from this exact
+ *  list, so "which section a course lives in" can never answer differently
+ *  for the two of them - a deep link and the rendered list would otherwise
+ *  be free to disagree about where a course is. */
+export function assembleSections(input: {
+  sections: readonly ListSection[]; // GroupsResponse.groups
+  ungrouped: readonly string[]; // GroupsResponse.ungrouped
+  courses: readonly FilterableCourse[]; // TreeResponse.courses
+}): ListSection[] {
+  const bySlug = new Set(input.courses.map((c) => c.slug));
+  const joinedGroups = input.sections.map((s) => ({ ...s, courses: s.courses.filter((slug) => bySlug.has(slug)) }));
+  const joinedUngrouped = input.ungrouped.filter((slug) => bySlug.has(slug));
+  return [
+    ...joinedGroups,
+    ...(joinedUngrouped.length > 0
+      ? [{ id: UNGROUPED_ID, title: UNGROUPED_TITLE, courses: joinedUngrouped, source: 'domain' as const }]
+      : []),
+  ];
+}
 
 /** The whole list, assembled: join to the tree, append Ungrouped, apply the filter,
  *  resolve open state. The page renders the result and holds no list logic of its own. */
@@ -169,18 +276,7 @@ export function buildCourseListView(input: {
   openState: OpenState;
 }): CourseListView {
   const bySlug = new Map(input.courses.map((c) => [c.slug, c]));
-
-  // Ungrouped renders last, and only when it still has a course once slugs the
-  // tree no longer knows about are dropped - the same join every other section
-  // gets below, done early because inclusion itself (not just the count) turns on it.
-  const joinedUngrouped = input.ungrouped.filter((slug) => bySlug.has(slug));
-  const assembled: ListSection[] = [
-    ...input.sections,
-    ...(joinedUngrouped.length > 0
-      ? [{ id: UNGROUPED_ID, title: UNGROUPED_TITLE, courses: joinedUngrouped, source: 'domain' as const }]
-      : []),
-  ];
-
+  const assembled = assembleSections(input);
   const allSectionIds = assembled.map((s) => s.id);
 
   const foldedQuery = foldForSearch(input.query);
@@ -190,18 +286,16 @@ export function buildCourseListView(input: {
   const sections: VisibleSection[] = [];
 
   for (const section of assembled) {
-    // the join happens here - a slug not present in `courses` is dropped
-    const joined = section.courses.filter((slug) => bySlug.has(slug));
-
+    // already joined against `courses` by assembleSections above
     let visibleCourses: string[];
     if (filtering) {
-      visibleCourses = joined.filter((slug) => {
+      visibleCourses = section.courses.filter((slug) => {
         const course = bySlug.get(slug)!;
         return foldForSearch(course.title).includes(foldedQuery) || foldForSearch(course.slug).includes(foldedQuery);
       });
       if (visibleCourses.length === 0) continue;
     } else {
-      visibleCourses = joined;
+      visibleCourses = section.courses;
     }
 
     matches += visibleCourses.length;

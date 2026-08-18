@@ -98,6 +98,16 @@ export interface NoteResponse {
   path: string;
   html: string;
   links: { resolved: Record<string, string>; broken: string[] };
+  /**
+   * The course whose directory contains this note, resolved by the server from the
+   * same walk that answers every other route - null for a note that sits outside
+   * every course (home.md, insights/, sources/). The client links only what this
+   * field confirms exists, so a breadcrumb can never point at a course that is not
+   * there.
+   */
+  course: { slug: string; title: string } | null;
+  /** The domain directory of `course`, or null when there is no course or it sits at the vault root. */
+  domain: string | null;
 }
 
 export interface SubmitRequest {
