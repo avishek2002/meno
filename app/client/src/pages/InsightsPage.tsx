@@ -13,7 +13,7 @@ import { ErrorState } from '../components/ErrorState';
 import type { InsightsResponse, Rate, TreeResponse } from '../../../shared/types.ts';
 import { InfoTip } from '../components/InfoTip';
 import { TODO_KIND_INFO } from '../todoTags';
-import { buildCourseStructure, courseHref, type CourseStructure } from '../courseContext.ts';
+import { buildCourseStructure, courseHref, courseModuleHref, type CourseStructure } from '../courseContext.ts';
 import { conceptHref, daysOverdue } from '../due.ts';
 
 /**
@@ -331,10 +331,10 @@ export function InsightsPage({ tenant }: { tenant: string }) {
                     <CourseCell tenant={tenant} course={p.course} structures={structures} />
                   </td>
                   <td>
-                    {/* The route has no module anchor yet (docs/reviews/2026-08-13-ui-navigation-review.md
-                        UI-10 asks for one; CoursePage/router.tsx do not support it), so this links to the
-                        course page as the closest faithful target rather than the module itself. */}
-                    <a href={courseHref(tenant, p.course)}>{p.module}</a>
+                    {/* UI-10: the course route now tolerates a trailing #module
+                        fragment, so this lands on the module's own card rather
+                        than the top of the course page. */}
+                    <a href={courseModuleHref(tenant, p.course, p.module)}>{p.module}</a>
                   </td>
                   <td>{p.planned}</td>
                 </tr>

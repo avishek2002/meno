@@ -1,9 +1,10 @@
-// Course-list view state: which sections are open, and what a filter query
-// leaves visible. Pure on purpose - no React, no DOM - so `node --test` can
-// cover it, which is the only client-side logic in this repo that gets that.
-// The page hands its browser storage in as a two-method store; this module
-// never names a browser global itself (the root tsconfig compiles it without
-// the DOM lib, so naming one is a typecheck failure, not a convention).
+// Course-list view state: which sections are open, what a filter query leaves
+// visible, and which lesson to resume (UI-16). Pure on purpose - no React, no
+// DOM - so `node --test` can cover it, which is the only client-side logic in
+// this repo that gets that. The page hands its browser storage in as a
+// two-method store; this module never names a browser global itself (the
+// root tsconfig compiles it without the DOM lib, so naming one is a
+// typecheck failure, not a convention).
 
 /** A section as the server resolved it: GroupsResponse.groups entries. */
 export interface ListSection {
@@ -162,6 +163,76 @@ export function writeOpenState(
     // quota or private-mode failure - the feature degrades to session-only
   }
   return normalized;
+}
+
+// --- UI-16: resume where you left off ---
+//
+// Same storage, same guard, a second key rather than a second mechanism:
+// the last lesson opened, per tenant. LessonPage writes it on mount,
+// TenantCoursesPage reads it to render the resume card. Pure here for the
+// same reason open state is - `node --test` covers the shape and the
+// degrade paths without a browser.
+
+/** What the course list needs to render "Resume: <lesson>" and link straight
+ *  back to it. `lessonTitle` travels with the record rather than being
+ *  looked up again later, because the course list would otherwise have to
+ *  fetch that course's structure just to label one card. */
+export interface ResumeState {
+  course: string;
+  module: string;
+  file: string;
+  lessonTitle: string;
+}
+
+/** Versioned, app-namespaced, distinct from OPEN_STATE_PREFIX - a stale or
+ *  future-shaped resume record must never collide with open-state reads. */
+export const RESUME_STATE_PREFIX = 'meno.courseList.resume.v1';
+
+export function resumeStateKey(tenant: string): string {
+  return `${RESUME_STATE_PREFIX}:${encodeURIComponent(tenant)}`;
+}
+
+/** Reads and validates; null for a missing key, unparseable JSON, a non-object,
+ *  a null or throwing store, or a shape missing any of the four string fields -
+ *  the course list must never render a resume card off a half-written record. */
+export function readResumeState(store: SectionStore | null, tenant: string): ResumeState | null {
+  if (!store) return null;
+  let raw: string | null;
+  try {
+    raw = store.getItem(resumeStateKey(tenant));
+  } catch {
+    return null;
+  }
+  if (raw === null) return null;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+  const p = parsed as Record<string, unknown>;
+  if (
+    typeof p.course !== 'string' ||
+    typeof p.module !== 'string' ||
+    typeof p.file !== 'string' ||
+    typeof p.lessonTitle !== 'string'
+  ) {
+    return null;
+  }
+  return { course: p.course, module: p.module, file: p.file, lessonTitle: p.lessonTitle };
+}
+
+/** Never throws: a quota or private-mode failure downgrades resume to
+ *  session-only, the same as open state - a lesson page must not break
+ *  because a resume card could not be written. */
+export function writeResumeState(store: SectionStore | null, tenant: string, resume: ResumeState): void {
+  if (!store) return;
+  try {
+    store.setItem(resumeStateKey(tenant), JSON.stringify(resume));
+  } catch {
+    // quota or private-mode failure - resume just does not persist this session
+  }
 }
 
 /** slug -> number of due entries for that course. Pure aggregation over

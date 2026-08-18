@@ -13,6 +13,12 @@
   margin: 0.25rem 0 1rem;
 }
 
+/* ---------- UI-16: resume where you left off ---------- */
+
+.resume-line {
+  margin: 0.25rem 0 1rem;
+}
+
 .due-now-heading {
   margin: 0 0 0.5rem;
   font-size: 0.8rem;

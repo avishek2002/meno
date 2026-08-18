@@ -152,6 +152,16 @@ a {
   border-radius: 3px;
 }
 
+/* The route-change effect focuses <main> so assistive tech lands in the new
+   view. It is tabIndex={-1}, so it can never be reached by tabbing - the only
+   way in is that programmatic move. Drawing a ring around the whole content
+   column on every navigation is therefore noise, not a focus indicator: the
+   changed title and heading are what tell the user where they are. */
+main.content:focus,
+main.content:focus-visible {
+  outline: none;
+}
+
 button,
 input,
 select {

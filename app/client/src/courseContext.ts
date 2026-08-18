@@ -91,11 +91,35 @@ export function lessonHref(tenant: string, course: string, module: string, file:
 }
 
 /**
+ * A course link anchored at one of its modules (UI-10) - router.tsx's `course`
+ * pattern tolerates the trailing #module fragment the same way it already
+ * tolerates guide's #section, and CoursePage scrolls to the module card
+ * carrying that id once its structure has loaded. Not percent-encoded: a
+ * module slug is drawn from the same id grammar section ids use
+ * (`/^[a-z0-9]+(-[a-z0-9]+)*$/`, lib/groups.ts), which contains nothing a
+ * URL fragment needs escaped, and guide's own #section links skip encoding
+ * for the same reason.
+ */
+export function courseModuleHref(tenant: string, course: string, module: string): string {
+  return `${courseHref(tenant, course)}#${module}`;
+}
+
+/**
  * The course directory a vault path sits under: its first two segments,
  * the "<domain>/<slug>" form CourseNode.dir is already in, or null for a path
  * too shallow to be inside a course. A note page has only a path, so this is
  * how it finds the course to link back to (UI-15) - resolve the result against
  * TreeResponse.courses[].dir to get the slug useCourseContext takes.
+ *
+ * Hazard two tracks independently rediscovered while wiring links back to a
+ * course: `dir` (this function's return value) is not the same string as the
+ * routing slug (CourseStructure.slug / CourseNode.slug) for a hand-made
+ * course. `course.yml` lets an author give a course any slug they like, but
+ * its directory keeps whatever basename it already had on disk - the two
+ * happen to match for every agent-generated course, which is why the gap is
+ * easy to miss until a hand-made one 404s. Never build a course href from a
+ * dir segment; resolve the dir against `TreeResponse.courses[].dir` first
+ * to get the real slug, exactly as this function's own doc comment says.
  */
 export function courseDirOfPath(path: string): string | null {
   const parts = path.split('/').filter((p) => p !== '');

@@ -10,19 +10,24 @@ import {
   UNGROUPED_ID,
   UNGROUPED_TITLE,
   OPEN_STATE_PREFIX,
+  RESUME_STATE_PREFIX,
   openStateKey,
+  resumeStateKey,
   foldForSearch,
   isSectionOpen,
   withSectionOpen,
   withAllOpen,
   readOpenState,
   writeOpenState,
+  readResumeState,
+  writeResumeState,
   buildCourseListView,
   dueCountsByCourse,
   type ListSection,
   type FilterableCourse,
   type OpenState,
   type SectionStore,
+  type ResumeState,
 } from '../client/src/courseList.ts';
 
 const SECTIONS: ListSection[] = [
@@ -115,7 +120,7 @@ test('allSectionIds includes sections the filter hid, and writeOpenState against
 
 // --- case 13: source grep for the DOM-free / localStorage-fenced boundary ---
 
-test('localStorage appears in exactly one client file, and courseList.ts names no browser global', () => {
+test('localStorage appears only in the two named pages, and courseList.ts names no browser global', () => {
   const clientSrcDir = fileURLToPath(new URL('../client/src', import.meta.url));
 
   const files: string[] = [];
@@ -130,9 +135,18 @@ test('localStorage appears in exactly one client file, and courseList.ts names n
     }
   })(clientSrcDir);
 
-  const usingLocalStorage = files.filter((f) => readFileSync(f, 'utf8').includes('localStorage'));
-  assert.equal(usingLocalStorage.length, 1, `expected exactly one file naming localStorage, got: ${usingLocalStorage.join(', ')}`);
-  assert.ok(usingLocalStorage[0].endsWith(join('pages', 'TenantCoursesPage.tsx')));
+  // UI-16 added a second owner: the resume affordance is written from the
+  // lesson page a learner leaves and read from the course list they return
+  // to, so one file cannot own both ends the way open-state's single owner
+  // does. Every consumer still goes through courseList.ts's SectionStore
+  // shape rather than reaching for the global directly - that boundary,
+  // not a single-file count, is what this test actually guards.
+  const usingLocalStorage = files.filter((f) => readFileSync(f, 'utf8').includes('localStorage')).sort();
+  const expected = [
+    fileURLToPath(new URL('../client/src/pages/LessonPage.tsx', import.meta.url)),
+    fileURLToPath(new URL('../client/src/pages/TenantCoursesPage.tsx', import.meta.url)),
+  ].sort();
+  assert.deepEqual(usingLocalStorage, expected, `expected exactly these files to name localStorage, got: ${usingLocalStorage.join(', ')}`);
 
   const courseListSrc = readFileSync(fileURLToPath(new URL('../client/src/courseList.ts', import.meta.url)), 'utf8');
   assert.equal(courseListSrc.includes("from 'react'"), false);
@@ -403,4 +417,50 @@ test('byDomain is true only for a derived domain section, never for Ungrouped', 
   assert.equal(explicit.byDomain, false);
   assert.equal(domain.byDomain, true);
   assert.equal(ungrouped.byDomain, false);
+});
+
+// --- UI-16: resume where you left off ---
+
+test('resumeStateKey starts with RESUME_STATE_PREFIX, distinct from OPEN_STATE_PREFIX, and encodes the tenant', () => {
+  const key = resumeStateKey('a/b');
+  assert.ok(key.startsWith(RESUME_STATE_PREFIX));
+  assert.notEqual(RESUME_STATE_PREFIX, OPEN_STATE_PREFIX);
+  assert.notEqual(key, resumeStateKey('a%2Fb'));
+});
+
+test('writeResumeState then readResumeState round-trips exactly', () => {
+  const resume: ResumeState = { course: 'git-fundamentals', module: 'm1-basics', file: 'staging', lessonTitle: 'Staging' };
+  const s = memoryStore();
+  writeResumeState(s, 'alice', resume);
+  assert.deepEqual(readResumeState(s, 'alice'), resume);
+});
+
+test('a resume record written for one tenant is invisible to another', () => {
+  const s = memoryStore();
+  writeResumeState(s, 'alice', { course: 'git', module: 'm1', file: 'f', lessonTitle: 'F' });
+  assert.equal(readResumeState(s, 'bob'), null);
+});
+
+test('readResumeState degrades to null for a null store, a throwing store, garbage JSON, and a record missing a field', () => {
+  assert.equal(readResumeState(null, 'tenant'), null);
+
+  const throwingStore: SectionStore = {
+    getItem: () => {
+      throw new Error('blocked');
+    },
+    setItem: () => {
+      throw new Error('quota exceeded');
+    },
+    removeItem: () => {
+      throw new Error('blocked');
+    },
+  };
+  assert.equal(readResumeState(throwingStore, 'tenant'), null);
+  // writeResumeState must not throw even though the store does.
+  writeResumeState(throwingStore, 'tenant', { course: 'c', module: 'm', file: 'f', lessonTitle: 'L' });
+
+  for (const garbage of ['not json', '[]', 'null', '{"course":"c"}', '{"course":"c","module":"m","file":"f","lessonTitle":5}']) {
+    const s = memoryStore({ [resumeStateKey('tenant')]: garbage });
+    assert.equal(readResumeState(s, 'tenant'), null, `garbage input: ${garbage}`);
+  }
 });

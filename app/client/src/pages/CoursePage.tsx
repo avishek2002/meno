@@ -3,6 +3,7 @@
 // closed-by-default briefing (UI-07). Concept mastery and module gate chips
 // only render at all because useCourseContext's asCourseMastery accepts the
 // {concepts, modules} shape the server actually sends (UI-01).
+import { useEffect } from 'react';
 import { useRegisterRevalidate } from '../RevalidateContext';
 import { AsyncStatus } from '../components/AsyncStatus';
 import { ErrorState } from '../components/ErrorState';
@@ -69,9 +70,20 @@ function continueLesson(module: CourseModuleEntry | null): CourseLesson | null {
   return module.lessons.find((l) => !l.planned) ?? null;
 }
 
-export function CoursePage({ tenant, course }: { tenant: string; course: string }) {
+export function CoursePage({ tenant, course, module }: { tenant: string; course: string; module?: string }) {
   const { structure, mastery, hubHtml, data, loading, error, revalidate } = useCourseContext(tenant, course);
   useRegisterRevalidate(revalidate);
+
+  // UI-10: the module anchor (router.tsx's optional trailing #module on the
+  // `course` route) scrolls once the module card exists in the DOM - it
+  // cannot exist before `structure` has loaded, the same ordering reason
+  // GuidePage's #section effect waits on nothing but is safe to fire
+  // immediately since its sections are static content.
+  useEffect(() => {
+    if (!module || !structure) return;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    document.getElementById(module)?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
+  }, [module, structure]);
 
   if (loading && !data) return <AsyncStatus message="Loading course..." />;
   if (error) {
@@ -144,7 +156,9 @@ export function CoursePage({ tenant, course }: { tenant: string; course: string 
         {structure.modules.map((m) => {
           const gate = mastery?.modules[m.slug] ?? null;
           return (
-            <div key={m.slug} className="module-card">
+            // id makes each card a scroll/link target (UI-10): courseModuleHref
+            // builds an href of exactly `#/t/.../c/course#${m.slug}`.
+            <div key={m.slug} id={m.slug} className="module-card">
               <h3>
                 {m.title} <span className={`status-badge status-${m.status}`}>{m.status}</span>
                 {gate && gate.gate !== 'none' && (

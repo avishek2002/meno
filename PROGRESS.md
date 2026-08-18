@@ -4,7 +4,7 @@ Living status file - the done / backlog tracker for this project. **Update it wh
 finish a thing -> move it to Done; pick up or think of a new thing -> add it to the agenda; make a call
 that isn't captured in the code -> log it. Keep entries dated, newest near the top of each section.
 
-_Last updated: 2026-08-13_
+_Last updated: 2026-08-18_
 
 > Maintenance: keep this file current whenever work changes. Tooling can't see conversation-only
 > decisions, so logging those is on whoever made them.
@@ -14,6 +14,21 @@ _Last updated: 2026-08-13_
 - None currently open.
 
 ## Done
+
+- 2026-08-18 - **UI navigation review, wave 2 plus three cross-track gaps closed.** UI-16: a
+  second `localStorage` key (`meno.courseList.resume.v1:<tenant>`, `courseList.ts`) records the
+  last lesson opened; the course list renders a "Resume: <lesson>" link. UI-17: eight pages
+  (course, lesson, graph, todos, progress, insights, cost, note, guide) moved to route-level
+  `React.lazy` in `App.tsx`, wrapped in one `Suspense` reusing `AsyncStatus`; entry chunk
+  279.54 KB raw / 86.63 KB gzip -> 200.46 KB raw / 64.00 KB gzip. Cross-track gaps six tracks
+  correctly left alone: `courseCtx.revalidate` now composes into the lesson page's registered
+  revalidate, and `TenantsPage` collects every learner card's `/progress` revalidate so "Re-read
+  files" reaches both; the `course` route gained an optional trailing `#module` fragment
+  (mirroring `guide`'s `#section`) and module cards carry `id`, so `InsightsPage`'s planned-debt
+  table can link a module cell to it via `courseModuleHref` (`CostPage` has no module-level rows,
+  so nothing to anchor there); the dir-versus-slug hazard is now a comment on
+  `courseDirOfPath`. Spec: `docs/specs/app.md` (course-list item, guide-fragment item, invariant
+  13, data table, revalidate composition). Review: `docs/reviews/2026-08-13-ui-navigation-review.md`.
 
 - 2026-08-13 - **UI navigation review, wave 0 contract landed** (no behaviour yet). The shared seams
   six parallel UI tracks build on: `app/client/src/courseContext.ts` (pure, unit-tested) plus

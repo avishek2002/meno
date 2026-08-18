@@ -25,6 +25,7 @@ import { ErrorState } from '../components/ErrorState';
 import { InfoTip } from '../components/InfoTip';
 import {
   EDGE_STROKE_WIDTH,
+  connectedNodeIds,
   filterGraphByGroups,
   fitToViewTransform,
   groupCounts,
@@ -81,6 +82,20 @@ const HIT_TARGET_RADIUS_CSS = 12;
 // so a focused view is self-describing even when every member is small -
 // UI-12.
 const LABEL_RADIUS_THRESHOLD = 14;
+// Size-threshold labels only auto-render once zoomed in at least this far -
+// at the maintainer's real corpus the default fit lands around k=0.6, well
+// above this, but zooming out again (wheel) hides them rather than
+// smearing text across a shrunk cluster. Highlighted-neighbourhood labels
+// ignore this: a learner who explicitly asked to see one node's
+// neighbourhood should see it labelled regardless of zoom (UI-12 v2).
+const AUTO_LABEL_MIN_ZOOM = 0.35;
+// Minimum CSS px between two label anchors before the lower-priority one is
+// dropped (UI-12 v2's "collision avoidance") - a cheap greedy
+// nearest-neighbour suppression rather than a real text-layout solver,
+// sized for the corpus that motivated this finding (9 always-eligible hub
+// labels). It will not prevent every overlap between two very long titles,
+// but it stops the dense many-label smear the finding measured.
+const MIN_LABEL_SPACING_CSS = 72;
 
 function clamp(n: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, n));
@@ -405,24 +420,45 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
   // centers on that one node, which matters more here than the whole graph
   // being visible at once - and that priority holds during filtering too,
   // since neither effect's dependencies change because of it.
+  //
+  // Fits to CONNECTED nodes only (UI-12 v2) - a node with no edge at all
+  // never gets pulled toward the rest of the layout by the tick loop above,
+  // so it drifts out under pure repulsion and, left in the fit calculation,
+  // drags the zoom out to include it: measured on the maintainer's vault,
+  // 35 of 200 nodes are edgeless and the fit including them left the
+  // connected majority in about 6% of the canvas. A totally edgeless graph
+  // (connected.size === 0) falls back to fitting every point rather than an
+  // empty fit.
   useEffect(() => {
-    if (!positions || resolvedFocus) return;
+    if (!positions || resolvedFocus || !visibleGraph) return;
     if (hasFitted) return;
-    const fit = fitToViewTransform([...positions.values()], VIEW_SIZE, FIT_MARGIN);
+    const connected = connectedNodeIds(visibleGraph.edges);
+    const fitPoints = connected.size > 0 ? [...positions.entries()].filter(([id]) => connected.has(id)).map(([, p]) => p) : [...positions.values()];
+    const fit = fitToViewTransform(fitPoints, VIEW_SIZE, FIT_MARGIN);
     setTransform({ x: fit.x, y: fit.y, k: clamp(fit.k, MIN_ZOOM, MAX_ZOOM) });
     setHasFitted(true);
-  }, [positions, resolvedFocus, hasFitted]);
+  }, [positions, resolvedFocus, hasFitted, visibleGraph]);
 
   // Center the view on the focused node once, the first time both the focus
   // value and the laid-out positions are available - never re-fired by a
   // later pan or drag, and re-armed only when the focus value itself changes
   // (route from LessonPage/CoursePage, or the user editing the URL).
+  //
+  // The rendered transform is `translate(x y) scale(k)`, which scales a
+  // point BEFORE translating it (screenPos = pos*k + transform), so putting
+  // a node at the origin needs `x = -pos.x * k`, not `-pos.x` (UI-12 v2 bug
+  // found while verifying search: this was already wrong for any existing
+  // `?focus=` deep link whenever fit-to-view had produced k != 1, and got
+  // far more visible once the fit fix above made the default k something
+  // other than the old ~0.2 - a search hit on a node hundreds of user-space
+  // units from the origin landed clipped near the canvas edge instead of
+  // centered).
   useEffect(() => {
     if (!resolvedFocus || !positions) return;
     if (hasCentered === resolvedFocus) return;
     const pos = positions.get(resolvedFocus);
     if (!pos) return;
-    setTransform((t) => ({ ...t, x: -pos.x, y: -pos.y }));
+    setTransform((t) => ({ ...t, x: -pos.x * t.k, y: -pos.y * t.k }));
     setHasCentered(resolvedFocus);
   }, [resolvedFocus, positions, hasCentered]);
 
@@ -619,6 +655,46 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
   // this is never zero.
   const pxPerUnit = baseScalePxPerUnit * transform.k;
 
+  // Which nodes actually get a text label this frame (UI-12 v2). The exact
+  // hovered/focused node - the one thing a hover or a search hit is
+  // actually about - always gets a label, full stop. Everything else
+  // (its highlighted neighbours, and any large node past AUTO_LABEL_MIN_ZOOM)
+  // is greedily accepted anchor-first, then highlighted-before-large, then
+  // largest-first, skipping any candidate whose anchor lands within
+  // MIN_LABEL_SPACING_CSS of one already accepted. Highlighted neighbours do
+  // NOT bypass spacing the way the anchor does: a hub's 2-hop neighbourhood
+  // can be most of the graph (measured: focusing one well-connected course
+  // hub put 68 of 200 nodes in the highlight set), and unconditionally
+  // labelling all of them recreates exactly the smear this exists to fix.
+  const labelIds = new Set<string>();
+  {
+    const anchorId = hoveredId ?? resolvedFocus ?? null;
+    const anchorPos = anchorId ? positions.get(anchorId) : undefined;
+    const accepted: Point[] = [];
+    if (anchorPos) {
+      labelIds.add(anchorId!);
+      accepted.push(anchorPos);
+    }
+    const candidates = visibleGraph.nodes
+      .map((node) => {
+        if (node.id === anchorId) return null;
+        const pos = positions.get(node.id);
+        if (!pos) return null;
+        const inHighlight = highlight ? highlight.has(node.id) : false;
+        const eligible = inHighlight || (nodeRadius(node.in_degree) >= LABEL_RADIUS_THRESHOLD && transform.k >= AUTO_LABEL_MIN_ZOOM);
+        if (!eligible) return null;
+        return { id: node.id, pos, inHighlight, r: nodeRadius(node.in_degree) };
+      })
+      .filter((c): c is { id: string; pos: Point; inHighlight: boolean; r: number } => c !== null)
+      .sort((a, b) => Number(b.inHighlight) - Number(a.inHighlight) || b.r - a.r);
+    for (const c of candidates) {
+      const tooClose = accepted.some((p) => Math.hypot(c.pos.x - p.x, c.pos.y - p.y) * pxPerUnit < MIN_LABEL_SPACING_CSS);
+      if (tooClose) continue;
+      accepted.push(c.pos);
+      labelIds.add(c.id);
+    }
+  }
+
   return (
     <section className="graph-page">
       <h1>
@@ -675,18 +751,24 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
         Skip past graph nodes
       </a>
       <div className="graph-canvas-wrap">
-        {nothingVisible ? (
-          // All groups toggled off (design point 6): the existing empty
-          // state, not a blank canvas and not a crash. The legend/filter
-          // panel stays rendered below so a group can be turned back on -
-          // there is no other way back in, since filter state is component
-          // state only (design point 10, no URL).
-          <EmptyState
-            title="No groups selected"
-            body="Every course group is turned off in the legend and filter panel. Turn one back on to see the graph again."
-          />
-        ) : (
-          <svg
+        {/* Its own bordered box (UI-12 v2), separate from the legend column,
+            so the drawing area reads as visually distinct from the legend
+            rather than both looking like they share one backdrop - see
+            graph.css: the base sheet's canvas background/border moved here
+            from graph-canvas-wrap, which is now a bare flex row. */}
+        <div className="graph-canvas">
+          {nothingVisible ? (
+            // All groups toggled off (design point 6): the existing empty
+            // state, not a blank canvas and not a crash. The legend/filter
+            // panel stays rendered below so a group can be turned back on -
+            // there is no other way back in, since filter state is component
+            // state only (design point 10, no URL).
+            <EmptyState
+              title="No groups selected"
+              body="Every course group is turned off in the legend and filter panel. Turn one back on to see the graph again."
+            />
+          ) : (
+            <svg
             ref={setSvgRef}
             className="graph-svg"
             viewBox={`${-half} ${-half} ${VIEW_SIZE} ${VIEW_SIZE}`}
@@ -733,11 +815,10 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
                 const padR = Math.max(r, HIT_TARGET_RADIUS_CSS / pxPerUnit);
                 const dimmed = highlight ? !highlight.has(node.id) : false;
                 const clickable = node.route !== null;
-                const inHighlight = highlight ? highlight.has(node.id) : false;
-                // Labelled when the glyph clears the size threshold, or
-                // whenever this node is in the current hover/focus
-                // neighbourhood, regardless of size (UI-12).
-                const showLabel = r >= LABEL_RADIUS_THRESHOLD || inHighlight;
+                // Computed once above, over the whole visible node list, so
+                // a collision between two candidates can be resolved by
+                // priority instead of render order (UI-12 v2).
+                const showLabel = labelIds.has(node.id);
                 // A ghost node has no route and no file to open - it renders as
                 // an image rather than a link, never a click target
                 // (docs/specs/graph.md, "How it behaves" item 6), and its label
@@ -801,7 +882,8 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
               })}
             </g>
           </svg>
-        )}
+          )}
+        </div>
 
         {/* A real column beside the canvas, not an overlay on top of it
             (UI-12: the legend used to cover 27% of the canvas and hide 8

@@ -7,12 +7,18 @@
 // reasons about a stale slug or a fallback rule.
 //
 // Sections are native <details>/<summary>: open/closed state persists per
-// tenant in the browser's storage (courseList.ts owns the pure logic, this
-// page is the only place in the client that names the browser storage
-// global). A filter input narrows the list to matching titles and slugs;
-// while filtering, every matching section renders forced open and a toggle
-// on it is discarded rather than written back - see the `key` on <details>
-// below for how that stays visually consistent with React's controlled value.
+// tenant in the browser's storage (courseList.ts owns the pure logic).
+// A filter input narrows the list to matching titles and slugs; while
+// filtering, every matching section renders forced open and a toggle on it
+// is discarded rather than written back - see the `key` on <details> below
+// for how that stays visually consistent with React's controlled value.
+//
+// UI-16: this is also where the resume card renders, reading the same
+// storage LessonPage writes to on mount. Two files in app/client/src/ now
+// name the browser storage global - this one and LessonPage.tsx - because
+// a resume affordance has to be written from the page a learner leaves and
+// read from the page they return to; there is no third page to route it
+// through instead.
 import { useEffect, useState, type ReactNode } from 'react';
 import { useResource } from '../useResource';
 import { useRegisterRevalidate } from '../RevalidateContext';
@@ -21,10 +27,12 @@ import { EmptyState } from '../components/EmptyState';
 import { ErrorState } from '../components/ErrorState';
 import { InfoTip } from '../components/InfoTip';
 import { asMastery, type ClientMastery } from '../clientTypes';
+import { lessonHref } from '../courseContext.ts';
 import {
   buildCourseListView,
   dueCountsByCourse,
   readOpenState,
+  readResumeState,
   withAllOpen,
   withSectionOpen,
   writeOpenState,
@@ -34,7 +42,7 @@ import type { CourseNode, GroupsResponse, ProgressResponse, TreeResponse } from 
 
 // Accessing localStorage can throw when storage is blocked (private mode,
 // locked-down browser settings) - fall back to session-only rather than a
-// broken page. This is the only place in app/client/src/ that may name it.
+// broken page.
 let store: SectionStore | null;
 try {
   store = localStorage;
@@ -150,6 +158,14 @@ export function TenantCoursesPage({ tenant }: { tenant: string }) {
   const ungrouped = groups.data ? groups.data.ungrouped : courses.map((c) => c.slug);
   const warnings = [...(tree.data?.warnings ?? []), ...(groups.data?.warnings ?? [])];
 
+  // UI-16: resume where you left off. Read fresh on every render rather than
+  // in state - the record only ever changes by visiting a lesson, which
+  // remounts this page on the way back, so there is no stale-closure risk to
+  // guard against. Gated on the course still existing in `bySlug`: a course
+  // removed since the lesson was opened must not offer a dead link.
+  const resume = readResumeState(store, tenant);
+  const resumeCourse = resume ? bySlug.get(resume.course) : undefined;
+
   // UI-08/UI-09: progress is a third, independent fetch - while it is still
   // in flight or has failed, the list renders exactly as it did before this
   // finding rather than blocking on it. asMastery guards the same whole-vault
@@ -208,6 +224,12 @@ export function TenantCoursesPage({ tenant }: { tenant: string }) {
       <h1>
         Courses <InfoTip entry="courseGroups" />
       </h1>
+      {resume && resumeCourse && (
+        <p className="resume-line">
+          Resume: <a href={lessonHref(tenant, resume.course, resume.module, resume.file)}>{resume.lessonTitle}</a>{' '}
+          ({resumeCourse.title})
+        </p>
+      )}
       {progress.data && (
         <p className="due-summary-line">
           {totalDue === 0

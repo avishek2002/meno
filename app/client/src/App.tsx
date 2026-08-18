@@ -1,21 +1,35 @@
 // Route dispatch + the header shell. Holds the ref the "Re-read files" button
 // reads from - see RevalidateContext.tsx for how pages register into it.
-import { useCallback, useEffect, useRef, type ReactNode } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, type ReactNode } from 'react';
 import { routeTitle, useRoute } from './router';
 import { RevalidateContext } from './RevalidateContext';
 import { Header } from './components/Header';
+import { AsyncStatus } from './components/AsyncStatus';
 import { TenantsPage } from './pages/TenantsPage';
-import { TenantCoursesPage } from './pages/TenantCoursesPage';
-import { CoursePage } from './pages/CoursePage';
-import { LessonPage } from './pages/LessonPage';
-import { TodosPage } from './pages/TodosPage';
-import { ProgressPage } from './pages/ProgressPage';
-import { InsightsPage } from './pages/InsightsPage';
-import { CostPage } from './pages/CostPage';
-import { GraphPage } from './pages/GraphPage';
-import { NotePage } from './pages/NotePage';
 import { NotFoundPage } from './pages/NotFoundPage';
-import { GuidePage } from './pages/GuidePage';
+
+// UI-17: everything past the landing page was statically imported into the
+// entry chunk regardless of which route the learner actually opened. These
+// nine are route-level React.lazy - one dynamic import per page, code-split
+// by Vite automatically - so the entry bundle carries only the shell, the
+// router and the one route (home) reachable before any tenant is known.
+// TenantsPage and NotFoundPage stay static: both are small and one of them
+// renders on first paint of almost every session. GuidePage's own content
+// (guide/content.ts) is worth splitting out even though the header's
+// InfoTip already forces guide/glossary.ts into every bundle regardless -
+// the glossary alone is a fraction of what GuidePage pulls in. The Suspense
+// fallback below reuses AsyncStatus rather than inventing a second loading
+// style (UI-03 built the one this app has).
+const GuidePage = lazy(() => import('./pages/GuidePage').then((m) => ({ default: m.GuidePage })));
+const TenantCoursesPage = lazy(() => import('./pages/TenantCoursesPage').then((m) => ({ default: m.TenantCoursesPage })));
+const CoursePage = lazy(() => import('./pages/CoursePage').then((m) => ({ default: m.CoursePage })));
+const LessonPage = lazy(() => import('./pages/LessonPage').then((m) => ({ default: m.LessonPage })));
+const TodosPage = lazy(() => import('./pages/TodosPage').then((m) => ({ default: m.TodosPage })));
+const ProgressPage = lazy(() => import('./pages/ProgressPage').then((m) => ({ default: m.ProgressPage })));
+const InsightsPage = lazy(() => import('./pages/InsightsPage').then((m) => ({ default: m.InsightsPage })));
+const CostPage = lazy(() => import('./pages/CostPage').then((m) => ({ default: m.CostPage })));
+const GraphPage = lazy(() => import('./pages/GraphPage').then((m) => ({ default: m.GraphPage })));
+const NotePage = lazy(() => import('./pages/NotePage').then((m) => ({ default: m.NotePage })));
 
 export default function App() {
   const route = useRoute();
@@ -54,7 +68,10 @@ export default function App() {
       page = <TenantCoursesPage tenant={route.params.tenant} />;
       break;
     case 'course':
-      page = <CoursePage tenant={route.params.tenant} course={route.params.course} />;
+      // route.params.module is the optional #module anchor (UI-10), mirroring
+      // guide's optional trailing #section fragment - undefined when the hash
+      // carries none, which CoursePage treats as "no anchor to scroll to".
+      page = <CoursePage tenant={route.params.tenant} course={route.params.course} module={route.params.module} />;
       break;
     case 'lesson':
       page = (
@@ -100,7 +117,7 @@ export default function App() {
           route change, so a keyboard or screen-reader user gets a signal that
           navigation happened. */}
       <main className="content" ref={mainRef} tabIndex={-1}>
-        {page}
+        <Suspense fallback={<AsyncStatus message="Loading..." />}>{page}</Suspense>
       </main>
     </RevalidateContext.Provider>
   );

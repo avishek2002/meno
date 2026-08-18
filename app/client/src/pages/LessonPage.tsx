@@ -1,6 +1,6 @@
 // #/t/:tenant/c/:course/m/:module/l/:file - lesson body, interactive checks,
 // mermaid diagrams, references, and the once-after-20s read-progress ping.
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useResource } from '../useResource';
 import { useCourseContext } from '../useCourseContext';
 import { useRegisterRevalidate } from '../RevalidateContext';
@@ -11,9 +11,25 @@ import { ReferencesPanel } from '../components/ReferencesPanel';
 import { Breadcrumb, type BreadcrumbSegment } from '../components/Breadcrumb';
 import { LessonNav } from '../components/LessonNav';
 import { courseHref } from '../courseContext.ts';
+import { writeResumeState, type SectionStore } from '../courseList.ts';
 import { postJson } from '../api';
 import { parseSources } from '../clientTypes';
 import type { LessonResponse } from '../../../shared/types.ts';
+
+// UI-16: the resume affordance persists to the same guarded localStorage
+// TenantCoursesPage already uses for open-state, under a second key
+// (courseList.ts's RESUME_STATE_PREFIX). Recording happens here, on the
+// lesson page, so this is a second, small, independent guard rather than a
+// shared import from TenantCoursesPage - the two pages have no other reason
+// to depend on each other, and the try/catch is three lines. See
+// app/test/course-list.test.ts's localStorage source grep, which allowlists
+// both files by name rather than asserting exactly one.
+let resumeStore: SectionStore | null;
+try {
+  resumeStore = localStorage;
+} catch {
+  resumeStore = null;
+}
 
 interface LessonPageProps {
   tenant: string;
@@ -25,13 +41,32 @@ interface LessonPageProps {
 export function LessonPage({ tenant, course, module, file }: LessonPageProps) {
   const url = `/api/v1/${encodeURIComponent(tenant)}/lesson/${encodeURIComponent(course)}/${encodeURIComponent(module)}/${encodeURIComponent(file)}`;
   const { data, error, status, loading, revalidate } = useResource<LessonResponse>(url);
-  useRegisterRevalidate(revalidate);
 
   // UI-06: the breadcrumb and prev/next both come from the same course fetch
   // that powers the course page (UI-02), never a lesson-local guess at the
   // course/module title.
   const courseCtx = useCourseContext(tenant, course);
   const neighbours = courseCtx.neighbours(module, file);
+
+  // Cross-track gap: this page reads from two fetches - the lesson body and
+  // useCourseContext's /course call - but only ever registered the first
+  // one's revalidate. "Re-read files" refreshed the body while leaving the
+  // breadcrumb and prev/next stale against the old course structure. Both
+  // have to run for a refresh to mean what it says.
+  const revalidateBoth = useCallback((): void => {
+    revalidate();
+    courseCtx.revalidate();
+  }, [revalidate, courseCtx.revalidate]);
+  useRegisterRevalidate(revalidateBoth);
+
+  // UI-16: record this lesson as the one to resume, once its title is known.
+  // Deliberately not gated on the 20s read-progress ping below - opening the
+  // lesson is what "where you left off" means, not lingering on it.
+  useEffect(() => {
+    if (!data) return;
+    const lessonTitle = typeof data.frontmatter.title === 'string' ? data.frontmatter.title : file;
+    writeResumeState(resumeStore, tenant, { course, module, file, lessonTitle });
+  }, [tenant, course, module, file, data]);
 
   useEffect(() => {
     const timer = setTimeout(() => {

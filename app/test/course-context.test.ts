@@ -11,6 +11,7 @@ import {
   buildCourseStructure,
   courseDirOfPath,
   courseHref,
+  courseModuleHref,
   findLesson,
   lessonHref,
   lessonNeighbours,
@@ -89,6 +90,10 @@ test('routes drop the .md suffix and percent-encode every segment', () => {
   assert.equal(stripMd('staging'), 'staging');
   assert.equal(courseHref('a b', 'c/d'), '#/t/a%20b/c/c%2Fd');
   assert.equal(lessonHref('t', 'c', 'm', 'f.md'), '#/t/t/c/c/m/m/l/f');
+});
+
+test('courseModuleHref appends an unencoded #module fragment to the course href', () => {
+  assert.equal(courseModuleHref('alice', 'git-fundamentals', 'm1-basics'), '#/t/alice/c/git-fundamentals#m1-basics');
 });
 
 test('findLesson matches a route pair with or without the .md suffix, and returns null otherwise', () => {

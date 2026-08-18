@@ -229,6 +229,28 @@ export function filterGraphByGroups<N extends { id: string; group: string | null
   return { nodes: visibleNodes, edges: visibleEdges };
 }
 
+/**
+ * The id of every node that is a `source` or `target` of at least one edge
+ * (either direction, since edges are undirected - invariant 4). Feeds
+ * fit-to-view's node filter below: a node with no edge at all has nothing
+ * pulling it toward the rest of the layout during the physics tick loop, so
+ * it stays wherever `seedPosition` put it and, empirically, `forceManyBody`'s
+ * repulsion pushes it further out still - one disconnected node at the
+ * corpus this was measured against (200 nodes, 35 with zero edges) settled
+ * over 2800 svg user-space units from the connected majority's own settled
+ * span of roughly 700. Fitting the view to every point let that handful of
+ * edgeless nodes dictate the zoom for the whole graph, shrinking the
+ * connected majority into about 6% of the canvas (UI-12 v2).
+ */
+export function connectedNodeIds(edges: readonly LayoutEdge[]): Set<string> {
+  const ids = new Set<string>();
+  for (const e of edges) {
+    ids.add(e.source);
+    ids.add(e.target);
+  }
+  return ids;
+}
+
 export function fitToViewTransform(points: readonly SeedPosition[], viewSize: number, margin: number): FitTransform {
   if (points.length === 0) return { x: 0, y: 0, k: 1 };
   if (points.length === 1) return { x: -points[0].x, y: -points[0].y, k: 1 };
