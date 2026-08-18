@@ -15,6 +15,17 @@ _None open._
 
 ## Done
 
+- 2026-08-18 - **`PROGRESS.md` now merges with the union driver, so parallel branches stop
+  conflicting on it.** Every feature prepends its Done entry at the same anchor, which made this
+  file the one guaranteed conflict in any parallel build - three in a single week, each resolved
+  the same way, by keeping both sides. `.gitattributes` marks it `merge=union`, which does exactly
+  that automatically: for a conflicting region git takes all of one side's lines then all of the
+  other's, so multi-line entries survive whole. The cost is that the two blocks land in merge
+  order rather than date order, which is a cosmetic fix on the next edit rather than a blocking
+  one. Scoped to this file alone on purpose - union on source silently produces code that merges
+  cleanly and compiles wrong, and `docs/architecture.md`'s spec table collides on version numbers,
+  which is a semantic clash that has to be seen rather than concatenated.
+
 - 2026-08-18 - **Merged the note-breadcrumb PR (#43) against wave 2's own UI-15 work; the
   "two `<h1>`s" call below is superseded.** Both sessions touched `NotePage`: #43 built
   server-side course/domain resolution (`resolveNoteCourse` in `app/server/tree.ts`,
