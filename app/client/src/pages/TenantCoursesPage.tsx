@@ -155,16 +155,27 @@ export function TenantCoursesPage({ tenant, section }: { tenant: string; section
   }, [sectionExists, forcedSectionId]);
 
   if (tree.loading && !tree.data) return <p className="status-line">Loading courses...</p>;
+  // /groups is waited for as well, not only /tree. The two resolve
+  // independently, and on the render where the tree has landed but the groups
+  // have not, `ungrouped` falls back to every slug and the list renders one
+  // transient `Ungrouped` section - a visible flash of a layout the tenant
+  // does not have, and a section list that `writeOpenState` would prune the
+  // learner's real stored sections against if anything persisted against it.
+  // A groups request that *fails* still falls through to that fallback, which
+  // is what the fallback is actually for: an ungrouped list beats no list.
+  if (groups.loading && !groups.data) return <p className="status-line">Loading courses...</p>;
   if (tree.error) return <p className="status-line status-error">Could not load courses: {tree.error}</p>;
   if (courses.length === 0) return <EmptyState title={`No courses yet for ${tenant}`} />;
 
-  const toggleSection = (id: string, next: boolean): void => {
+  const toggleSection = (id: string, next: boolean, rendered: boolean): void => {
     // decideToggle carries the whole release/persist decision, including the
-    // programmatic-forced-open case and the filtering-must-come-first case -
-    // both were browser-only regressions once (see the comment on
-    // decideToggle in courseList.ts), which is exactly why the decision does
-    // not live here as inline conditionals any more.
-    const decision = decideToggle({ sectionId: id, activeForcedId, next, filtering: view.filtering });
+    // is-this-even-a-user-action case (`rendered`, which covers React's own
+    // mount and Collapse all attribute writes as well as the deep link's
+    // programmatic open) and the filtering-must-come-first case - every one
+    // of them was a browser-only defect (see the comment on decideToggle in
+    // courseList.ts), which is exactly why the decision does not live here as
+    // inline conditionals any more.
+    const decision = decideToggle({ sectionId: id, activeForcedId, next, rendered, filtering: view.filtering });
     if (decision.release) setReleasedSection(id);
     if (decision.persist) {
       setOpenState(writeOpenState(store, tenant, withSectionOpen(openState, id, next), view.allSectionIds));
@@ -247,7 +258,7 @@ export function TenantCoursesPage({ tenant, section }: { tenant: string; section
               tabIndex={forced ? -1 : undefined}
               className="group-section"
               open={forced || s.open}
-              onToggle={(e) => toggleSection(s.id, e.currentTarget.open)}
+              onToggle={(e) => toggleSection(s.id, e.currentTarget.open, forced || s.open)}
             >
               <summary>
                 {s.title} <span className="group-count">{s.courses.length}</span>

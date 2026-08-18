@@ -11,20 +11,31 @@ _Last updated: 2026-08-18_
 
 ## Pending decisions (needs maintainer)
 
-- 2026-08-18 - **The course-list collapse state has never survived a reload** - a bug on `main`,
-  found while browser-verifying the note breadcrumb, deliberately left unfixed there to keep that change to its
-  agreed scope. Close a section, reload, and it is open again with the stored preference deleted.
-  Mechanism: the browser fires `toggle` when the `<details>` mounts, `toggleSection` reads that as a
-  user action and persists `true`, `writeOpenState` normalizes `true` entries away, the object
-  empties, and the key is removed. Reproduced against `main` on the committed example tenant, and
-  the same class of defect the breadcrumb work hit. Behavior 9 and invariant 13 in
-  `docs/specs/app.md` both describe this feature as working, so either the code or the spec is
-  wrong and one of them has to move. **The decision:** fix it (the guard is small - ignore a toggle
-  whose value already matches what was rendered) or write the limitation into the spec. Fixing it
-  is the recommendation; it is the only browser-persisted state the app has, and it silently does
-  not work.
+_None open._
 
 ## Done
+
+- 2026-08-18 - **v1.11: the course-list collapse state now survives a reload.** It never had. The
+  decision logged here was to fix it rather than write the limitation into the spec, and the fix
+  turned out to need two changes, not the one the note predicted, because two defects were lining
+  up. Reproducing it in a headless browser against the example tenant was what separated them.
+  React renders the list the moment `/tree` resolves, and `/groups` has not always landed by then,
+  so `ungrouped` falls back to every course and a transient `Ungrouped` section renders; setting
+  `open` on it fires a mount-time `toggle`; `toggleSection` read that as a click and persisted
+  against a section list holding only `section:ungrouped`, so `writeOpenState` pruned the real ids
+  away and called `removeItem`. The later mount toggles for the real sections then persisted
+  `true`, which normalization drops as the default - which is why the list came back fully
+  expanded and looked correct, and why v1.6 and the v1.10 walk both missed it. **`decideToggle`
+  now takes what was rendered** and discards any toggle whose value already agrees with it: the
+  browser fires `toggle` for every `open` attribute change including React's own, so a mount, a
+  remount, and `Collapse all` all produce events no learner asked for. That subsumes the old
+  forced-section special case rather than sitting beside it - forced means rendered open - so the
+  rule is one rule now. **And the page waits for `/groups` as well as `/tree`**, which removes the
+  transient section list the pruning ran against, plus a visible flash of a layout the tenant does
+  not have. A `/groups` request that genuinely fails still falls through to the ungrouped
+  fallback, which is what that fallback is for. Gate-covered as pure logic; the rendering that
+  produces the events is not, so the reload, both bulk controls, the filter's forced expansion and
+  its restore on Escape, and the deep-link force/release were re-observed in the browser.
 
 - 2026-08-18 - **A note page was a dead end titled with a raw file path.** `NotePage` printed the
   vault path as inert text, so the screen every wikilink lands on had no way back to the course it

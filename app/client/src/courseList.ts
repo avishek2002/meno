@@ -99,18 +99,26 @@ export function sectionForCourse(sections: readonly ListSection[], slug: string)
 
 /** What a native <details> toggle event should do to force-release state and
  *  to persisted open/collapse state, given everything the decision depends
- *  on. Two failure modes this function exists to rule out, both found by
- *  browser testing rather than the gate, which is why the whole decision
- *  lives here instead of as inline conditionals in TenantCoursesPage:
+ *  on. The whole decision lives here, rather than as inline conditionals in
+ *  TenantCoursesPage, because every failure mode below was found by browser
+ *  testing rather than by the gate - none of them has a DOM to fail in.
  *
- *  1. TenantCoursesPage forces a deep-linked section's `open` attribute to
- *     true by remounting the element (see the `key` comment there) - the
- *     browser fires a `toggle` event for that programmatic open exactly as
- *     it would for a real click. Treating it as user input would release
- *     the force and persist `true` on the very render that applied it,
- *     silently erasing whatever collapse state the user had actually saved
- *     for that section. `next === true` on the currently-forced id is that
- *     event, and it releases nothing and persists nothing.
+ *  1. A `toggle` event only means "the user did this" when the element's new
+ *     state disagrees with the state we last rendered for it. The browser
+ *     fires `toggle` for any change to the `open` attribute, including the
+ *     ones React itself makes: setting `open` on a freshly mounted (or
+ *     remounted) `<details>` fires one, and so does Collapse all removing
+ *     it. Reading those as user input is how the collapse state came to be
+ *     erased on every page load - each open section reported `true` at
+ *     mount, the handler wrote it back, and `writeOpenState` normalization
+ *     pruned the rest of the object away against a section list that was
+ *     still resolving. `next === rendered` is that whole family of events,
+ *     and it releases nothing and persists nothing. The deep link's own
+ *     programmatic open (TenantCoursesPage remounts the forced section to
+ *     make the `open` prop take effect - see the `key` comment there) is one
+ *     instance of it rather than a case of its own: forced means rendered
+ *     open, so the toggle that force produces reports `true` against a
+ *     `rendered` of `true` and is discarded here.
  *
  *  2. While filtering, every matching section renders forced open by the
  *     filter itself (buildCourseListView pins `open: true`), and a toggle
@@ -121,8 +129,8 @@ export function sectionForCourse(sections: readonly ListSection[], slug: string)
  *     filter, so the section pops back open on its own. The filtering check
  *     has to gate the release exactly as it already gates the persist, or
  *     "discarded" stops being true for the release half of the decision.
- *     That is why filtering is checked first, before the forced-id case
- *     above even runs. */
+ *     That is why filtering is checked first, before the rendered-state
+ *     comparison above even runs. */
 export interface ToggleDecision {
   /** call setReleasedSection(sectionId) */
   release: boolean;
@@ -133,12 +141,15 @@ export interface ToggleDecision {
 export function decideToggle(input: {
   sectionId: string;
   activeForcedId: string | null;
+  /** the element's state after the toggle */
   next: boolean;
+  /** the `open` value the last render gave this section (`forced || s.open`) */
+  rendered: boolean;
   filtering: boolean;
 }): ToggleDecision {
-  const { sectionId, activeForcedId, next, filtering } = input;
+  const { sectionId, activeForcedId, next, rendered, filtering } = input;
   if (filtering) return { release: false, persist: false };
-  if (sectionId === activeForcedId && next === true) return { release: false, persist: false };
+  if (next === rendered) return { release: false, persist: false };
   return { release: sectionId === activeForcedId, persist: true };
 }
 
