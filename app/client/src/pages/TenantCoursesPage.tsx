@@ -271,7 +271,7 @@ export function TenantCoursesPage({ tenant, section }: { tenant: string; section
       />
     );
   }
-  if (courses.length === 0) return <EmptyState title={`No courses yet for ${tenant}`} />;
+  if (courses.length === 0) return <EmptyState headingLevel="h1" title={`No courses yet for ${tenant}`} />;
 
   const toggleSection = (id: string, next: boolean, rendered: boolean): void => {
     // decideToggle carries the whole release/persist decision, including the
@@ -319,8 +319,8 @@ export function TenantCoursesPage({ tenant, section }: { tenant: string; section
 
   return (
     <section>
-      <h1>
-        Courses <InfoTip entry="courseGroups" />
+      <h1 aria-labelledby="courses-heading">
+        <span id="courses-heading">Courses</span> <InfoTip entry="courseGroups" />
       </h1>
       {resume && resumeCourse && (
         <p className="resume-line">

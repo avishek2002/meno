@@ -11,6 +11,7 @@ import { useCallback, useMemo, type ReactNode } from 'react';
 import { useResource } from '../useResource';
 import { useRegisterRevalidate } from '../RevalidateContext';
 import { AsyncStatus } from '../components/AsyncStatus';
+import { EmptyState } from '../components/EmptyState';
 import { ErrorState } from '../components/ErrorState';
 import type { CostResponse, TreeResponse } from '../../../shared/types.ts';
 import { buildCourseStructure, type CourseStructure } from '../courseContext.ts';
@@ -63,17 +64,16 @@ export function CostPage({ tenant }: { tenant: string }) {
 
   if (data.reason === 'no-snapshot' || !data.snapshot) {
     return (
-      <div className="empty-state" data-meno-empty>
-        <h2>No cost snapshot yet for {tenant}</h2>
-        <p>
-          Cost reports the token spend of the agent transcripts that wrote this tenant&apos;s courses, priced at
-          published list rates. Nothing has been measured on this machine yet.
-        </p>
+      <EmptyState
+        headingLevel="h1"
+        title={`No cost snapshot yet for ${tenant}`}
+        body="Cost reports the token spend of the agent transcripts that wrote this tenant's courses, priced at published list rates. Nothing has been measured on this machine yet."
+      >
         <p>To generate one, run:</p>
         <p>
           <code>{data.how_to_generate}</code>
         </p>
-      </div>
+      </EmptyState>
     );
   }
 
@@ -124,12 +124,12 @@ export function CostPage({ tenant }: { tenant: string }) {
 
       <section className="cost-section">
         <h2>Courses</h2>
-        <table>
+        <table aria-label="Course costs">
           <thead>
             <tr>
-              <th>Course</th>
-              <th>Cost</th>
-              <th>Scope</th>
+              <th scope="col">Course</th>
+              <th scope="col">Cost</th>
+              <th scope="col">Scope</th>
             </tr>
           </thead>
           {snap.courses.length === 0 ? (

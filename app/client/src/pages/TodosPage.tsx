@@ -125,8 +125,8 @@ export function TodosPage({ tenant }: { tenant: string }) {
 
   return (
     <section>
-      <h1>
-        Todos <InfoTip entry="todosShared" />
+      <h1 aria-labelledby="todos-heading">
+        <span id="todos-heading">Todos</span> <InfoTip entry="todosShared" />
       </h1>
       {notice && <p className="notice">{notice}</p>}
 
@@ -140,7 +140,12 @@ export function TodosPage({ tenant }: { tenant: string }) {
         />
         <label className="todo-create-select">
           Kind <InfoTip entry="todoKind" />
-          <select value={newKind} onChange={(e) => setNewKind(e.target.value as TodoKind)} disabled={busy === 'new'}>
+          <select
+            aria-label="Kind"
+            value={newKind}
+            onChange={(e) => setNewKind(e.target.value as TodoKind)}
+            disabled={busy === 'new'}
+          >
             {TODO_KIND_INFO.map((k) => (
               <option key={k.kind} value={k.kind}>
                 {k.label}
@@ -150,7 +155,12 @@ export function TodosPage({ tenant }: { tenant: string }) {
         </label>
         <label className="todo-create-select">
           Audience <InfoTip entry="todoAudience" />
-          <select value={newAudience} onChange={(e) => setNewAudience(e.target.value as TodoAudience)} disabled={busy === 'new'}>
+          <select
+            aria-label="Audience"
+            value={newAudience}
+            onChange={(e) => setNewAudience(e.target.value as TodoAudience)}
+            disabled={busy === 'new'}
+          >
             {TODO_AUDIENCE_INFO.map((a) => (
               <option key={a.audience} value={a.audience}>
                 {a.label}
@@ -191,6 +201,7 @@ export function TodosPage({ tenant }: { tenant: string }) {
                         checked={t.done}
                         disabled={busy === t.line}
                         onChange={() => void toggleDone(t.line, !t.done)}
+                        aria-label={t.text}
                       />
                       {editing === t.line ? (
                         <input

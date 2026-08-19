@@ -94,15 +94,21 @@ export function InsightsPage({ tenant }: { tenant: string }) {
   if (!data) return null;
 
   if (data.basis.ledger_lines === 0) {
-    return <EmptyState title={`No study activity yet for ${tenant}`} body="Insights has nothing to report until a course exists and study begins." />;
+    return (
+      <EmptyState
+        headingLevel="h1"
+        title={`No study activity yet for ${tenant}`}
+        body="Insights has nothing to report until a course exists and study begins."
+      />
+    );
   }
 
   const { sessions, reviews, gates, evidence, usage, vault, limits, notes } = data;
 
   return (
     <section className="insights-page">
-      <h1>
-        Insights <InfoTip entry="insights" />
+      <h1 aria-labelledby="insights-heading">
+        <span id="insights-heading">Insights</span> <InfoTip entry="insights" />
       </h1>
       <p className="status-line">As of {data.as_of}, over {data.basis.ledger_lines} ledger lines.</p>
       <p className="status-line">
@@ -131,13 +137,13 @@ export function InsightsPage({ tenant }: { tenant: string }) {
           </Stat>
         </div>
         {reviews.overdue.length > 0 && (
-          <table>
+          <table aria-label="Overdue reviews">
             <thead>
               <tr>
-                <th>Course</th>
-                <th>Concept</th>
-                <th>Next review</th>
-                <th>Days overdue</th>
+                <th scope="col">Course</th>
+                <th scope="col">Concept</th>
+                <th scope="col">Next review</th>
+                <th scope="col">Days overdue</th>
               </tr>
             </thead>
             <tbody>
@@ -174,13 +180,13 @@ export function InsightsPage({ tenant }: { tenant: string }) {
             <p className="status-line">
               Concepts you overrode past a failed gate that have not yet earned a fresh agent-graded transfer score.
             </p>
-            <table>
+            <table aria-label="Unrepaid overrides">
               <thead>
                 <tr>
-                  <th>Course</th>
-                  <th>Concept</th>
-                  <th>Gated</th>
-                  <th>Reinject after</th>
+                  <th scope="col">Course</th>
+                  <th scope="col">Concept</th>
+                  <th scope="col">Gated</th>
+                  <th scope="col">Reinject after</th>
                 </tr>
               </thead>
               <tbody>
@@ -216,12 +222,12 @@ export function InsightsPage({ tenant }: { tenant: string }) {
           <p className="status-line">Recognition-only: {evidence.recognition_only_concepts.join(', ')}</p>
         )}
         {evidence.mastered_on_old_evidence.length > 0 && (
-          <table>
+          <table aria-label="Concepts mastered on old evidence">
             <thead>
               <tr>
-                <th>Course</th>
-                <th>Concept</th>
-                <th>Days since transfer evidence</th>
+                <th scope="col">Course</th>
+                <th scope="col">Concept</th>
+                <th scope="col">Days since transfer evidence</th>
               </tr>
             </thead>
             <tbody>
@@ -240,14 +246,14 @@ export function InsightsPage({ tenant }: { tenant: string }) {
           </table>
         )}
         {evidence.weak_concepts.length > 0 && (
-          <table>
+          <table aria-label="Weak concepts">
             <thead>
               <tr>
-                <th>Course</th>
-                <th>Concept</th>
-                <th>First transfer score</th>
-                <th>Latest transfer score</th>
-                <th>n transfer</th>
+                <th scope="col">Course</th>
+                <th scope="col">Concept</th>
+                <th scope="col">First transfer score</th>
+                <th scope="col">Latest transfer score</th>
+                <th scope="col">n transfer</th>
               </tr>
             </thead>
             <tbody>
@@ -317,12 +323,12 @@ export function InsightsPage({ tenant }: { tenant: string }) {
           </details>
         )}
         {usage.planned_debt.length > 0 && (
-          <table>
+          <table aria-label="Planned lessons not yet generated">
             <thead>
               <tr>
-                <th>Course</th>
-                <th>Module</th>
-                <th>Planned (not yet generated)</th>
+                <th scope="col">Course</th>
+                <th scope="col">Module</th>
+                <th scope="col">Planned (not yet generated)</th>
               </tr>
             </thead>
             <tbody>

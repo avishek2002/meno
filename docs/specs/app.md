@@ -4,8 +4,8 @@
 filter; the group write surface removed), v1.10 (note-path breadcrumb, course deep-link, guarded
 back control), v1.11 (collapse state actually persists), v1.12 (breadcrumb up-navigation,
 truncatable routes, centralized href builders), v1.13 (skip link, header reflow,
-reduced-motion coverage, operable-control contrast), and v1.14 (scroll clearance measured from
-the header). Canonical formats owned elsewhere: check blocks and
+reduced-motion coverage, operable-control contrast), v1.14 (scroll clearance measured from
+the header), and v1.15 (accessible names on controls, tables and headings). Canonical formats owned elsewhere: check blocks and
 callouts in
 [generate-module/references/check-formats.md](../../.agents/skills/generate-module/references/check-formats.md),
 todos in
@@ -251,6 +251,35 @@ write-authority seam (decision 14) is enforced in code.
     larger, not smaller. The gap stays in CSS because it is a design decision; the height comes
     from JavaScript because it is a fact about the DOM. All three consumers (the guidebook's
     `#section` anchors, the module anchor, the course-list deep link) share the one expression.
+    **Nothing a person operates, and no table, is nameless** (v1.15). An accessible name is
+    computed, not authored, so three separate mechanisms had each been quietly producing the
+    wrong one. A control given no name at all computes to the empty string, which is what the
+    todo checkboxes and the two todo filter selects did; screen-reader users heard the role and
+    nothing else. A control named only by its `placeholder` computes to that placeholder, which
+    is worse than nothing when it repeats: all three cloze inputs on a lesson page answered to
+    "Your answer", so the name identified the widget type rather than the question, and the
+    prompt each one belongs to was never announced. And name-from-content recurses into
+    descendants including interactive ones, so every heading, `<th>` and `<label>` wrapping an
+    `InfoTip` absorbed that button's own `aria-label` into its name: the course list's `h1`
+    announced as `Courses What is "Groups"?`, and four mastery column headers carried their
+    glossary tooltip's question inside the column's name. The fix is the same shape in all three
+    places and adds no visible markup - `aria-label` where the name is a plain string the
+    component already holds, `aria-labelledby` pointing at a span around the visible text where
+    it is not, and `InfoTip` itself left untouched, because `aria-hidden` on a focusable button
+    would trade one violation for another. Tables take an `aria-label` rather than a visible
+    `<caption>` for the same reason: the name was the defect, and adding visible titles is a
+    design change that belongs with the missing subheadings it would expose. Every `<th>` in the
+    nine authored tables now carries `scope`; tables rendered from lesson markdown come through
+    `app/server/markdown.ts` and have no per-table markup to edit, so they are untouched and
+    still open. Full-page empty states now render their heading at `h1`, so a page whose entire
+    body is an empty state is no longer topped by an `h2`; `EmptyState` keeps `h2` as its default
+    for the two call sites that nest under a heading that already exists.
+    The gate cannot verify any of this. `node --test` carries no DOM, so the committed tests are
+    source assertions and the computed names were confirmed once, by hand, by reading Chromium's
+    accessibility tree over the DevTools protocol with Playwright borrowed from a neighbouring
+    project. That is the same borrow-and-return arrangement the v1.13 audit used, and it leaves
+    the same gap: a future regression here fails silently unless somebody looks again.
+
     These came out of an agent-run audit of all twelve pages against WCAG 2.2, the ARIA Authoring
     Practices Guide, and the documented axe-core rule set. What that audit could check was
     structure, names, focus, contrast, geometry and motion; what it could not check was whether
