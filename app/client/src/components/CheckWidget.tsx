@@ -44,7 +44,7 @@ export function CheckWidget({ check, onSubmit }: CheckWidgetProps) {
 
   return (
     <div className={`check-card check-${check.type}${verdictClass}`}>
-      <p className="check-prompt">{check.prompt}</p>
+      <p className="check-prompt" id={`meno-check-prompt-${check.id}`}>{check.prompt}</p>
 
       {check.type === 'mcq' && !result && (
         <form onSubmit={onMcqSubmit}>
@@ -78,6 +78,7 @@ export function CheckWidget({ check, onSubmit }: CheckWidgetProps) {
             onChange={(e) => setClozeText(e.target.value)}
             disabled={pending}
             placeholder="Your answer"
+            aria-labelledby={`meno-check-prompt-${check.id}`}
           />
           <button type="submit" disabled={pending || !clozeText.trim()}>
             Submit

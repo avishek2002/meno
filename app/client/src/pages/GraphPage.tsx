@@ -625,6 +625,7 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
   if (data.nodes.length === 0) {
     return (
       <EmptyState
+        headingLevel="h1"
         title={`No graph yet for ${tenant}`}
         body="Once your vault has notes, they will appear here as a picture of how your learning connects."
       />
@@ -698,8 +699,8 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
 
   return (
     <section className="graph-page">
-      <h1>
-        Graph <InfoTip entry="graphView" />
+      <h1 aria-labelledby="graph-heading">
+        <span id="graph-heading">Graph</span> <InfoTip entry="graphView" />
       </h1>
       {data.warnings.length > 0 && (
         <div className="warnings-box">

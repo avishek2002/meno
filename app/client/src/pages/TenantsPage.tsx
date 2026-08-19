@@ -90,6 +90,7 @@ export function TenantsPage() {
   if (tenants.length === 0) {
     return (
       <EmptyState
+        headingLevel="h1"
         title="No learner content yet"
         body="Meno has no tenants yet - nobody has started a learning contract on this machine."
       />

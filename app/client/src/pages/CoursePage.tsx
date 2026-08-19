@@ -240,14 +240,14 @@ export function CoursePage({ tenant, course, module }: { tenant: string; course:
       {concepts.length > 0 && (
         <section className="mastery-summary">
           <h2>Concept mastery</h2>
-          <table className="mastery-table">
+          <table className="mastery-table" aria-label="Concept mastery">
             <thead>
               <tr>
-                <th>Concept</th>
-                <th>Level</th>
-                <th>Transfer score</th>
-                <th>Recognition rate</th>
-                <th>Next review</th>
+                <th scope="col">Concept</th>
+                <th scope="col">Level</th>
+                <th scope="col">Transfer score</th>
+                <th scope="col">Recognition rate</th>
+                <th scope="col">Next review</th>
               </tr>
             </thead>
             <tbody>

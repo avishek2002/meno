@@ -4,27 +4,65 @@ Living status file - the done / backlog tracker for this project. **Update it wh
 finish a thing -> move it to Done; pick up or think of a new thing -> add it to the agenda; make a call
 that isn't captured in the code -> log it. Keep entries dated, newest near the top of each section.
 
-_Last updated: 2026-08-18_
+_Last updated: 2026-08-19_
 
 > Maintenance: keep this file current whenever work changes. Tooling can't see conversation-only
 > decisions, so logging those is on whoever made them.
 
 ## Pending decisions (needs maintainer)
 
-- 2026-08-18 - **Audit findings not closed by v1.13**, from the same sweep, all measured, none
-  yet fixed: todo checkboxes have no accessible name (AX `name: ""`); the check widget's cloze
-  input is labelled by `placeholder` alone and its radio group has no `fieldset`/`legend`; nothing
-  announces async updates anywhere (filter emptying, todo notices, the graph legend dropping 228
-  nodes to 101 - zero live regions in the DOM before or after); all 22 tables lack a name and any
-  `th[scope]`; `h1` -> `h4` skip on the course list; the
-  course-list `h1`'s accessible name is polluted by its nested InfoTip button ("Courses What is
-  Groups question mark"); white-on-`--accent` and white-on-`--violet-border` are 2.34:1 and 3.08:1
-  in dark mode; the cost empty state renders no `h1`; and note page titles leak the full vault
-  path including `.md`. **The decision:** which of these to batch next, and whether the
-  design-system drift (20 rendered font sizes, 36 spacing literals, no `--space-*` token) is worth
-  a dedicated pass or should be absorbed opportunistically.
+- 2026-08-19 - **Audit findings still open after v1.15**, from the 2026-08-13 sweep. The
+  accessible-name half closed at v1.15 (see Done); what remains is three groups, each needing a
+  call rather than typing.
+  - **Needs a design decision before it can be built.** The check widget's mcq radio group has no
+    `fieldset`/`legend`: `check.prompt` renders once at `CheckWidget.tsx:47`, outside all three
+    type branches, and a `<legend>` must be its fieldset's first child, so this needs the prompt
+    restructured or duplicated. And the course list skips `h1` -> `h4` -> `h3`, non-monotonic,
+    because group titles are `<summary>` inside `<details>` and are not headings at all - there
+    is no `h2` on that page to skip to, so fixing it means inventing section heading semantics
+    that `<summary>` will tolerate.
+  - **Needs a pipeline change, not a page change.** Tables inside lesson bodies come from
+    `app/server/markdown.ts` (remark-gfm) and reach the DOM through `RenderedHtml.tsx` as an HTML
+    string, so no per-table React markup exists to edit. Fixing their `th[scope]` means a rehype
+    plugin or a client-side DOM pass. **Correcting the earlier count:** the "22 tables" figure
+    came from crawling a real vault and is content-dependent, so it was never a fixed number.
+    This repository has exactly 9 authored tables, all fixed at v1.15; the rest are per-lesson.
+  - **Still untouched, straightforwardly.** White-on-`--accent` and white-on-`--violet-border` are
+    2.34:1 and 3.08:1 in dark mode. Note page titles leak the full vault path including `.md`.
+    Nothing announces the *result-count* updates - a filter emptying, todo notices, the graph
+    legend dropping 228 nodes to 101. **Correcting the earlier wording:** "nothing announces async
+    updates anywhere" was too broad. `AsyncStatus` (`role="status"`) and `ErrorState`
+    (`role="alert"`) landed in wave 0 and do announce; neither ever mounts for these three cases,
+    because content is already rendered, which is why the finding survives as stated above.
+  - **The decision:** which group to take next, and whether the design-system drift (20 rendered
+    font sizes, 36 spacing literals, no `--space-*` token) is worth a dedicated pass or should be
+    absorbed opportunistically.
 
 ## Done
+
+- 2026-08-19 - **v1.15: nothing a person operates, and no table, is nameless.** Three separate
+  mechanisms were each producing a wrong accessible name, and the fix is a different shape for
+  each. Controls with no name at all (the todo checkboxes, the two todo filter selects) computed
+  to the empty string. The cloze input was named by its `placeholder`, so all three on a lesson
+  page answered to "Your answer" - the widget type, never the question. And name-from-content
+  recurses into interactive descendants, so ten containers wrapping an `InfoTip` absorbed that
+  button's `aria-label`: the course list's `h1` announced as `Courses What is "Groups"?`, and
+  four mastery column headers carried their tooltip's question inside the column name. `InfoTip`
+  itself is untouched - `aria-hidden` on a focusable button trades one violation for another - so
+  the containers point at a span around their own visible text instead. The nine authored tables
+  took an `aria-label` rather than a visible `<caption>`, because the name was the defect and
+  adding visible titles is a design change; every `<th>` gained `scope`. Full-page empty states
+  render at `h1` now, closing the same hole at six call sites rather than the one that was
+  reported, while `EmptyState` keeps `h2` as its default for the two that nest correctly.
+  CostPage's hand-rolled duplicate is gone. Zero visual change, no CSS touched.
+  **Verified twice, because the gate cannot do it.** `node --test` has no DOM, so the 27 committed
+  tests are source assertions; the computed names were confirmed separately by reading Chromium's
+  accessibility tree over the DevTools protocol, with Playwright borrowed from `giftnote-web-qa`
+  by absolute path so this repository gains no dependency. Before and after were captured against
+  the same fixture with the diff stashed in between, which is what turned up the one misstatement
+  in the original finding: Chromium *does* fall back to `placeholder` for a name, so the cloze
+  input was never `""`, it was three identical useless names. That check is a one-off and was not
+  committed, so a regression here still fails silently - named as an open gap in the app spec.
 
 - 2026-08-18 - **v1.14: scroll clearance is measured from the header instead of guessed.** The
   sticky header publishes its own height as `--header-height` (a `ResizeObserver` in `Header.tsx`)
@@ -564,21 +602,6 @@ _Last updated: 2026-08-18_
 
 ## On the agenda (backlog, not started)
 
-- **UI navigation and content-visibility work order**
-  (`docs/reviews/2026-08-13-ui-navigation-review.md`): 17 ranked findings from a headless
-  traversal of every route, reviewed by a UI/UX and a frontend specialist. Scoped to adaptive
-  information architecture and state-driven surfacing; visual design and mobile were out of
-  scope. Sequenced as waves - **wave 0 is serial and must land first** (the shared course-context
-  hook, the mastery type-guard bug, the route-change effect, a shared error state, response
-  caching), then six file-disjoint parallel tracks. The collision map is in the document.
-  - **UI-01 is a live bug, not a design gap**: `asMastery` (`app/client/src/clientTypes.tsx:36`)
-    requires a `.courses` key the course endpoint does not send, so concept mastery and module
-    gate state have never rendered on any course page - including a currently failed, locked
-    gate. Fix this before anything that builds on study state.
-  - **Fixture extension, deferred deliberately**: `examples/example-learner` (1 subject, 2
-    courses, 15 files) cannot reproduce the density-dependent findings (UI-12, partly UI-11),
-    so those ship without regression tests. Growing the fixture would break assertions in
-    `tools/eval.ts` and ten test files, so it is its own change, not a prerequisite.
 - **Decision 19 program** (plan: `docs/plans/content-accuracy-and-community.md`): (1) blocking
   self-audit in `generate-module` + seeded-fault fixtures + eval scorers that drill the
   auditor; (2) the five-pack community slate (git-and-github and agent-harness-craft first);

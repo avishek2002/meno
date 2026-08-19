@@ -55,7 +55,7 @@ export function ProgressPage({ tenant }: { tenant: string }) {
   const hasAnything = courses.length > 0 || data.due.length > 0 || data.recent.length > 0;
 
   if (!hasAnything) {
-    return <EmptyState title={`No progress yet for ${tenant}`} body="Nothing has been studied or reviewed yet." />;
+    return <EmptyState headingLevel="h1" title={`No progress yet for ${tenant}`} body="Nothing has been studied or reviewed yet." />;
   }
 
   const dueGroups = groupByCourse(withDaysOverdue(data.due, todayIso()));
@@ -70,8 +70,8 @@ export function ProgressPage({ tenant }: { tenant: string }) {
 
       {data.due.length > 0 && (
         <section className="due-list">
-          <h2>
-            Due for review <InfoTip entry="dueForReview" />
+          <h2 aria-labelledby="due-for-review-heading">
+            <span id="due-for-review-heading">Due for review</span> <InfoTip entry="dueForReview" />
           </h2>
           <p className="due-action-line">
             To clear a row, ask your agent for a review session - it runs the <code>tutor-session</code> skill.
@@ -84,12 +84,12 @@ export function ProgressPage({ tenant }: { tenant: string }) {
                   ({rows.length} due)
                 </span>
               </h3>
-              <table>
+              <table aria-label={`Concepts due for review in ${courseTitle(course)}`}>
                 <thead>
                   <tr>
-                    <th>Concept</th>
-                    <th>Next review</th>
-                    <th>Days overdue</th>
+                    <th scope="col">Concept</th>
+                    <th scope="col">Next review</th>
+                    <th scope="col">Days overdue</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -115,21 +115,21 @@ export function ProgressPage({ tenant }: { tenant: string }) {
           <h2>
             <a href={courseHref(tenant, course)}>{courseTitle(course)}</a>
           </h2>
-          <table className="mastery-table">
+          <table className="mastery-table" aria-label={`Concept mastery in ${courseTitle(course)}`}>
             <thead>
               <tr>
-                <th>Concept</th>
-                <th>
-                  Level <InfoTip entry="masteryLevel" />
+                <th scope="col">Concept</th>
+                <th scope="col" aria-labelledby={`mastery-th-level-${course}`}>
+                  <span id={`mastery-th-level-${course}`}>Level</span> <InfoTip entry="masteryLevel" />
                 </th>
-                <th>
-                  Transfer score <InfoTip entry="transferScore" />
+                <th scope="col" aria-labelledby={`mastery-th-transfer-${course}`}>
+                  <span id={`mastery-th-transfer-${course}`}>Transfer score</span> <InfoTip entry="transferScore" />
                 </th>
-                <th>
-                  Recognition rate <InfoTip entry="recognitionRate" />
+                <th scope="col" aria-labelledby={`mastery-th-recognition-${course}`}>
+                  <span id={`mastery-th-recognition-${course}`}>Recognition rate</span> <InfoTip entry="recognitionRate" />
                 </th>
-                <th>
-                  Next review <InfoTip entry="nextReview" />
+                <th scope="col" aria-labelledby={`mastery-th-nextreview-${course}`}>
+                  <span id={`mastery-th-nextreview-${course}`}>Next review</span> <InfoTip entry="nextReview" />
                 </th>
               </tr>
             </thead>
