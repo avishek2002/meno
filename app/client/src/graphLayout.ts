@@ -251,6 +251,40 @@ export function connectedNodeIds(edges: readonly LayoutEdge[]): Set<string> {
   return ids;
 }
 
+// --- zoom (docs/specs/graph.md invariant 22, "The pure seam") -------------
+//
+// The single clamp and the single anchor point every zoom path shares: the
+// wheel handler, the +/- buttons, and fit-to-view all route their scale
+// through these two functions, so no path can produce a `k` outside this
+// range and no path anchors a zoom step anywhere but the viewport centre.
+
+/** 0.2x-4x (docs/specs/graph.md, "How it behaves" item 14). */
+export const ZOOM_LIMITS: { min: number; max: number } = { min: 0.2, max: 4 };
+
+/** What one +/- button press multiplies the current scale by; the reciprocal zooms out. */
+export const ZOOM_STEP_FACTOR = 1.3;
+
+export function clampZoom(k: number): number {
+  return Math.min(ZOOM_LIMITS.max, Math.max(ZOOM_LIMITS.min, k));
+}
+
+/**
+ * Scale by `factor` about the viewport centre, which is the svg user-space
+ * origin because the viewBox is centred there (see VIEW_SIZE in
+ * GraphPage.tsx). The rendered transform is `translate(x y) scale(k)`, so a
+ * world point `p` lands on screen at `p*k + (x, y)`; the point currently
+ * under the centre is therefore `(-x/k, -y/k)`, and keeping it under the
+ * centre after rescaling to `k2` needs `x2 = x * (k2/k)`, `y2 = y * (k2/k)`.
+ * Clamped to ZOOM_LIMITS - the wheel handler, the +/- buttons and
+ * fit-to-view's own clamp all route through this one function, so there is
+ * one clamp and one anchor, not several.
+ */
+export function zoomAboutCenter(t: FitTransform, factor: number): FitTransform {
+  const k = clampZoom(t.k * factor);
+  const ratio = k / t.k;
+  return { x: t.x * ratio, y: t.y * ratio, k };
+}
+
 export function fitToViewTransform(points: readonly SeedPosition[], viewSize: number, margin: number): FitTransform {
   if (points.length === 0) return { x: 0, y: 0, k: 1 };
   if (points.length === 1) return { x: -points[0].x, y: -points[0].y, k: 1 };
@@ -271,8 +305,12 @@ export function fitToViewTransform(points: readonly SeedPosition[], viewSize: nu
   const width = maxX - minX;
   const height = maxY - minY;
   const available = Math.max(viewSize - 2 * margin, 1);
-  // never zoom in past 1 - fit-to-view only ever shrinks an over-wide graph
-  const k = Math.min(1, available / Math.max(width, height, 1e-6));
+  // never zoom in past 1 - fit-to-view only ever shrinks an over-wide graph -
+  // then through the same clampZoom every other zoom path uses (invariant
+  // 22), so a graph spread out far enough to compute below ZOOM_LIMITS.min
+  // still returns a transform whose x/y were computed against the k it
+  // actually reports, not a k a caller clamped after the fact.
+  const k = clampZoom(Math.min(1, available / Math.max(width, height, 1e-6)));
 
   return { x: -centerX * k, y: -centerY * k, k };
 }

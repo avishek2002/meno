@@ -347,6 +347,141 @@ export interface GraphResponse {
   warnings: string[];
 }
 
+// --- graph node card -------------------------------------------------------
+//
+// GET /api/v1/:tenant/graph/node?id=<node id>. The second, deliberately narrow
+// GET of the graph subsystem: everything a node card shows that a GraphNode
+// does not already carry, for exactly one node, fetched only when a card opens.
+//
+// Why a second endpoint and not three more fields on GraphNode: invariant 9
+// pins a node to exactly eight keys and app/test/graph.test.ts greps the whole
+// graph payload for "answer", "explain", "checks", "html" and "frontmatter".
+// Widening the node would put per-node prose behind that grep for every node on
+// every graph load, to serve one card at a time. This endpoint keeps the graph
+// payload exactly as narrow as it is and inherits the same leak rule for itself
+// (docs/specs/graph.md, invariant 18).
+//
+// Read-only like the rest of the subsystem: no POST counterpart, and nothing
+// the card shows - zoom, pan, fullscreen, which card is open - is ever
+// persisted (invariant 15).
+
+/**
+ * Where `NodeCardResponse.summary` came from, so the card can say "no
+ * description yet" honestly instead of rendering an empty line:
+ *
+ * - `hub-derived`  a lesson's one-line description, read out of its course
+ *                  hub note's `<!-- meno:derived -->` block. The lesson body
+ *                  itself is never read - that is the whole point of the
+ *                  choice (invariant 18).
+ * - `home-derived` a course's one-line description, read out of `home.md`'s
+ *                  own derived block, which uses the same bullet grammar one
+ *                  level up (`- [[<hub>|Title]] - module 2 of 7, ...`).
+ * - `note-intro`   the note's first ordinary paragraph, for the `home` and
+ *                  `note` kinds only.
+ * - `none`         no description exists. Always the case for a ghost lesson
+ *                  (a planned lesson gets no derived bullet until it is
+ *                  written) and for a hub whose home note has no bullet yet.
+ */
+export type NodeCardSummarySource = 'hub-derived' | 'home-derived' | 'note-intro' | 'none';
+
+/** One `course.yml` `objectives[]` entry, identity and text only. */
+export interface NodeCardObjective {
+  /** The manifest's own id, e.g. "O1" - the card shows it, the client never parses it. */
+  id: string;
+  text: string;
+}
+
+/**
+ * Lessons-done-over-total, counted over manifests rather than over files on
+ * disk, so a planned lesson counts toward the denominator exactly the way a
+ * ghost node counts in the graph. Scope is the one course for a `hub` node and
+ * the whole tenant for the `home` node; `courses` says which, so the card can
+ * label the numbers without a second field per scope.
+ *
+ * `lessons_mastered <= lessons_generated <= lessons_total` always: all three
+ * count the same manifest entries.
+ */
+export interface NodeCardProgress {
+  /** Every `lessons[]` entry in every `module.yml` in scope, written or not. */
+  lessons_total: number;
+  /** Of those, how many have a file on disk. */
+  lessons_generated: number;
+  /** Of those, how many `deriveMastery()` puts at level `mastered` in their course. */
+  lessons_mastered: number;
+  /** Courses counted: 1 for a `hub`, the tenant's course count for `home`. */
+  courses: number;
+}
+
+/**
+ * The card's single bottom button - the ONLY way out of the graph canvas now
+ * that clicking a node opens a card instead of navigating (invariant 21).
+ *
+ * `href` is built server-side by the same `app/shared/routeHrefs.ts` builders
+ * `GraphNode.route` is built with (lib/graph.ts), for the same reason: the
+ * nodes are heterogeneous and only the server knows which route shape each one
+ * needs. It is NOT an echo of `GraphNode.route`. Per kind:
+ *
+ * - `hub`    `courseHref(tenant, course)`, deliberately NOT the node's own
+ *            `route`, which is the raw `noteHref` of the hub markdown.
+ *            CoursePage renders gate state, concept mastery, the objectives
+ *            AND the hub note itself (its `<details className="hub-note">`),
+ *            so it strictly dominates the note view for the same node.
+ * - `lesson` `lessonHref(...)`, the same value `route` already carries.
+ * - `home`   `noteHref(tenant, 'home.md')`, the same value `route` carries.
+ *            The tenant dashboard (`tenantHref`) was the alternative and was
+ *            not taken: the header already links there, and home.md's
+ *            hand-authored "Notes to self" renders nowhere else.
+ * - `note`   `noteHref(tenant, id)`, the same value `route` carries.
+ *
+ * A ghost lesson has `enabled: false`, `href: null`, and a `disabled_reason`
+ * ready to render: the button is drawn so the card keeps its shape, and says
+ * why it does nothing.
+ */
+export interface NodeCardAction {
+  /** Null if and only if `enabled` is false. */
+  href: string | null;
+  /** Names the destination, never the node: "Open course", "Open lesson", "Open note". */
+  label: string;
+  enabled: boolean;
+  /** One sentence, present only when `enabled` is false; null otherwise. */
+  disabled_reason: string | null;
+}
+
+/**
+ * GET /api/v1/:tenant/graph/node?id=<node id>, read-only, walked fresh per
+ * request like every other GET.
+ *
+ * `id` is a `GraphNode.id` - a vault-relative posix path with the `.md`
+ * suffix - passed as a query parameter rather than a path segment because it
+ * contains `/`, matching `GET /api/v1/:tenant/note?path=`. Spelled `id` and
+ * not `path` on purpose: a ghost lesson has an id and no file, and this
+ * endpoint answers for it.
+ *
+ * Resolution is against the graph's own node set, never against the
+ * filesystem: an id the current graph does not contain is a 404 and never
+ * reaches `safePath` (docs/specs/graph.md, invariant 19).
+ */
+export interface NodeCardResponse {
+  tenant: string;
+  /** Echoed back verbatim, so a late response for a card the learner already swapped is discarded. */
+  id: string;
+  title: string;
+  kind: GraphNodeKind;
+  state: GraphNodeState;
+  /** Course slug, null for the same nodes `GraphNode.course` is null for. */
+  course: string | null;
+  /** One line ABOUT the node. Null when none exists - see NodeCardSummarySource. */
+  summary: string | null;
+  summary_source: NodeCardSummarySource;
+  /** `course.yml` objectives, in manifest order, for a `hub` node. Empty for every other kind. */
+  objectives: NodeCardObjective[];
+  /** Set for `hub` and `home`; null for `lesson` and `note`, whose progress is `state`. */
+  progress: NodeCardProgress | null;
+  action: NodeCardAction;
+  /** Degraded-path notes (an unparseable derived block). Never an error. */
+  warnings: string[];
+}
+
 // --- glossary --------------------------------------------------------------
 //
 // Same rule InsightsReport and CostSnapshot follow: lib/terms.ts is the one

@@ -60,9 +60,11 @@ test('a malformed connects block still answers 200 and keeps its hub node', asyn
 
 test('the graph HTTP surface is exactly one GET and the subsystem writes nothing', async () => {
   const routes = readFileSync(fileURLToPath(new URL('../server/routes.ts', import.meta.url)), 'utf8');
-  const graphRows = routes.split('\n').filter((l) => /^\s*\[['"]\w+['"],.*\/graph\$/.test(l));
-  assert.equal(graphRows.length, 1, 'exactly one route mentions the graph endpoint');
-  assert.match(graphRows[0], /^\s*\['GET'/, 'the graph route is a GET');
+  // widened from \/graph\$ to also match the node-card route's own regex
+  // literal (…\/graph\/node$/) now that the subsystem has two GETs, not one
+  const graphRows = routes.split('\n').filter((l) => /^\s*\[['"]\w+['"],.*\/graph(\\\/node)?\$/.test(l));
+  assert.equal(graphRows.length, 2, 'exactly two routes mention the graph endpoint');
+  assert.ok(graphRows.every((r) => /^\s*\['GET'/.test(r)), 'both graph routes are GETs');
 
   const app = await withTenant();
   try {
