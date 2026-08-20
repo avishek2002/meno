@@ -5,13 +5,27 @@
 import { useEffect } from 'react';
 import { GUIDE, GUIDE_URL } from '../guide/content';
 import { GLOSSARY } from '../guide/glossary';
-import { guideHref } from '../../../shared/routeHrefs.ts';
+import { guideHrefFor } from '../../../shared/routeHrefs.ts';
 import { prefersReducedMotion } from '../reducedMotion.tsx';
 
 export function GuidePage({ tenant, section }: { tenant?: string; section?: string }) {
   // document.title is set centrally in App.tsx from the route table (UI-03) -
   // this page must not also set it, or the two fight over the tab title on
   // every mount/unmount.
+
+  // The table of contents below has to keep emitting the tenant-scoped form
+  // of its own URL whenever a tenant is open (UI-18), or the header's nav
+  // block reappears on arrival at #/t/<tenant>/guide only to vanish again on
+  // the first section click - Header.tsx already gets `tenant` right because
+  // App.tsx passes route.params.tenant straight through, but this page has
+  // to carry it forward into every link it builds itself instead of quietly
+  // falling back to the tenant-less form.
+  //
+  // guideHrefFor rather than the ternary spelled out here: this file is .tsx,
+  // which `node --test` cannot strip, so a local copy would be the one
+  // load-bearing line of UI-18 that the gate could never catch a revert of.
+  // The header's Guide link goes through the same function.
+  const sectionHref = (id: string): string => guideHrefFor(tenant, id);
 
   // Section links are real URLs (#/guide#glossary), so they bookmark and answer
   // the back button; the router tolerates the suffix and we scroll to it here,
@@ -38,11 +52,11 @@ export function GuidePage({ tenant, section }: { tenant?: string; section?: stri
         <ul>
           {GUIDE.map((s) => (
             <li key={s.id}>
-              <a href={guideHref(s.id)}>{s.title}</a>
+              <a href={sectionHref(s.id)}>{s.title}</a>
             </li>
           ))}
           <li>
-            <a href={guideHref('glossary')}>Glossary</a>
+            <a href={sectionHref('glossary')}>Glossary</a>
           </li>
         </ul>
       </nav>

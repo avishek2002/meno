@@ -67,7 +67,10 @@ export default function App() {
       page = <TenantsPage />;
       break;
     case 'guide':
-      page = <GuidePage section={route.params.section} />;
+      // route.params.tenant is only present on the tenant-scoped guide URL
+      // (UI-18, routes.ts's second `guide` RouteDef) - undefined on plain
+      // #/guide, which GuidePage already treats as "no tenant yet".
+      page = <GuidePage tenant={route.params.tenant} section={route.params.section} />;
       break;
     case 'tenant':
       page = <TenantCoursesPage tenant={route.params.tenant} section={route.params.section} />;

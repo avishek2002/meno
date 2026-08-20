@@ -45,6 +45,29 @@ test('#/guide#glossary still matches guide with its section', () => {
   assert.deepEqual(route.params, { section: 'glossary' });
 });
 
+test('#/t/alice/guide matches the tenant-scoped guide route, not tenant, not note, not not-found (UI-18)', () => {
+  // The claim routes.ts's second `guide` RouteDef comment makes: `tenant`'s
+  // group is [^/#] so it cannot span "/guide", and `note` requires a literal
+  // "/n/" - proven here rather than trusted from the comment alone.
+  const route = matchRoute('#/t/alice/guide');
+  assert.equal(route.name, 'guide');
+  assert.deepEqual(route.params, { tenant: 'alice' });
+  // The other direction of the same claim, which is where the real risk is:
+  // asserting `name !== 'tenant'` after asserting `name === 'guide'` can
+  // never fail, so it proves nothing. What can actually break is the new
+  // entry stealing a hash one of its neighbours owns. These do fail if it
+  // does.
+  assert.equal(matchRoute('#/t/alice').name, 'tenant');
+  assert.equal(matchRoute('#/t/alice/n/guide').name, 'note');
+  assert.equal(matchRoute('#/t/alice/c/guide').name, 'course');
+});
+
+test('#/t/alice/guide#glossary matches the tenant-scoped guide route with both tenant and section', () => {
+  const route = matchRoute('#/t/alice/guide#glossary');
+  assert.equal(route.name, 'guide');
+  assert.deepEqual(route.params, { tenant: 'alice', section: 'glossary' });
+});
+
 test('the graph route with ?focus= still matches, and without it still matches with tenant only', () => {
   const withFocus = matchRoute('#/t/alice/graph?focus=03-ownership');
   assert.equal(withFocus.name, 'graph');
