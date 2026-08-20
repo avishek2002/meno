@@ -56,7 +56,7 @@ export function GuidePage({ tenant, section }: { tenant?: string; section?: stri
             </li>
           ))}
           <li>
-            <a href={sectionHref('glossary')}>Glossary</a>
+            <a href={sectionHref('glossary')}>Interface terms</a>
           </li>
         </ul>
       </nav>
@@ -80,9 +80,17 @@ export function GuidePage({ tenant, section }: { tenant?: string; section?: stri
         </section>
       ))}
 
+      {/* Titled "Interface terms", not "Glossary", since v1.16: the nav bar now
+          carries a Glossary tab holding the vocabulary a learner's own courses
+          taught, and two same-named destinations one click apart in the same
+          header is a coin toss for anyone looking up a word. The section id
+          stays `glossary` so existing #/guide#glossary links keep resolving. */}
       <section id="glossary" className="guide-section">
-        <h2>Glossary</h2>
-        <p>Every term the app explains in a tooltip, in one place.</p>
+        <h2>Interface terms</h2>
+        <p>
+          Every term the app itself explains in a tooltip, in one place. For the vocabulary your
+          own courses taught, see the Glossary tab.
+        </p>
         <dl className="guide-list">
           {Object.entries(GLOSSARY).map(([key, e]) => (
             <div key={key} className="guide-list-row">

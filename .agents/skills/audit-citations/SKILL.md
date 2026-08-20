@@ -20,6 +20,10 @@ remember the page, you still fetch it.
 
 ## Protocol (per source record)
 
+A module's `terms.yml` carries no `sources` block and is out of scope for this audit: a
+definition restates content the lesson's own citations already support, not a new claim,
+so there is nothing there to check against the network.
+
 Work through every source in the target's `module.yml` files and lesson frontmatter (or a
 sample when asked for a spot-check - but always the full set when the run is an
 acceptance or eval). For each record:

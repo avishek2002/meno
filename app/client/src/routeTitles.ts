@@ -16,6 +16,7 @@ export const ROUTE_NAMES = [
   'insights',
   'cost',
   'graph',
+  'glossary',
   'note',
   'tenant',
 ] as const;
@@ -39,6 +40,7 @@ const ROUTE_TITLES: Record<string, string> = {
   insights: 'Insights',
   cost: 'Cost',
   graph: 'Graph',
+  glossary: 'Glossary',
   note: 'Note',
   'not-found': 'Not found',
 };

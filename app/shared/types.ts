@@ -3,6 +3,7 @@
 // references - these are transport shapes only.
 import type { InsightsReport, Rate } from '../../lib/insights.ts';
 import type { CostSnapshot, CourseCost, CostNoDataEntry, SharedOrchestration, CostTotals } from '../../lib/cost.ts';
+import type { GlossaryBacklink, GlossaryCourse, GlossaryEntry } from '../../lib/terms.ts';
 
 // Re-exported (not duplicated) so the client can import it like every other
 // response type below, via a plain `import type { InsightsReport } from
@@ -290,6 +291,40 @@ export interface GraphResponse {
   edges: GraphEdge[];
   groups: GraphGroup[];
   /** Degraded-path notes (malformed connects blocks, group warnings). Never an error. */
+  warnings: string[];
+}
+
+// --- glossary --------------------------------------------------------------
+//
+// Same rule InsightsReport and CostSnapshot follow: lib/terms.ts is the one
+// place the merged shape is defined, and this file re-exports rather than
+// duplicates. Unlike the graph, the glossary has a single owning lib module -
+// mergeTerms produces the whole payload bar the tenant id - so there is no
+// second producer to reconcile a locally-declared copy against.
+export type { GlossaryBacklink, GlossaryEntry, GlossaryCourse };
+
+/**
+ * GET /api/v1/:tenant/glossary. Read-only, walked fresh per request like every
+ * other GET, with no POST counterpart: terms.yml has exactly two authors, an
+ * agent following generate-module and the learner's own text editor.
+ *
+ * `courses` is in tree-walk order and each course's `entries` is in curriculum
+ * order (module sequence, then lesson sequence), never alphabetical.
+ *
+ * A backlink carries identity only - course, module and lesson file - and no
+ * `route` field, unlike GraphResponse.node.route. The graph's nodes are
+ * heterogeneous and only the server knows which route shape each one needs;
+ * every backlink here is a lesson, so the client builds the href itself with
+ * routeHrefs.ts's lessonHref, which is where every other link it renders comes
+ * from.
+ *
+ * The glossary reads no ledger and carries no read, due, or mastery state:
+ * terms are display vocabulary, deliberately inert (lib/terms.ts).
+ */
+export interface GlossaryResponse {
+  tenant: string;
+  courses: GlossaryCourse[];
+  /** Degraded-path notes (malformed terms.yml, divergent duplicates). Never an error. */
   warnings: string[];
 }
 

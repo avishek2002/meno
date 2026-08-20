@@ -69,7 +69,9 @@ function useBackDepth(): number {
  * rather than a guess.
  *
  * Why a measurement and not a constant: the header wraps at narrow widths, so
- * it is 60.17px tall on a laptop and 100.95px at 360px wide. Every in-page
+ * it is 60.17px tall on a laptop and 100.95px at 360px wide (measured before
+ * v1.16 added the Glossary link; the observer is what makes the exact figure
+ * not matter, which is the whole argument for measuring). Every in-page
  * scroll target - the guidebook's `#section` anchors, the module anchor on a
  * course page, the course-list deep link - has to clear whichever of those is
  * current, and `scroll-margin-top` cannot reference another element's height,

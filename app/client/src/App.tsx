@@ -29,6 +29,7 @@ const TodosPage = lazy(() => import('./pages/TodosPage').then((m) => ({ default:
 const ProgressPage = lazy(() => import('./pages/ProgressPage').then((m) => ({ default: m.ProgressPage })));
 const InsightsPage = lazy(() => import('./pages/InsightsPage').then((m) => ({ default: m.InsightsPage })));
 const CostPage = lazy(() => import('./pages/CostPage').then((m) => ({ default: m.CostPage })));
+const GlossaryPage = lazy(() => import('./pages/GlossaryPage').then((m) => ({ default: m.GlossaryPage })));
 const GraphPage = lazy(() => import('./pages/GraphPage').then((m) => ({ default: m.GraphPage })));
 const NotePage = lazy(() => import('./pages/NotePage').then((m) => ({ default: m.NotePage })));
 
@@ -102,6 +103,9 @@ export default function App() {
       break;
     case 'cost':
       page = <CostPage tenant={route.params.tenant} />;
+      break;
+    case 'glossary':
+      page = <GlossaryPage tenant={route.params.tenant} />;
       break;
     case 'graph':
       page = <GraphPage tenant={route.params.tenant} focus={route.params.focus} />;

@@ -103,6 +103,34 @@ machine can verify, so quality does not depend on a generation run's mood.
   seeded-fault fixture at `examples/seeded-faults/accuracy-fixture/` and scores whether
   the auditor catches the known plants.
 
+
+## The module's terms.yml (v1.17)
+
+Alongside a module's lesson bodies, `generate-module` writes one `terms.yml` sidecar per module
+directory, holding the vocabulary those lessons introduced. Format and voice:
+[generate-module/references/terms-format.md](../../.agents/skills/generate-module/references/terms-format.md);
+field shape: `schemas/terms.schema.json`; machine-checkable rules: `lib/terms.ts`, enforced by
+`tools/validate.ts`'s `terms` check.
+
+An entry is `{term, lesson, definition, see_also?}`, where `lesson` names a file in that module's
+own manifest. A definition is exactly two sentences - what the term is, in plain language, then
+what breaks or changes without it - and roughly 45 words. It is written for someone who has done
+the lesson, so it may lean on terms the course defined earlier. A lesson that genuinely introduces
+no new vocabulary is named in `no_terms:` rather than given filler.
+
+Three properties are load-bearing and easy to erode:
+
+- **Terms are inert.** Unlike `concepts:`, a term never becomes a review item, never moves a
+  mastery gate, and never enters a due computation. Nothing that reads `terms.yml` reads the
+  ledger.
+- **No `sources` block.** A definition restates content the lesson already cited rather than
+  making a new claim, so `audit-citations` skips the file. This is a documented carve-out, not an
+  omission.
+- **Coverage is keyed to disk, not to status.** A `terms.yml` that exists must account for every
+  lesson body actually written in its module, which is an error; a module with written lessons and
+  no `terms.yml` at all is only a warning, so the format stays additive over vaults generated
+  before it existed.
+
 ## Open questions
 
 1. Whether `practice` and `review` lesson types (reduced anatomy) need their own

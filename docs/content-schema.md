@@ -14,6 +14,7 @@ live in `schemas/` as JSON Schema files and are enforced by `tools/validate.ts`.
 | Source records | `generate-curriculum/references/sourcing.md` | `schemas/source.schema.json` | landed (Phase 2) |
 | Lesson frontmatter | `generate-module/references/lesson-format.md` | `schemas/lesson.schema.json` | landed (Phase 3) |
 | Check blocks (`meno-check`) | `generate-module/references/check-formats.md` | body rules via `lib/lesson.ts` + validate `checks` | landed (Phase 3) |
+| `terms.yml` (glossary vocabulary) | `generate-module/references/terms-format.md` | `schemas/terms.schema.json` | landed (v1.17) |
 | `progress/ledger.jsonl` events | semantics: `docs/specs/progress.md` | `schemas/ledger.schema.json` | landed (Phase 3) |
 | `progress/mastery.yml` | derived view: `docs/specs/progress.md` | byte-identical rebuild via `lib/mastery.ts` | landed (Phase 3) |
 | UI-writable ledger events (narrowed) | `docs/specs/app.md` | `schemas/ledger.ui.schema.json` | landed (Phase 4) |

@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/avishek2002/meno/schemas/terms.schema.json",
+  "title": "Meno module glossary sidecar (terms.yml)",
+  "description": "Machine-checkable half of the canonical format owned by .agents/skills/generate-module/references/terms-format.md. One file per module, beside module.yml, defining the vocabulary that module's lesson bodies introduce. Cross-file rules (lesson resolution, per-lesson coverage, the two-sentence and word-count limits, duplicate-definition drift, see_also resolution) are enforced by tools/validate.ts over lib/terms.ts. Deliberately carries no sources block: a definition restates already-cited lesson content rather than making a new claim, so audit-citations skips this file. Terms are inert - display vocabulary that never feeds mastery, gates, or review scheduling, which is exactly what separates them from a manifest's concepts list.",
+  "type": "object",
+  "required": ["schema_version", "terms"],
+  "properties": {
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "terms": {
+      "type": "array",
+      "maxItems": 200,
+      "items": {
+        "type": "object",
+        "required": ["term", "lesson", "definition"],
+        "properties": {
+          "term": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "description": "the vocabulary item as the lesson body spells it; merge identity is lib/terms.ts termKey(), not this string"
+          },
+          "lesson": {
+            "type": "string",
+            "pattern": "\\.md$",
+            "description": "a lessons[].file entry from this module's own module.yml, suffix included - the lesson that introduces the term"
+          },
+          "definition": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 600,
+            "description": "exactly two sentences: what it is in plain language, then what breaks or changes without it. Sentence and word counts are computed by lib/terms.ts and enforced by tools/validate.ts, so this bound is only a coarse backstop"
+          },
+          "see_also": {
+            "type": "array",
+            "maxItems": 10,
+            "items": { "type": "string", "minLength": 1, "maxLength": 120 },
+            "description": "other terms, anywhere in the same course, worth reading beside this one; merged across every entry that shares a term key"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "no_terms": {
+      "type": "array",
+      "maxItems": 100,
+      "items": { "type": "string", "pattern": "\\.md$" },
+      "description": "lessons in this module that deliberately introduce no new vocabulary, named the way terms[].lesson is. The explicit way to say nothing, so coverage can be required without forcing a lesson to invent filler"
+    }
+  },
+  "additionalProperties": true
+}
