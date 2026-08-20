@@ -40,6 +40,61 @@ _Last updated: 2026-08-20_
 
 ## Done
 
+- 2026-08-20 - **v1.18: a personal-notes side panel, one file per course, sectioned by anatomy
+  key.** Present on the course page and on every lesson page; writes plain markdown into
+  `<course-slug>-notes.md` beside the hub, HTML-comment-delimited note blocks (`<!-- meno:note
+  ... --> ... <!-- /meno:note -->`) sitting in otherwise ordinary vault markdown a learner edits
+  by hand in Obsidian. **Anchoring is by anatomy part key, never by stored heading text** - a new
+  `ANATOMY_HEADINGS` table in `lib/lesson.ts` (the one place heading text and part key meet,
+  refactoring `anatomyOf` onto it behavior-preservingly) drives `lessonSections`, so renaming
+  `## Worked example` to `## Worked example: two moves` keeps its note attached. Heading ids in
+  rendered lesson HTML (`id="sec-<key>"`, `data-meno-section="<key>"`) are set in a new
+  post-sanitize pass in `app/server/markdown.ts` - **after** `rehype-sanitize` runs, not before,
+  because its default schema clobbers a pre-existing id with a `user-content-` prefix. Two routes,
+  `GET`/`PUT /api/v1/:tenant/notes/:course`, mirror the todos routes: `If-Match` content-hash
+  guarded, atomic replace, 409 with `code: 'notes-conflict'` and the current file on a stale write,
+  428 when the header is missing. Parse is a single scan into an ordered list of text/block
+  regions, so round-trip is exact by construction and an edit changes only one block's body bytes
+  - proven by diffing regions, not by eye.
+  **The one non-additive piece: app spec invariant 13 is relaxed.** It said the client persists
+  nothing but disposable view state; it now permits one new class of content in `localStorage` -
+  unsaved note text - held only between a failed write and its resolution, deleted the moment that
+  write succeeds or the learner reloads from disk. The scope is tight, but this is a genuine
+  widening of what the browser may hold, not a tightening. Every
+  other invariant in the write-authority seam holds exactly as before: no ledger event, no schema
+  change, no `schema_version` bump, and the app still may not write a hub note - the hub wikilink
+  stays `second-brain`'s job, filed as one todo (`Link <course>-notes into the course hub`) the
+  first time a course's notes file is created, deduplicated so it is filed once per course.
+  **The accepted transient state**: between that first creation and the next vault sweep, the
+  notes file is a real orphan (unreachable from `home.md`) and shows up in
+  `insights.orphaned_notes` - visible and self-clearing, the honest cost of a seam that gives hub
+  notes to the agent alone.
+  Backend and frontend built in parallel against a frozen contract, `docs/specs/notes.md`, with
+  path ownership split down the middle and zero shared files (`app/shared/types.ts` published
+  first so the frontend half typechecked against real shapes rather than guesses). 20 new backend
+  tests (`notes-format.test.ts`, `notes-api.test.ts`, `section-ids.test.ts`) plus the frontend's
+  own `notesPanel.ts` suite; `app/test/write-authority.test.ts` and `app/test/rendered-html.test.ts`
+  pass unmodified, as the contract required.
+  **A four-lens review found six real defects that a green gate had not.** The worst was silent
+  data loss: the `localStorage` buffer was written only on a 409, so a plain network failure - the
+  server down, the connection dropped - set an error status and kept the text in memory alone,
+  where navigating away lost it. The buffer now catches every failed write. The conflict UI offered
+  two identically-weighted one-click buttons, neither of which said which one discarded the
+  learner's own words; both are now labelled by what happens to their text, with the destructive
+  one visually secondary. The parser was fence-blind, so a `<!-- meno:note ... -->` pasted inside a
+  code fence became a live, addressable block that the next real write would silently overwrite - a
+  trap aimed squarely at a programming course. `module` and `lesson` skipped the charset validation
+  `section` already had, letting a malformed address write a block the parser could never re-match.
+  The section list was derived twice from two different trees, and a heading containing a wikilink
+  really did produce two different keys; it is now derived once and passed through. And section
+  titles in the file read `Prerequisite check` where the lesson said `Before you start` - the
+  written heading now comes from `ANATOMY_HEADINGS`, while the marker keeps the key.
+  **What the tests could not have caught, a browser did**: the panel was driven live at 1440px and
+  900px through Playwright borrowed from `giftnote-web-qa`, covering the conflict path by editing
+  the file on disk behind the client's back, and the network-failure path by aborting the request.
+  A React console error found that way turned out to be pre-existing in `checkMounts.tsx` and
+  unrelated - measured at five occurrences with the notes hook enabled and five with it disabled.
+
 - 2026-08-20 - **v1.17 (UI-18): the nav bar survives a visit to the guidebook.** Clicking Guide
   from inside a tenant emptied the header of everything else - Courses, Graph, Todos, Progress,
   Insights, Cost all disappeared, and the browser's back button was the only way back to any of

@@ -2,6 +2,16 @@
    System font stack, light/dark via prefers-color-scheme, a comfortable
    reading column, and restrained styling for callouts/checks/code. */
 
+/* Personal notes side panel (docs/specs/notes.md, "Module boundaries and
+   path ownership"): a plain CSS @import rather than a change to main.tsx,
+   which this feature's frontend half does not own. @import must be the
+   first rule in the file (only @charset may precede it), which is why this
+   sits above :root even though the panel's own rules read var(--bg) etc.
+   defined there - custom property resolution happens at used-value time,
+   not source order, so an importing file may reference :root tokens
+   defined later in the same stylesheet without issue. */
+@import './styles/notes.css';
+
 :root {
   color-scheme: light dark;
   --bg: #ffffff;

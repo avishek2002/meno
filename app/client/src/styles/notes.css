@@ -1,0 +1,252 @@
+/* Personal notes side panel (docs/specs/notes.md). Mobile-first: the default
+   rules below are the overlay geometry (below ~1200px), and the
+   min-width: 1200px block turns the panel into a push panel that occupies
+   the reading column's already-empty right margin. `main.content`'s
+   max-width stays 46rem in both states (invariant 8) because this panel is
+   `position: fixed` throughout - it is never a document-flow sibling of
+   `.content`, so it can never resize it, in either geometry.
+
+   This file never selects on a URL fragment: under this app's hash router
+   the browser treats everything after the first `#` as the fragment, so no
+   element id here would ever match one that way (docs/specs/notes.md,
+   "The panel"). */
+
+.notes-toggle {
+  position: fixed;
+  top: calc(var(--header-height) + 0.5rem);
+  right: 0.5rem;
+  z-index: 32;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 0.45rem 0.85rem;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.notes-toggle:hover {
+  background: var(--accent-soft);
+}
+
+.notes-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 20, 15, 0.35);
+  z-index: 30;
+  /* The panel is deliberately non-modal (role="complementary", no
+     aria-modal, no focus trap - docs/specs/notes.md), so a pointer user must
+     be able to reach every bit of content a keyboard user can already Tab
+     into. A capturing scrim broke that: document.elementFromPoint() on a
+     content link returned the scrim itself, blocking the click, while
+     nothing stopped a keyboard user tabbing to that same link. This dims
+     the page without intercepting any pointer event; the close button and
+     Escape remain the only ways to leave the panel. */
+  pointer-events: none;
+}
+
+.notes-panel {
+  position: fixed;
+  top: var(--header-height);
+  right: 0;
+  bottom: 0;
+  z-index: 31;
+  width: min(90vw, 22rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  overflow-y: auto;
+  background: var(--bg-raised);
+  border-left: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  padding: 1rem 1rem 1.5rem;
+}
+
+@media (min-width: 1200px) {
+  /* Push: no dimming scrim, the reading column is fully usable beside the
+     panel rather than blocked behind it. */
+  .notes-scrim {
+    display: none;
+  }
+
+  .notes-panel {
+    /* Fills the margin the centred 46rem reading column already leaves
+       empty: half of (viewport minus content) minus a small gutter, clamped
+       so it neither crowds the column near the 1200px breakpoint itself nor
+       grows unreasonably wide on an ultra-wide screen. */
+    width: clamp(13rem, calc((100vw - 46rem) / 2 - 1rem), 20rem);
+    box-shadow: none;
+  }
+}
+
+.notes-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.notes-panel-header h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.notes-close {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  width: 1.9rem;
+  height: 1.9rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+
+.notes-close:hover {
+  background: var(--bg-subtle);
+  color: var(--text);
+}
+
+.notes-section-label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.notes-section-select {
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.notes-unmatched-note {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.notes-reveal {
+  align-self: flex-start;
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 0.3rem 0.6rem;
+  font-size: 0.82rem;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+
+.notes-reveal:hover {
+  background: var(--bg-subtle);
+  color: var(--text);
+}
+
+.notes-textarea {
+  flex: 1;
+  min-height: 14rem;
+  resize: vertical;
+  padding: 0.6rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  line-height: 1.5;
+}
+
+.notes-status {
+  margin: 0;
+  min-height: 1.2em;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.notes-conflict {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--warning-border);
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  border-radius: var(--radius);
+}
+
+.notes-conflict p {
+  margin: 0;
+}
+
+/* The two conflict actions are deliberately not peers: "keep what I wrote"
+   is the safe action and reads as the primary control; "discard what I
+   wrote" is destructive and is styled visually secondary - no border,
+   muted color, smaller - so the consequence is legible from appearance
+   alone, not only from the label text. */
+.notes-conflict-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+
+.notes-conflict-keep {
+  align-self: flex-start;
+  border: 1px solid var(--warning-border);
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+  padding: 0.35rem 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.notes-conflict-discard {
+  align-self: flex-start;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: transparent;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.notes-conflict-discard:hover {
+  color: var(--text);
+}
+
+/* The small note button mounted beside every depth-2 lesson heading
+   (sectionNoteButtons.tsx), inline with the heading text rather than on its
+   own line. */
+.section-note-button-mount {
+  display: inline-block;
+  margin-left: 0.5rem;
+}
+
+.section-note-button {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  width: 1.6rem;
+  height: 1.6rem;
+  line-height: 1;
+  font-size: 0.85rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  vertical-align: middle;
+}
+
+.section-note-button:hover {
+  background: var(--bg-subtle);
+  color: var(--text);
+}
+
+/* The reveal-from-panel arrival highlight (docs/specs/notes.md), the same
+   1.5s-then-clear shape CoursePage.tsx's .module-card-arrived uses -
+   background plus a transition, covered by styles.css's single wildcard
+   `prefers-reduced-motion` rule rather than a second one here. */
+.notes-section-highlight {
+  background: var(--accent-soft);
+  border-radius: var(--radius);
+  transition: background-color 0.2s ease;
+}

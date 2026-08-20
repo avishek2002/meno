@@ -6,7 +6,9 @@ The full spec for how tenant content hangs together as an Obsidian vault. Genera
 
 - Note filenames are kebab-case and stable once created (wikilinks bind to them). Lessons keep their `NN-` ordering prefix; hubs are `<slug>-hub.md`; the tenant home note is `home.md` at the vault root.
 - Courses are grouped by domain, and the grouping is **identical to the community tier's**: a course sits at `<domain>/<course-slug>/` here exactly as a pack sits at `content/community/<domain>/<slug>/`. `<domain>` comes from the same closed vocabulary in [DOMAINS.md](../../../../content/community/DOMAINS.md) - one list, both tiers, so a course keeps its place in the tree whether it is being studied privately or published, and adoption is a straight mirror copy rather than a reshuffle.
-- The vault tree mirrors the course structure - no separate "notes folder"; lessons ARE the notes:
+- The vault tree mirrors the course structure - no separate "notes folder"; lessons ARE the notes.
+  (Widened, not broken, by the one personal-notes *file* per course below: still no folder, still
+  no second copy of a lesson's content - only the learner's own annotations, addressed by section.)
 
 ```
 content/tenants/<tenant>/
@@ -20,6 +22,7 @@ content/tenants/<tenant>/
       profile.md               the contract (wikilinks allowed in prose)
       course.yml               manifest (regenerable, never hand-edited)
       <course-slug>-hub.md     course hub / map of content
+      <course-slug>-notes.md   personal notes (app-created; see "Personal notes file" below)
       modules/NN-slug/
         module.yml
         NN-lesson-name.md      lessons = notes
@@ -75,7 +78,27 @@ graph TD
 
 ## My notes
 (human territory; never regenerated)
+- [[rust-for-backend-notes|My notes]]
 ````
+
+## Personal notes file (`<course-slug>-notes.md`, docs/specs/notes.md)
+
+One per course, beside its hub, created by the app the first time the learner saves a note from
+the study-app side panel - never by an agent. Full format, anchoring, and HTTP surface:
+[docs/specs/notes.md](../../../../docs/specs/notes.md); the one thing to know here is the marker
+grammar and the ownership split, since a sweep touches this file's hub link, never its body.
+
+Marker grammar, one line: `<!-- meno:note page=course|lesson [lesson=<module>/<lesson>] section=<key> --> ... <!-- /meno:note -->`,
+each marker alone on its line. Everything outside a matched marker pair - the title, the
+backlink, hand-typed prose, headings - is the learner's; read it if useful, but never
+restructure, reformat, or regenerate it, the same rule "My notes" gets in a hub.
+
+**The hub link is the agent's job, not the app's**: the write-authority seam gives hub notes to
+the agent only, so the app's own write to a new notes file cannot also touch the hub. It instead
+files one todo, `Link <course-slug>-notes into the course hub`, the first time it creates the
+file. Any sweep that finds a course directory containing `<course-slug>-notes.md` adds
+`- [[<course-slug>-notes|My notes]]` under that hub's `## My notes` if it is missing, which clears
+that todo - the example above.
 
 ## Connects to (`## Connects to`, cross-course edges)
 

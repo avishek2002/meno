@@ -33,3 +33,4 @@ graph TD
 
 ## My notes
 (human territory; never regenerated)
+- [[rust-for-backend-notes|My notes]]
