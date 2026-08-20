@@ -22,6 +22,7 @@ import { loadInsightsInputs } from '../../lib/insights-io.ts';
 import { readCostSnapshot } from '../../lib/cost-io.ts';
 import { loadVaultFiles, buildVaultGraph } from '../../lib/vault.ts';
 import { buildGraph } from '../../lib/graph.ts';
+import { buildNodeCard } from '../../lib/node-card.ts';
 import { getGlossary } from './glossary.ts';
 import { parseNotes, notesBlocks, noteSeed, upsertNoteBlock } from './notes.ts';
 import type {
@@ -33,6 +34,7 @@ import type {
   GroupsResponse,
   CostResponse,
   GraphResponse,
+  NodeCardResponse,
   TodoKind,
   TodoAudience,
   NoteResponse,
@@ -520,6 +522,29 @@ const getGraph: Handler = (_req, res, p, ctx) => {
   json(res, 200, payload);
 };
 
+// GET /api/v1/:tenant/graph/node?id=<node id>. The graph subsystem's second
+// and last GET (docs/specs/graph.md, item 13). `id` is a query parameter, not
+// a path segment, because it is a vault-relative path and contains `/` -
+// matching GET /api/v1/:tenant/note?path= - and resolution is against the
+// node set `buildNodeCard` computes from these same loaders, never against
+// the filesystem: `buildNodeCard` returning null is this route's 404, and it
+// never happens by way of `safePath` (invariant 19). No `groups` here - a
+// card never renders the fill-colour legend, so this handler wires one fewer
+// loader than `getGraph` does.
+const getGraphNode: Handler = (req, res, p, ctx) => {
+  const url = new URL(req.url ?? '/', 'http://x');
+  const id = str(url.searchParams.get('id'), 'id'); // 400 on missing/empty (invariant 19)
+  const tenantDir = safePath(ctx.root, p.tenant);
+  const files = loadVaultFiles(tenantDir);
+  const vault = buildVaultGraph(files);
+  const tree = walkTenant(tenantDir, p.tenant);
+  const mastery = deriveMastery(readLedgerEvents(tenantDir));
+  const card = buildNodeCard({ tenant: p.tenant, id, files, vault, tree, mastery });
+  if (!card) throw Object.assign(new Error(`no such graph node "${id}"`), { status: 404 });
+  const payload: NodeCardResponse = card;
+  json(res, 200, payload);
+};
+
 const getHealth: Handler = (_req, res, _p, ctx) => {
   json(res, 200, { ok: true, version: ctx.version, root: ctx.root, node: process.version });
 };
@@ -542,6 +567,7 @@ const ROUTES: [string, RegExp, Handler][] = [
   ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/ledger$/, getLedger],
   ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/groups$/, getGroups],
   ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/graph$/, getGraph],
+  ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/graph\/node$/, getGraphNode],
   ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/glossary$/, getGlossary],
   ['POST', /^\/api\/v1\/(?<tenant>[^/]+)\/check\/submit$/, postCheckSubmit],
   ['POST', /^\/api\/v1\/(?<tenant>[^/]+)\/lesson\/read$/, postLessonRead],

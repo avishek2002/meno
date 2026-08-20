@@ -69,7 +69,10 @@ test('TodosPage: the Todos h1 is aria-labelledby a span holding just the heading
 
 test('GraphPage: the Graph h1 is aria-labelledby a span holding just the heading text', () => {
   const source = read('../client/src/pages/GraphPage.tsx');
-  assert.match(source, /<h1 aria-labelledby="graph-heading">/);
+  // inert={fullscreen} is expected here too (finding 3): fullscreen visually
+  // covers this heading with the canvas backdrop, so it must also drop out
+  // of the tab order while that backdrop is up.
+  assert.match(source, /<h1 aria-labelledby="graph-heading" inert=\{fullscreen\}>/);
   assert.match(source, /<span id="graph-heading">Graph<\/span>/);
 });
 
@@ -269,4 +272,21 @@ test('sectionNoteButtons.tsx: every per-heading note button is aria-label={`Note
   const source = read('../client/src/sectionNoteButtons.tsx');
   assert.match(source, /button\.setAttribute\('aria-label', `Notes: \$\{section\.title\}`\);/);
   assert.match(source, /icon\.setAttribute\('aria-hidden', 'true'\);/, 'the decorative pencil glyph must be hidden from assistive tech, leaving only the aria-label as the name');
+});
+
+// --- v1.19: the graph canvas controls (docs/specs/graph.md item 14) --------
+
+test('GraphPage: the zoom in and zoom out buttons are icon-only but each carries a real aria-label', () => {
+  const source = read('../client/src/pages/GraphPage.tsx');
+  assert.match(source, /onClick=\{zoomOut\}[\s\S]{0,80}?aria-label="Zoom out"/, 'the zoom-out button must be named, since its visible glyph is not a real word');
+  assert.match(source, /onClick=\{zoomIn\}[\s\S]{0,80}?aria-label="Zoom in"/, 'the zoom-in button must be named, since its visible glyph is not a real word');
+});
+
+test('GraphPage: the fullscreen toggle names the state it will move TO, not a static label', () => {
+  const source = read('../client/src/pages/GraphPage.tsx');
+  assert.match(
+    source,
+    /aria-label=\{fullscreen \? 'Exit fullscreen' : 'Enter fullscreen'\}/,
+    'a toggle whose label never changes leaves a screen reader user unable to tell which state a press will produce',
+  );
 });

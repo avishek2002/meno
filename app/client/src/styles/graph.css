@@ -5,6 +5,30 @@
    from main.tsx after styles.css, so a rule here wins a specificity tie with
    the base sheet. New rules only - existing rules stay in styles.css. */
 
+/* The page itself is the flex column now (finding 6): .content (styles.css)
+   is already a `flex: 1` item of #root's own column flex (the standard
+   sticky-footer pattern - #root: display:flex, flex-direction:column,
+   min-height:100vh), which gives it a genuine, definite height rather than
+   an auto one whenever the viewport has room to spare. Stretching
+   .graph-page to fill THAT height, then handing .graph-canvas-wrap
+   `flex: 1 1 auto` below, derives the canvas's height from whatever the
+   heading, warnings, notice and search box actually take up this render,
+   rather than a fixed rem estimate of their combined height that only held
+   for the specific page state (no warnings, no notice, search collapsed,
+   skip link unfocused) it was measured against - four things that change
+   the page's real chrome height and used to each push the canvas bottom
+   below the fold: data.warnings, the noConnectionsYet notice, the inline
+   search-results list, and the skip link switching to `position: static`
+   on focus. min-height: 0 overrides the flex default of min-height: auto,
+   the classic nested-flex gotcha that would otherwise stop this column from
+   ever shrinking below its content's own height. */
+.graph-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
 /* The legend moves from an absolutely-positioned overlay (styles.css) to a
    real column beside the canvas, so it stops covering nodes (UI-12: it used
    to cover 27% of the canvas and hide 8 nodes). Wraps below the canvas on a
@@ -25,6 +49,10 @@
   background: none;
   border: none;
   border-radius: 0;
+  /* Grows to fill whatever .graph-page has left over above (see the comment
+     there) instead of a fixed height guess - the fix for finding 6. */
+  flex: 1 1 auto;
+  min-height: 26rem;
 }
 
 .graph-canvas {
@@ -34,6 +62,138 @@
   border-radius: var(--radius);
   background: var(--bg-subtle);
   overflow: hidden;
+  /* The node card below pins to a corner of THIS box, not the wrap - so it
+     tracks the canvas even when the legend column is a different height. */
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
+}
+
+/* Overrides the base sheet's fixed `height: 70vh` (loaded first, so this
+   wins the specificity tie) - the svg now fills whatever height
+   .graph-canvas ends up with from the flex chain above (.graph-page down
+   through .graph-canvas-wrap's `flex: 1 1 auto`), rather than carrying a
+   height of its own. */
+.graph-svg {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+}
+
+/* CSS-only fullscreen (docs/specs/graph.md, "How it behaves" item 14):
+   `position: fixed; inset: 0` on the same wrap the canvas and legend already
+   live in, not the Fullscreen API - deliberately, so Escape stays
+   unambiguous between exiting fullscreen and closing an open node card (see
+   GraphPage.tsx's one Escape listener). z-index clears both the sticky
+   header (styles.css, z-index 10) and the InfoTip bubble (z-index 60), since
+   fullscreen is meant to take the canvas out of the app's own header and
+   theming entirely. */
+.graph-canvas-wrap.graph-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  height: auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0.75rem;
+  background: var(--bg);
+}
+
+/* The zoom in / zoom out / fit-to-view / fullscreen toolbar (docs/specs/graph.md,
+   "How it behaves" item 14) - sits above the legend toggle, in the same
+   column, so it reads as "beside the legend" per the spec's own phrasing. */
+.graph-canvas-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+}
+
+.graph-canvas-controls button {
+  flex: 0 0 auto;
+}
+
+/* aria-disabled, not the `disabled` attribute (findings 1 and 8) - a
+   disabled element is dropped from the tab order and, if it held focus, the
+   browser blurs it straight to <body>. These stay focusable and keyboardable
+   (their own click handlers are the real no-op), so the greyed-out look has
+   to come from CSS instead of the free styling `:disabled` gives for free. */
+.graph-canvas-controls button[aria-disabled='true'],
+.node-card-action[aria-disabled='true'] {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* The non-modal node card (docs/specs/graph.md, "How it behaves" item 12):
+   pinned to a corner of .graph-canvas, which is `overflow: hidden` and now
+   `position: relative` above, so the card never spills past the canvas
+   border. z-index clears the hover tooltip (base sheet, z-index 20). */
+.node-card {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  z-index: 25;
+  width: 20rem;
+  max-width: calc(100% - 1.5rem);
+  max-height: calc(100% - 1.5rem);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 0.9rem 1rem;
+}
+
+.node-card-close {
+  align-self: flex-end;
+}
+
+.node-card-title {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.node-card-kind {
+  margin: 0;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+}
+
+.node-card-summary {
+  margin: 0;
+}
+
+.node-card-objectives {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.85rem;
+}
+
+.node-card-progress {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.node-card-action {
+  align-self: flex-start;
+  margin-top: 0.25rem;
+}
+
+.node-card-disabled-reason {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.node-card-error {
+  color: var(--text-muted);
 }
 
 /* No border/background of its own - GraphLegend's own inner .graph-legend
@@ -154,14 +314,37 @@
 @media (max-width: 40rem) {
   .graph-canvas-wrap {
     flex-wrap: wrap;
+    /* Overrides the base rule's flex: 1 1 auto - wrapped, canvas and legend
+       stack and each already carries its own min-height, so growing the
+       wrap itself to fill the page's remaining height on top of that would
+       just stretch a gap below the legend rather than helping either box. */
+    flex: 0 1 auto;
   }
 
   .graph-canvas {
     flex-basis: 100%;
+    min-height: 24rem;
   }
 
   .graph-legend-panel {
     flex: 1 1 100%;
     max-width: none;
+  }
+
+  /* A corner-pinned card at this width is a bottom sheet, not a corner box
+     (docs/specs/graph.md hard rule for this track): fixed to the viewport
+     edge rather than absolute inside .graph-canvas, so it is never squeezed
+     to a sliver by a narrow canvas. */
+  .node-card {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    width: auto;
+    max-width: none;
+    max-height: 60vh;
+    border-width: 1px 0 0;
+    border-radius: var(--radius) var(--radius) 0 0;
   }
 }

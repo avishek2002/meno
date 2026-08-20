@@ -8,6 +8,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import {
+  clampZoom,
   EDGE_STROKE_WIDTH,
   filterGraphByGroups,
   fitToViewTransform,
@@ -17,6 +18,9 @@ import {
   hopNeighborhood,
   resolveFocus,
   seedPosition,
+  ZOOM_LIMITS,
+  ZOOM_STEP_FACTOR,
+  zoomAboutCenter,
 } from '../client/src/graphLayout.ts';
 import { decodeParams } from '../client/src/routeParams.ts';
 
@@ -314,4 +318,59 @@ test('exactly one client file exports resolveFocus: graphLayout.ts', () => {
   const exportingResolveFocus = files.filter((f) => readFileSync(f, 'utf8').includes('export function resolveFocus'));
   assert.equal(exportingResolveFocus.length, 1);
   assert.ok(exportingResolveFocus[0].endsWith(join('client', 'src', 'graphLayout.ts')));
+});
+
+// --- invariant 22: the zoom seam - ZOOM_LIMITS, clampZoom, zoomAboutCenter ---
+
+test('ZOOM_LIMITS is 0.2 to 4, matching the wheel/button/fit-to-view range the spec pins', () => {
+  assert.equal(ZOOM_LIMITS.min, 0.2);
+  assert.equal(ZOOM_LIMITS.max, 4);
+});
+
+test('clampZoom holds both ends of the range and passes an in-range value through unchanged', () => {
+  assert.equal(clampZoom(0.05), ZOOM_LIMITS.min);
+  assert.equal(clampZoom(0.2), ZOOM_LIMITS.min);
+  assert.equal(clampZoom(1), 1);
+  assert.equal(clampZoom(4), ZOOM_LIMITS.max);
+  assert.equal(clampZoom(9), ZOOM_LIMITS.max);
+});
+
+test('zoomAboutCenter clamps a step that would overshoot ZOOM_LIMITS.max', () => {
+  const t = { x: 10, y: -20, k: 3.9 };
+  const result = zoomAboutCenter(t, ZOOM_STEP_FACTOR);
+  assert.equal(result.k, ZOOM_LIMITS.max);
+});
+
+test('zoomAboutCenter clamps a step that would undershoot ZOOM_LIMITS.min', () => {
+  const t = { x: 10, y: -20, k: 0.21 };
+  const result = zoomAboutCenter(t, 1 / ZOOM_STEP_FACTOR);
+  assert.equal(result.k, ZOOM_LIMITS.min);
+});
+
+test('zoomAboutCenter keeps the graph point at the viewport centre fixed across a zoom step', () => {
+  // The viewport centre is the svg user-space origin (viewBox is centred on
+  // it). The world point currently under the centre is -t.x/t.k, -t.y/t.k;
+  // after a zoom step that point must still land at screen (0, 0), i.e.
+  // pos*k2 + x2 === 0.
+  const t = { x: 37, y: -18, k: 1.5 };
+  const worldAtCentreX = -t.x / t.k;
+  const worldAtCentreY = -t.y / t.k;
+
+  const zoomedIn = zoomAboutCenter(t, ZOOM_STEP_FACTOR);
+  assert.ok(Math.abs(worldAtCentreX * zoomedIn.k + zoomedIn.x) < 1e-9);
+  assert.ok(Math.abs(worldAtCentreY * zoomedIn.k + zoomedIn.y) < 1e-9);
+
+  const zoomedOut = zoomAboutCenter(t, 1 / ZOOM_STEP_FACTOR);
+  assert.ok(Math.abs(worldAtCentreX * zoomedOut.k + zoomedOut.x) < 1e-9);
+  assert.ok(Math.abs(worldAtCentreY * zoomedOut.k + zoomedOut.y) < 1e-9);
+});
+
+test('zoomAboutCenter is a pure function of its arguments, and graphLayout.ts still names no browser global', () => {
+  const t = { x: 0, y: 0, k: 1 };
+  assert.deepEqual(zoomAboutCenter(t, 1.2), zoomAboutCenter(t, 1.2));
+
+  const src = readFileSync(fileURLToPath(new URL('../client/src/graphLayout.ts', import.meta.url)), 'utf8');
+  assert.equal(src.includes("from 'react'"), false);
+  assert.equal(src.includes('window.'), false);
+  assert.equal(src.includes('document.'), false);
 });

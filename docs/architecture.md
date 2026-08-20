@@ -174,7 +174,7 @@ spec row is stale.
 | [specs/validation.md](specs/validation.md) | validate checks, exit codes, policy | Phase 2 | 3, 5, v1.17 |
 | [specs/lessons.md](specs/lessons.md) | lesson generation, anatomy, checks | Phase 3 | v1.17 |
 | [specs/progress.md](specs/progress.md) | ledger events, mastery derivation, gates | Phase 3 | 5 |
-| [specs/app.md](specs/app.md) | server + client, API surface, write path | Phase 4 | v1.5, v1.6, v1.10, v1.11, v1.12, v1.13, v1.14, v1.15, v1.16, v1.17, v1.18 |
+| [specs/app.md](specs/app.md) | server + client, API surface, write path | Phase 4 | v1.5, v1.6, v1.19, v1.11, v1.12, v1.13, v1.14, v1.15, v1.16, v1.17, v1.18 |
 | [specs/tutor-session.md](specs/tutor-session.md) | review sessions, grading, generate-ahead | Phase 5 | - |
 | [specs/citations.md](specs/citations.md) | audit protocol, stale-content flows | Phase 6 | - |
 | [specs/durability.md](specs/durability.md) | init, private mirror, restore | Phase 7 | - |
@@ -184,7 +184,7 @@ spec row is stale.
 | [org-deployment.md](org-deployment.md) + [integration-surface.md](integration-surface.md) | org deployment: private mirror-clone, `content/org/` knowledge base, RBAC mapped to host primitives, the stable integration surface | v1.3 | - |
 | [specs/supply-chain.md](specs/supply-chain.md) | the contribution trust boundary: CI enforcement, capability paths, what review executes | v1.4 | - |
 | [specs/cost.md](specs/cost.md) | content-cost attribution: cost-source adapter contract, `computeCost` (`lib/cost.ts`), snapshot format, read-only endpoint, CLI, page | v1.7 | - |
-| [specs/graph.md](specs/graph.md) | knowledge-graph view: `lib/graph.ts` model, `lib/connects.ts` grammar, read-only endpoint, deterministic client layout | v1.8 | - |
+| [specs/graph.md](specs/graph.md) | knowledge-graph view: `lib/graph.ts` model, `lib/connects.ts` grammar, two read-only endpoints (graph, node card), deterministic client layout, canvas controls | v1.19 | - |
 | [specs/subject-finder.md](specs/subject-finder.md) | find-subjects: consent-gated workspace scan (`lib/workspace-scan.ts`), snapshot format, privacy guards, candidate routing, evidence-packet handoff into elicit-needs | v1.9 | - |
 | [specs/notes.md](specs/notes.md) | personal notes: per-course notes file format, the two If-Match-guarded routes, anatomy-key section anchors, the side panel | v1.18 | - |
 

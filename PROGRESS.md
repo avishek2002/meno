@@ -40,6 +40,65 @@ _Last updated: 2026-08-20_
 
 ## Done
 
+- 2026-08-20 - **v1.19: the graph canvas gets controls, and a node opens a card instead of a
+  page.** Two halves of one complaint - the graph was hard to see into, and clicking a node threw
+  you out of it. Zoom and pan already existed (wheel, background-drag, 0.2x to 4x) but had no
+  visible affordance at all, so the work was exposing them, not building them: zoom in, zoom out,
+  and a fit-to-view button that re-triggers the `fitToViewTransform` that until now ran once per
+  load and never again. Plus a CSS-only fullscreen toggle - `position: fixed; inset: 0`, not the
+  Fullscreen API, deliberately, so that Escape keeps one unambiguous meaning instead of racing the
+  browser for it. The wheel handler had a real bug on the way past: it scaled `k` without
+  re-anchoring, so zooming drifted off-centre; wheel and buttons now share one `zoomAboutCenter`
+  and one clamp.
+  - **Clicking a node now opens a non-modal card, and no longer navigates.** The card is pinned to
+    a corner, the graph stays live underneath, clicking another node swaps the contents in place,
+    and the card's bottom button is the only route to the node's page. Every node kind gets one:
+    a course hub shows its `course.yml` objectives and lessons-done-over-total, a lesson shows the
+    one-line description its hub note already wrote for it in the `meno:derived` block, and a ghost
+    lesson gets a card saying it is planned but not written, with the action disabled rather than
+    absent. This is the one deliberate behaviour change to a stable surface: every page reachable
+    from the graph is now two clicks away rather than one, accepted on the grounds that the hover
+    tooltip still covers the cheap glance and the card shows things the destination page does not.
+  - **The summary comes from a second endpoint, not a wider node.** `GET
+    /api/v1/:tenant/graph/node?id=` returns objectives, progress and an action for exactly one
+    node, fetched only when a card opens. Widening `GraphNode` instead would have been a quarter
+    of the work and was rejected: invariant 9 pins a node to eight keys and greps the whole graph
+    payload for `answer`, `explain`, `checks`, `html` and `frontmatter`, and putting per-node prose
+    behind that grep for every node on every load to serve one card at a time inverts the point of
+    the guard. New invariant 18 gives the second endpoint the same exactly-these-keys treatment.
+  - **The leak that guard was written for turned out to be live.** Review found `title` reading a
+    file's `# ` heading with no under-`modules/` guard, while `summary` sitting six lines away had
+    one. A lesson file present on disk but missing from its `module.yml` therefore served its real
+    heading through the card - and because `tryYaml` silently drops a whole module when its
+    manifest fails to parse, a single YAML typo converted every lesson beneath it into the same
+    leak at once. The guard is now hoisted and shared so the two fields cannot drift apart again,
+    and the tests that missed it were the more important fix: both existing ones only ever ran over
+    the pristine fixture, which by construction contains no orphaned lesson file.
+  - **Nothing here persists.** Zoom, pan, fullscreen and which card is open are all component
+    state, reset on every fetch, so invariant 14's determinism claim stays literally true rather
+    than true-except-for-one-thing. Invariant 15 widened to say so.
+  - **Nine accessibility defects were found and fixed after the first build passed the gate**,
+    which is the honest headline: the gate was green and the feature was broken. Focus was being
+    destroyed at three separate points - the zoom buttons became `disabled` at their limits and
+    blurred the user into `<body>`, the card never took focus when it opened and dropped it on the
+    floor when it closed, and CSS-only fullscreen left the entire page behind it focusable and
+    scrollable. Also fixed: Escape firing the graph's handler and `InfoTip`'s at once (the graph's
+    now runs in the capture phase and only consumes the event when it acts), `aria-pressed`
+    contradicting a label that named the opposite state, the ghost card's `disabled_reason` being
+    unreachable in focus mode, the card going stale when arrow-key navigation moved to another
+    node, and the hover tooltip rendering underneath the card. A `15rem` estimate for surrounding
+    chrome was deleted rather than tuned - the canvas is a flex child now, so its height is derived
+    from whatever siblings actually rendered, including the warnings block and the search results
+    that would previously have pushed it below the fold.
+  - **Not verified in a browser.** Browser automation is gated to other projects on this machine,
+    so the card, the controls, fullscreen, and every one of the focus fixes above are reasoned
+    about and nothing more. `docs/specs/graph.md`'s "Verified by" section says so plainly rather
+    than implying coverage that does not exist. The pure seam is what the gate does cover: zoom
+    arithmetic in `graphLayout.ts`, the derived-block grammar in `lib/hub-derived.ts`, and the
+    endpoint's leak rule and error handling at the HTTP layer. Also corrected the architecture
+    spec table, which had recorded `graph.md` at v1.8 since the v1.9 group filter landed without
+    updating it.
+
 - 2026-08-20 - **v1.18: a personal-notes side panel, one file per course, sectioned by anatomy
   key.** Present on the course page and on every lesson page; writes plain markdown into
   `<course-slug>-notes.md` beside the hub, HTML-comment-delimited note blocks (`<!-- meno:note
@@ -723,6 +782,14 @@ _Last updated: 2026-08-20_
 - 2026-08-05 - research phase: 9-agent workflow across learning science, LMS landscape, needs elicitation, agent architecture, prior art, content schema; synthesized into docs/RESEARCH.md.
 
 ## On the agenda (backlog, not started)
+
+- **Node drags over-travel when the graph is taller than it is wide.** `clientDeltaToWorld`
+  (`app/client/src/pages/GraphPage.tsx`) converts a pointer delta to world units by scaling with
+  `rect.width`, but `baseScalePxPerUnit` derives the drawing scale from `min(width, height)`. The
+  two agree only while width is the binding axis, so on a tall, narrow canvas a dragged node
+  travels further than the cursor. Pre-existing, predates v1.19, surfaced by the v1.19 review while
+  reading the pointer code for other reasons. Session-only state either way, so nothing persists
+  wrong - it just feels slippery. Fix is to scale by the same `min(w, h)` the renderer uses.
 
 - **Decision 19 program** (plan: `docs/plans/content-accuracy-and-community.md`): (1) blocking
   self-audit in `generate-module` + seeded-fault fixtures + eval scorers that drill the

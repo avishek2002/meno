@@ -23,8 +23,11 @@ import { AsyncStatus } from '../components/AsyncStatus';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorState } from '../components/ErrorState';
 import { InfoTip } from '../components/InfoTip';
+import { NodeCard } from '../components/NodeCard';
 import {
   EDGE_STROKE_WIDTH,
+  ZOOM_LIMITS,
+  ZOOM_STEP_FACTOR,
   connectedNodeIds,
   filterGraphByGroups,
   fitToViewTransform,
@@ -34,6 +37,7 @@ import {
   resolveFocus,
   searchNodesByTitle,
   seedPosition,
+  zoomAboutCenter,
 } from '../graphLayout.ts';
 import type { GraphGroupCount, TitleMatch } from '../graphLayout.ts';
 import type { GraphEdge, GraphNode, GraphNodeState, GraphResponse } from '../../../shared/types.ts';
@@ -62,8 +66,6 @@ interface Transform {
 const VIEW_SIZE = 900; // svg user-space width/height; the viewBox is centered on the origin
 const FIT_MARGIN = 48; // px of breathing room fit-to-view leaves on each side of the settled graph
 const TICKS = 300; // fixed manual step count - deterministic, no animation timer
-const MIN_ZOOM = 0.2;
-const MAX_ZOOM = 4;
 const DRAG_THRESHOLD = 4; // px of pointer movement before a pointerdown+up counts as a drag, not a click
 const HOVER_HOPS = 1;
 const FOCUS_HOPS = 2;
@@ -98,10 +100,6 @@ const AUTO_LABEL_MIN_ZOOM = 0.35;
 // but it stops the dense many-label smear the finding measured.
 const MIN_LABEL_SPACING_CSS = 72;
 
-function clamp(n: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, n));
-}
-
 function nodeRadius(inDegree: number): number {
   return Math.min(MAX_NODE_RADIUS, MIN_NODE_RADIUS + Math.sqrt(inDegree) * 4);
 }
@@ -130,7 +128,9 @@ function nodeVisual(state: GraphNodeState, color: string): NodeVisual {
 }
 
 function stateLabel(state: GraphNodeState): string {
-  if (state === 'ghost') return 'planned - no file yet, not clickable';
+  // No longer "not clickable" for ghost (v1.19): every node opens a card now,
+  // ghosts included - the card itself is what says a ghost has no file yet.
+  if (state === 'ghost') return 'planned - no file yet';
   if (state === 'mastered') return 'mastered';
   return 'written, not yet mastered';
 }
@@ -249,19 +249,38 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
   const [groupOverride, setGroupOverride] = useState<Set<string | null> | null>(null);
 
   const svgElRef = useRef<SVGSVGElement | null>(null);
+  // The canvas container (below, `.graph-canvas`) - always mounted whether
+  // it holds the svg or the "no groups selected" EmptyState, unlike svgElRef
+  // above which goes null whenever nothingVisible swaps the svg out. Exists
+  // purely as closeCard's fallback focus target for when the card's own
+  // node has been filtered out from under it (finding: closeCard stranding
+  // the roving tab stop) - tabIndex={-1} like graph-legend-panel below, so
+  // it never joins the natural Tab order, only .focus()able programmatically.
+  const canvasRef = useRef<HTMLDivElement | null>(null);
   const panRef = useRef<{ pointerId: number; startX: number; startY: number; startTx: number; startTy: number } | null>(null);
   const dragRef = useRef<{ id: string; pointerId: number; startX: number; startY: number; startPos: Point; moved: boolean } | null>(
     null,
   );
   const suppressClickRef = useRef<string | null>(null);
   const nodeRefs = useRef<Map<string, SVGGElement>>(new Map());
+  // The mounted card's own container (docs/specs/graph.md item 12, finding
+  // 2) - a genuine open (activateNode, below) focuses it directly through
+  // this ref once React has committed it; an already-open card just
+  // swapping to a new node under arrow-key navigation (moveActive, finding
+  // 7) deliberately does NOT, so focus stays on the graph the whole time a
+  // learner is arrowing through nodes instead of being yanked into the card
+  // on every step.
+  const cardContainerRef = useRef<HTMLDivElement | null>(null);
+  const focusCardOnOpenRef = useRef(false);
 
   // CSS px per svg user-space unit at scale 1 (transform.k not yet
   // applied), tracked via ResizeObserver in setSvgRef below - the other
   // half of the hit-area math (UI-12). The viewBox is square but the
-  // element is not (`width: 100%`, `height: 70vh`), and with no explicit
-  // preserveAspectRatio the default `xMidYMid meet` scales uniformly by
-  // whichever of width/VIEW_SIZE or height/VIEW_SIZE is smaller, letterboxing
+  // element is not (graph.css sizes it via the flex chain - `.graph-svg`'s
+  // own `flex: 1 1 auto; height: auto` inside `.graph-canvas` - so its
+  // rendered width and height track the canvas box, not each other), and
+  // with no explicit preserveAspectRatio the default `xMidYMid meet` scales
+  // uniformly by whichever of width/VIEW_SIZE or height/VIEW_SIZE is smaller, letterboxing
   // the other axis - using width alone would silently overstate the hit
   // radius on any viewport where height is the binding dimension. Defaults
   // to 1 (a 1:1 guess) until the observer's first callback fires, which only
@@ -274,6 +293,43 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
   const [activeNodeId, setActiveNodeId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [legendOpen, setLegendOpen] = useState<boolean>(true);
+  // The node card and CSS-only fullscreen (docs/specs/graph.md, "How it
+  // behaves" items 12 and 14) - component state only, never persisted to
+  // disk or to the URL, so neither survives a reload (invariant 15).
+  const [openCardId, setOpenCardId] = useState<string | null>(null);
+  const [fullscreen, setFullscreen] = useState<boolean>(false);
+
+  // Fullscreen (docs/specs/graph.md item 14) is CSS-only `position: fixed`
+  // over the whole viewport (graph.css), which visually covers the header
+  // nav, the InfoTip trigger, the search input and the skip link without
+  // removing any of them from the DOM or the tab order - a keyboard user
+  // tabbing past the legend used to reach all four, invisible behind the
+  // opaque backdrop. Everything inside this component's own JSX before the
+  // canvas wrap gets `inert` directly (see the render below); the header and
+  // skip link live in App.tsx/Header.tsx, outside this component's tree, so
+  // they are inert'd imperatively here instead - a real DOM `inert`
+  // attribute, not a hand-rolled tabindex sweep, applied to elements this
+  // file does not own the JSX for.
+  //
+  // Body scroll is locked for the same reason: the legend column has no
+  // wheel handler of its own (only the canvas svg does, non-passively), so
+  // wheeling over it while fullscreen used to scroll the page hidden behind
+  // the fixed overlay - invisibly, until Escape closed fullscreen and the
+  // page reappeared wherever that scroll had left it.
+  useEffect(() => {
+    if (!fullscreen) return;
+    const skipLink = document.querySelector<HTMLElement>('.skip-link');
+    const header = document.querySelector<HTMLElement>('.app-header');
+    skipLink?.setAttribute('inert', '');
+    header?.setAttribute('inert', '');
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      skipLink?.removeAttribute('inert');
+      header?.removeAttribute('inert');
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [fullscreen]);
 
   // The counts the legend/filter panel shows - always over the FULL,
   // unfiltered node list (graphLayout.groupCounts), so a toggle always shows
@@ -289,9 +345,14 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
   }, [data]);
 
   // A fresh fetch always starts from "everything visible" - any earlier
-  // filter choice was scoped to the response it was made against.
+  // filter choice was scoped to the response it was made against. An open
+  // card is scoped to that same response too - a revalidate can drop the
+  // node it was open for (a ghost lesson getting generated removes it from
+  // the ghost set under a different route), so a fresh fetch closes it
+  // rather than leaving a card open for a node the new graph may not have.
   useEffect(() => {
     setGroupOverride(null);
+    setOpenCardId(null);
   }, [data]);
 
   const visibleGroupIds = groupOverride ?? defaultVisibleGroupIds;
@@ -316,6 +377,75 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
     if (!data) return null;
     return filterGraphByGroups(data.nodes, data.edges, visibleGroupIds);
   }, [data, visibleGroupIds]);
+
+  // Closing the card by any path (Escape, the Close button) returns focus to
+  // the node element the currently-open card describes, rather than letting
+  // the card's own unmount drop focus to <body>. Opening a different node's
+  // card while one is already open is a swap, not a close - activateNode
+  // below just changes openCardId and never runs this - so the return target
+  // is always read fresh off openCardId at the moment of an actual close.
+  //
+  // The originating node is not guaranteed to still be on screen: the card
+  // deliberately survives a group-filter toggle (visibleGroupIds above), so
+  // a learner can toggle off the very group the open card's node belongs to
+  // and then close the card. Pointing activeNodeId at an id nothing renders
+  // would leave no element at tabIndex={0} - the whole node group drops out
+  // of the Tab order until visibleGraph next changes - and the `?.focus()`
+  // on a ref that was never set silently does nothing instead of throwing.
+  // Fall back to the first still-visible node, or the canvas container
+  // itself if none remain (nothingVisible).
+  const closeCard = useCallback((): void => {
+    const id = openCardId;
+    setOpenCardId(null);
+    if (!id) return;
+    if (visibleGraph?.nodes.some((n) => n.id === id)) {
+      setActiveNodeId(id);
+      nodeRefs.current.get(id)?.focus();
+      return;
+    }
+    const fallbackId = visibleGraph?.nodes[0]?.id ?? null;
+    setActiveNodeId(fallbackId);
+    if (fallbackId) {
+      nodeRefs.current.get(fallbackId)?.focus();
+    } else {
+      canvasRef.current?.focus();
+    }
+  }, [openCardId, visibleGraph]);
+
+  // The one Escape listener for both the card and fullscreen, so the two
+  // stay unambiguous (design point 2): a card open takes priority and closes
+  // first: only once none is open does Escape fall through to exiting
+  // fullscreen. Two independent listeners, one per feature, would both fire
+  // on the same keypress and close both at once.
+  //
+  // Bound on `document` in the CAPTURE phase, not `window` in the (default)
+  // bubble phase: InfoTip.tsx (frozen) has its own Escape handler on
+  // `document`, bubble phase, that closes a pinned tip and refocuses its
+  // trigger. A bubble-phase listener on window always runs AFTER a
+  // document-level bubble listener, so this file's old stopPropagation()
+  // fired too late to stop InfoTip from also acting on the same keypress -
+  // with a card open and the "i" tip pinned, one Escape used to close both
+  // and yank focus to the tip's trigger. Capture-phase on document runs
+  // BEFORE any bubble-phase listener, so this can consume the event first -
+  // but only when it genuinely acts (a card open, or fullscreen on); an
+  // Escape that finds neither is left alone so InfoTip (or anything else)
+  // still gets its turn.
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent): void {
+      if (e.key !== 'Escape') return;
+      if (openCardId) {
+        e.stopPropagation();
+        closeCard();
+        return;
+      }
+      if (fullscreen) {
+        e.stopPropagation();
+        setFullscreen(false);
+      }
+    }
+    document.addEventListener('keydown', onKeyDown, true);
+    return () => document.removeEventListener('keydown', onKeyDown, true);
+  }, [openCardId, fullscreen, closeCard]);
 
   // Physics: computed fresh whenever the visible subgraph changes - a fresh
   // response, or a group toggled on or off - torn down on unmount. Manual
@@ -398,6 +528,13 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
       const nextId = order[nextIdx].id;
       setActiveNodeId(nextId);
       nodeRefs.current.get(nextId)?.focus();
+      // A card open when arrow-key navigation moves the active node swaps to
+      // describe the newly active node instead of going stale (finding 7) -
+      // the same "clicking another node swaps the card's contents in place"
+      // rule activateNode already applies to a click, just reached from a
+      // second input path. setOpenCardId is a no-op call when no card is
+      // open (openCardId is already null, so this sets null to null).
+      setOpenCardId((prev) => (prev ? nextId : prev));
     },
     [visibleGraph, activeNodeId],
   );
@@ -430,15 +567,44 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
   // connected majority in about 6% of the canvas. A totally edgeless graph
   // (connected.size === 0) falls back to fitting every point rather than an
   // empty fit.
+  // The fit computation itself, extracted so the fit-to-view button (below)
+  // can re-run the exact same maths on demand - the "runs once per load and
+  // is never re-triggered" limitation the fit button exists to remove.
+  // fitToViewTransform already clamps its own k through clampZoom (invariant
+  // 22), so this sets the returned transform straight through with no second
+  // clamp.
+  const fitToView = useCallback((): void => {
+    if (!positions || !visibleGraph) return;
+    const connected = connectedNodeIds(visibleGraph.edges);
+    const fitPoints =
+      connected.size > 0 ? [...positions.entries()].filter(([id]) => connected.has(id)).map(([, p]) => p) : [...positions.values()];
+    const fit = fitToViewTransform(fitPoints, VIEW_SIZE, FIT_MARGIN);
+    setTransform({ x: fit.x, y: fit.y, k: fit.k });
+  }, [positions, visibleGraph]);
+
+  // The zoom in / zoom out buttons (docs/specs/graph.md, "How it behaves"
+  // item 14) - the same zoomAboutCenter the wheel handler uses, so there is
+  // one clamp and one anchor for every zoom path, buttons included. Each
+  // guards its own limit and returns the same transform object unchanged
+  // when already there, a genuine no-op - paired with aria-disabled rather
+  // than the `disabled` attribute below, since a browser blurs a disabled
+  // element on click and a keyboard user parked at a zoom limit would be
+  // ejected from the toolbar to <body>.
+  const zoomIn = useCallback(
+    (): void => setTransform((t) => (t.k >= ZOOM_LIMITS.max ? t : zoomAboutCenter(t, ZOOM_STEP_FACTOR))),
+    [],
+  );
+  const zoomOut = useCallback(
+    (): void => setTransform((t) => (t.k <= ZOOM_LIMITS.min ? t : zoomAboutCenter(t, 1 / ZOOM_STEP_FACTOR))),
+    [],
+  );
+
   useEffect(() => {
     if (!positions || resolvedFocus || !visibleGraph) return;
     if (hasFitted) return;
-    const connected = connectedNodeIds(visibleGraph.edges);
-    const fitPoints = connected.size > 0 ? [...positions.entries()].filter(([id]) => connected.has(id)).map(([, p]) => p) : [...positions.values()];
-    const fit = fitToViewTransform(fitPoints, VIEW_SIZE, FIT_MARGIN);
-    setTransform({ x: fit.x, y: fit.y, k: clamp(fit.k, MIN_ZOOM, MAX_ZOOM) });
+    fitToView();
     setHasFitted(true);
-  }, [positions, resolvedFocus, hasFitted, visibleGraph]);
+  }, [positions, resolvedFocus, hasFitted, visibleGraph, fitToView]);
 
   // Center the view on the focused node once, the first time both the focus
   // value and the laid-out positions are available - never re-fired by a
@@ -472,7 +638,13 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
     const onWheelNative = (e: WheelEvent): void => {
       e.preventDefault();
       const factor = e.deltaY > 0 ? 0.9 : 1.1;
-      setTransform((t) => ({ ...t, k: clamp(t.k * factor, MIN_ZOOM, MAX_ZOOM) }));
+      // Routed through zoomAboutCenter (docs/specs/graph.md invariant 22)
+      // rather than scaling k alone: scaling k without re-anchoring x/y drifts
+      // the graph off-centre on every wheel step, since the rendered
+      // transform is translate-then-scale - the bug the architect flagged.
+      // The +/- buttons below share this same function, so there is one
+      // clamp and one anchor for every zoom path.
+      setTransform((t) => zoomAboutCenter(t, factor));
     };
     el.addEventListener('wheel', onWheelNative, { passive: false });
     // Tracks the SVG's rendered CSS size so the hit-area padding (UI-12)
@@ -550,20 +722,62 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
 
   // A drag (pointer moved past DRAG_THRESHOLD) sets suppressClickRef on
   // pointerup; the click that the browser fires right after is then
-  // swallowed here instead of navigating. Ghost nodes never call this - they
-  // have no route, so activate() is a no-op for them regardless.
+  // swallowed here instead of opening a card. Opens the node card and
+  // navigates nowhere, for every kind and every state, ghosts included
+  // (docs/specs/graph.md invariant 21) - clicking a different node swaps the
+  // card's contents in place rather than stacking a second one, since
+  // openCardId just changes value.
+  //
+  // The already-open case is handled explicitly rather than left to fall
+  // through into setOpenCardId: setting state to the value it already holds
+  // is a no-op React bails out of without re-rendering, so the flag below
+  // would never be consumed and would stay armed for whatever unrelated
+  // openCardId change comes next (typically an arrow-key swap, stealing
+  // focus mid-navigation - the exact bug finding 7 closed). A repeat
+  // activation - a second click, or Enter on the node whose card is already
+  // open - re-focuses the card directly instead, since that is what asking
+  // for it again should do.
   function activateNode(node: GraphNode): void {
-    if (!node.route) return;
     if (suppressClickRef.current === node.id) {
       suppressClickRef.current = null;
       return;
     }
-    navigate(node.route);
+    if (node.id === openCardId) {
+      cardContainerRef.current?.focus();
+      return;
+    }
+    focusCardOnOpenRef.current = true;
+    setOpenCardId(node.id);
   }
+
+  // Runs the focus move activateNode above requested, once the card it
+  // opened has actually committed to the DOM - this is AFTER render, unlike
+  // the imperative .focus() calls sprinkled through the pointer/keyboard
+  // handlers above, because the card's own mount is what we are waiting on
+  // here, not a node that already exists. Guarded by the ref flag so an
+  // arrow-key-driven swap (moveActive), which changes openCardId without
+  // setting the flag, never fires this and never steals focus off the graph
+  // mid-navigation (finding 7 vs finding 2 - see the ref's own comment
+  // above).
+  //
+  // The flag is only cleared once cardContainerRef.current is actually
+  // focused, not merely because this effect ran: a concurrent refetch can
+  // null out `positions` and un-render the card (the early return below,
+  // `if (!positions) return ...`) between activateNode arming the flag and
+  // this effect's first run, in which case the ref is still null here and
+  // there is nothing to focus yet. `positions` is in the dependency array so
+  // this effect gets a second try once the card re-mounts with its layout
+  // restored, rather than leaving the flag permanently armed with no effect
+  // run left to consume it.
+  useEffect(() => {
+    if (!openCardId || !focusCardOnOpenRef.current) return;
+    if (!cardContainerRef.current) return;
+    focusCardOnOpenRef.current = false;
+    cardContainerRef.current.focus();
+  }, [openCardId, positions]);
 
   function onNodeKeyDown(e: ReactKeyboardEvent<SVGGElement>, node: GraphNode): void {
     if (e.key === 'Enter' || e.key === ' ') {
-      if (!node.route) return;
       e.preventDefault();
       activateNode(node);
       return;
@@ -653,7 +867,7 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
   const noConnectionsYet = hasNoConnectionEdges(data.edges);
   const nothingVisible = visibleGraph.nodes.length === 0;
   // Rendered CSS px per svg user-space unit at the current zoom - see
-  // HIT_TARGET_RADIUS_CSS above. transform.k is always >= MIN_ZOOM (0.2), so
+  // HIT_TARGET_RADIUS_CSS above. transform.k is always >= ZOOM_LIMITS.min (0.2), so
   // this is never zero.
   const pxPerUnit = baseScalePxPerUnit * transform.k;
 
@@ -699,24 +913,31 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
 
   return (
     <section className="graph-page">
-      <h1 aria-labelledby="graph-heading">
+      {/* inert while fullscreen (finding 3): fullscreen is CSS `position:
+          fixed; inset: 0` on .graph-canvas-wrap below, which visually covers
+          everything above it in the DOM without removing any of it from the
+          tab order - a keyboard user used to be able to tab straight past
+          the (invisible) legend into the InfoTip trigger, the search input,
+          and this heading. The header nav and skip link live outside this
+          component's tree and are inert'd imperatively in the effect above. */}
+      <h1 aria-labelledby="graph-heading" inert={fullscreen}>
         <span id="graph-heading">Graph</span> <InfoTip entry="graphView" />
       </h1>
       {data.warnings.length > 0 && (
-        <div className="warnings-box">
+        <div className="warnings-box" inert={fullscreen}>
           {data.warnings.map((w, i) => (
             <p key={i}>{w}</p>
           ))}
         </div>
       )}
       {noConnectionsYet && (
-        <p className="notice">
+        <p className="notice" inert={fullscreen}>
           No cross-course connections have been authored yet, so the thick accent link this view exists to show is
           absent. Run a <code>second-brain</code> sweep to add <code>## Connects to</code> blocks to your course hubs,
           and they will appear here.
         </p>
       )}
-      <form className="graph-search" role="search" onSubmit={onSearchSubmit}>
+      <form className="graph-search" role="search" onSubmit={onSearchSubmit} inert={fullscreen}>
         <label htmlFor="graph-search-input">Find a note by title</label>
         <div className="graph-search-row">
           <input
@@ -749,16 +970,16 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
           </ul>
         )}
       </form>
-      <a href="#graph-legend-panel" className="graph-skip-link">
+      <a href="#graph-legend-panel" className="graph-skip-link" inert={fullscreen}>
         Skip past graph nodes
       </a>
-      <div className="graph-canvas-wrap">
+      <div className={fullscreen ? 'graph-canvas-wrap graph-fullscreen' : 'graph-canvas-wrap'}>
         {/* Its own bordered box (UI-12 v2), separate from the legend column,
             so the drawing area reads as visually distinct from the legend
             rather than both looking like they share one backdrop - see
             graph.css: the base sheet's canvas background/border moved here
             from graph-canvas-wrap, which is now a bare flex row. */}
-        <div className="graph-canvas">
+        <div className="graph-canvas" ref={canvasRef} tabIndex={-1}>
           {nothingVisible ? (
             // All groups toggled off (design point 6): the existing empty
             // state, not a blank canvas and not a crash. The legend/filter
@@ -816,15 +1037,14 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
                 // target - see HIT_TARGET_RADIUS_CSS and pxPerUnit above.
                 const padR = Math.max(r, HIT_TARGET_RADIUS_CSS / pxPerUnit);
                 const dimmed = highlight ? !highlight.has(node.id) : false;
-                const clickable = node.route !== null;
                 // Computed once above, over the whole visible node list, so
                 // a collision between two candidates can be resolved by
                 // priority instead of render order (UI-12 v2).
                 const showLabel = labelIds.has(node.id);
-                // A ghost node has no route and no file to open - it renders as
-                // an image rather than a link, never a click target
-                // (docs/specs/graph.md, "How it behaves" item 6), and its label
-                // says so via stateLabel.
+                // Every node opens a card on click now, ghosts included
+                // (docs/specs/graph.md invariant 21) - role="button" rather
+                // than the old link/img split, since the action is "open a
+                // card", never "navigate", for any node.
                 const label = `${node.title}, ${stateLabel(node.state)}`;
 
                 return (
@@ -834,13 +1054,13 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
                       if (el) nodeRefs.current.set(node.id, el);
                       else nodeRefs.current.delete(node.id);
                     }}
-                    role={clickable ? 'link' : 'img'}
+                    role="button"
                     aria-label={label}
                     // Roving focus (UI-12): only the active node is ever in
                     // the Tab sequence - see the activeNodeId effect and
                     // moveActive above.
                     tabIndex={node.id === activeNodeId ? 0 : -1}
-                    className={clickable ? 'graph-node graph-node-clickable' : 'graph-node'}
+                    className="graph-node graph-node-clickable"
                     opacity={dimmed ? 0.15 : visual.opacity}
                     onPointerDown={(e) => onNodePointerDown(e, node.id)}
                     onPointerMove={onNodePointerMove}
@@ -885,6 +1105,16 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
             </g>
           </svg>
           )}
+
+          {/* The node card (docs/specs/graph.md, "How it behaves" item 12):
+              pinned to a corner of the canvas, non-modal - the graph stays
+              live underneath. Clicking a different node just changes
+              openCardId, which swaps this component's contents in place
+              rather than stacking a second card. Rendered regardless of
+              nothingVisible (design point 6) - a card opened before every
+              group was toggled off still describes a real node, and there is
+              no reason to drop it out from under the learner mid-read. */}
+          {openCardId && <NodeCard ref={cardContainerRef} tenant={tenant} nodeId={openCardId} onClose={closeCard} />}
         </div>
 
         {/* A real column beside the canvas, not an overlay on top of it
@@ -893,6 +1123,40 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
             also collapsible, since the finding names either fix as
             sufficient. */}
         <div className="graph-legend-panel" id="graph-legend-panel" tabIndex={-1}>
+          {/* Zoom in / zoom out / fit-to-view and the fullscreen toggle
+              (docs/specs/graph.md, "How it behaves" item 14) - visible
+              buttons beside the legend for gestures that already worked
+              (wheel, background drag) but had no on-screen affordance.
+              zoomIn/zoomOut mark themselves aria-disabled at the ends of
+              ZOOM_LIMITS rather than using the `disabled` attribute: a
+              browser blurs a disabled element on click, so a keyboard user
+              who zoomed to a limit and pressed the button again would be
+              ejected from the toolbar to <body> instead of staying put.
+              zoomIn/zoomOut are already genuine no-ops past the limit (see
+              their definitions above), so aria-disabled costs nothing extra
+              here. The fullscreen button's own label names the state it
+              will move to, same pattern as the legend toggle above -
+              aria-pressed would contradict that (it names the CURRENT
+              state), so it is deliberately left off; the label alone is the
+              one source of truth for what a press does. */}
+          <div className="graph-canvas-controls" role="group" aria-label="Canvas zoom and view controls">
+            <button type="button" onClick={zoomOut} aria-disabled={transform.k <= ZOOM_LIMITS.min} aria-label="Zoom out">
+              -
+            </button>
+            <button type="button" onClick={zoomIn} aria-disabled={transform.k >= ZOOM_LIMITS.max} aria-label="Zoom in">
+              +
+            </button>
+            <button type="button" onClick={fitToView} aria-label="Fit graph to view">
+              Fit
+            </button>
+            <button
+              type="button"
+              aria-label={fullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+              onClick={() => setFullscreen((v) => !v)}
+            >
+              {fullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+            </button>
+          </div>
           <button
             type="button"
             className="graph-legend-toggle"
@@ -914,7 +1178,13 @@ export function GraphPage({ tenant, focus }: { tenant: string; focus?: string })
           )}
         </div>
 
-        {tooltip && (
+        {/* Suppressed while a card is open (finding 9, separate reviewer):
+            .node-card sits at a higher z-index than this tooltip on purpose
+            (graph.css), so hovering a node near the card's corner used to
+            render the tooltip partly hidden underneath it. The card already
+            shows strictly more about the node than the hover tooltip does,
+            so there is nothing lost by not doubling up. */}
+        {tooltip && !openCardId && (
           <div className="graph-tooltip" style={{ left: tooltip.left, top: tooltip.top }} role="status">
             <strong>{tooltip.title}</strong>
             <span>{stateLabel(tooltip.state)}</span>
