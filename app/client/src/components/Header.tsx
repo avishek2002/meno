@@ -1,15 +1,24 @@
 // Wordmark linking home, tenant name + nav when inside a tenant, the guidebook
-// link (always reachable, since the screen you need help on may be the one with
-// no tenant yet), a guarded back button, and the "Re-read files" button - files
-// are the truth and there is no watcher, so re-reading is always an explicit
-// action.
+// link, a guarded back button, and the "Re-read files" button - files are the
+// truth and there is no watcher, so re-reading is always an explicit action.
+//
+// The guidebook link is always reachable, since the screen you need help on
+// may be the one with no tenant yet - but "always reachable" and "always the
+// same URL" are not the same claim (UI-18). Inside a tenant it links the
+// tenant-scoped form (#/t/<tenant>/guide) so the other six nav links do not
+// have to vanish just because the reader asked for help; with no tenant open
+// it links the plain #/guide the guarantee above is actually about.
+// headerNav.ts's buildNavEntries owns which form and the rest of the nav's
+// shape - see its own doc comment for why the plain form used to make the
+// whole block disappear.
 //
 // Real anchors with aria-current, not tabs: each of these has its own URL and
 // answers the back button, which makes them navigation.
 import { useEffect, useState } from 'react';
 import { InfoTip } from './InfoTip';
 import { nextDepth, stampedState } from '../historyDepth.ts';
-import { homeHref, guideHref, tenantHref, todosHref, progressHref, insightsHref, costHref, graphHref } from '../../../shared/routeHrefs.ts';
+import { homeHref } from '../../../shared/routeHrefs.ts';
+import { buildNavEntries } from '../headerNav.ts';
 
 // Tracks how many in-app entries back the reader can go, so the back button
 // can hide itself entirely rather than ever ejecting someone out of Meno -
@@ -92,13 +101,6 @@ function useHeaderHeightVar(el: HTMLElement | null): void {
   }, [el]);
 }
 
-// course, lesson and note are reached only by drilling into Courses - there
-// is no other nav item for them - so all three carry the same aria-current as
-// the course list itself (UI-03). Without this, three levels into a course
-// reads to assistive tech as though the learner had left every section of the
-// app.
-const COURSES_SUB_ROUTES = new Set(['tenant', 'course', 'lesson', 'note']);
-
 export function Header({
   tenant,
   route,
@@ -108,10 +110,7 @@ export function Header({
   route: string;
   onRefresh: () => void;
 }) {
-  const current = (name: string): 'page' | undefined => {
-    const match = name === 'tenant' ? COURSES_SUB_ROUTES.has(route) : route === name;
-    return match ? 'page' : undefined;
-  };
+  const navEntries = buildNavEntries(route, tenant);
   const backDepth = useBackDepth();
   // Callback ref: the effect has to re-run if the element identity ever
   // changes, which a plain useRef would not report.
@@ -131,32 +130,29 @@ export function Header({
         </a>
         {tenant && <span className="tenant-name">{tenant}</span>}
       </div>
-      <nav className="main-nav" aria-label="Main">
-        {tenant && (
-          <>
-            <a href={tenantHref(tenant)} aria-current={current('tenant')}>
-              Courses
-            </a>
-            <a href={graphHref(tenant)} aria-current={current('graph')}>
-              Graph
-            </a>
-            <a href={todosHref(tenant)} aria-current={current('todos')}>
-              Todos
-            </a>
-            <a href={progressHref(tenant)} aria-current={current('progress')}>
-              Progress
-            </a>
-            <a href={insightsHref(tenant)} aria-current={current('insights')}>
-              Insights
-            </a>
-            <a href={costHref(tenant)} aria-current={current('cost')}>
-              Cost
-            </a>
-          </>
-        )}
-        <a href={guideHref()} className="nav-guide" aria-current={current('guide')}>
-          Guide
-        </a>
+      {/* aria-label "Primary" rather than "Main" (UI-18). Renamed rather than
+          dropped: an unnamed nav landmark would be announced as a bare
+          "navigation" among the page's other labelled ones (Breadcrumb,
+          Lesson navigation, Guidebook sections), which is worse than a
+          slightly redundant name. "Main" was the wrong word twice over - it
+          duplicates what <main> already carries, and it is the wording this
+          rename exists to remove.
+          Not "Sections" either: GuidePage's own table of contents is labelled
+          "Guidebook sections", and on that one page - the screen a reader who
+          needs help is most likely to be on - a landmark list would show
+          "Sections" and "Guidebook sections" side by side, one a substring of
+          the other, with nothing saying which is the site-wide chrome.
+          "Primary" alone, not "Primary navigation": a <nav> landmark is
+          already announced with its role, so the longer form reads as
+          "Primary navigation navigation".
+          The main-nav class name stays - it is a CSS hook (styles.css,
+          styles/nav.css), not the wording this rename is about. */}
+      <nav className="main-nav" aria-label="Primary">
+        {navEntries.map((entry) => (
+          <a key={entry.href} href={entry.href} className={entry.className} aria-current={entry.current}>
+            {entry.label}
+          </a>
+        ))}
       </nav>
       <span className="header-refresh">
         <button type="button" className="refresh-btn" onClick={onRefresh}>

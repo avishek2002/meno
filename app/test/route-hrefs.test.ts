@@ -8,6 +8,8 @@ import assert from 'node:assert/strict';
 import {
   homeHref,
   guideHref,
+  tenantGuideHref,
+  guideHrefFor,
   tenantHref,
   tenantCourseHref,
   courseHref,
@@ -38,6 +40,43 @@ test('homeHref and guideHref build the fixed routes', () => {
 test('tenantHref percent-encodes the tenant', () => {
   assert.equal(tenantHref('alice'), '#/t/alice');
   assert.equal(tenantHref(TRICKY), `#/t/${TRICKY_ENCODED}`);
+});
+
+test('tenantGuideHref (UI-18) percent-encodes the tenant but not the section, matching guideHref', () => {
+  assert.equal(tenantGuideHref('alice'), '#/t/alice/guide');
+  assert.equal(tenantGuideHref('alice', 'glossary'), '#/t/alice/guide#glossary');
+  assert.equal(tenantGuideHref(TRICKY), `#/t/${TRICKY_ENCODED}/guide`);
+  // The section fragment stays unencoded for the same reason
+  // tenantCourseHref's does - it is drawn from the same safe id grammar.
+  assert.equal(tenantGuideHref(TRICKY, 'glossary'), `#/t/${TRICKY_ENCODED}/guide#glossary`);
+});
+
+// UI-18's one load-bearing decision, and the only one with two call sites -
+// the header's Guide link (headerNav.ts) and the guidebook's own table of
+// contents (GuidePage.tsx). GuidePage is .tsx and so unreachable from
+// `node --test`; routing both callers through this function is what puts the
+// decision behind the gate at all. Hardcoded expectations, not values this
+// test asked the function under test to compute, so a revert to always-plain
+// guideHref fails here.
+test('guideHrefFor picks the form that keeps the reader in their tenant (UI-18)', () => {
+  assert.equal(guideHrefFor(undefined), '#/guide');
+  assert.equal(guideHrefFor(undefined, 'glossary'), '#/guide#glossary');
+  assert.equal(guideHrefFor('alice'), '#/t/alice/guide');
+  assert.equal(guideHrefFor('alice', 'glossary'), '#/t/alice/guide#glossary');
+  // An empty tenant name is not "no tenant" - only undefined is. A tenant
+  // that stringifies to nothing would produce #/t//guide, which matches no
+  // route, and silently swallowing it here would hide that upstream bug
+  // behind a link that happens to work.
+  assert.equal(guideHrefFor(''), '#/t//guide');
+});
+
+test('round-trip: guideHrefFor output resolves back to route name guide either way', () => {
+  const tenantless = matchRoute(guideHrefFor(undefined, 'glossary'));
+  assert.equal(tenantless.name, 'guide');
+  assert.deepEqual(tenantless.params, { section: 'glossary' });
+  const scoped = matchRoute(guideHrefFor('alice', 'glossary'));
+  assert.equal(scoped.name, 'guide');
+  assert.deepEqual(scoped.params, { tenant: 'alice', section: 'glossary' });
 });
 
 test('tenantCourseHref percent-encodes the tenant but not the course slug fragment', () => {
@@ -110,6 +149,16 @@ test('round-trip: home, guide (with and without a section)', () => {
   const withSection = matchRoute(guideHref('glossary'));
   assert.equal(withSection.name, 'guide');
   assert.deepEqual(withSection.params, { section: 'glossary' });
+});
+
+test('round-trip: tenantGuideHref (UI-18), with and without a section', () => {
+  const withoutSection = matchRoute(tenantGuideHref('alice'));
+  assert.equal(withoutSection.name, 'guide');
+  assert.deepEqual(withoutSection.params, { tenant: 'alice' });
+
+  const withSection = matchRoute(tenantGuideHref('alice', 'glossary'));
+  assert.equal(withSection.name, 'guide');
+  assert.deepEqual(withSection.params, { tenant: 'alice', section: 'glossary' });
 });
 
 test('round-trip: tenant, with and without the course-list deep-link fragment', () => {

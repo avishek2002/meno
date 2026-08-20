@@ -4,7 +4,7 @@ Living status file - the done / backlog tracker for this project. **Update it wh
 finish a thing -> move it to Done; pick up or think of a new thing -> add it to the agenda; make a call
 that isn't captured in the code -> log it. Keep entries dated, newest near the top of each section.
 
-_Last updated: 2026-08-19_
+_Last updated: 2026-08-20_
 
 > Maintenance: keep this file current whenever work changes. Tooling can't see conversation-only
 > decisions, so logging those is on whoever made them.
@@ -39,6 +39,25 @@ _Last updated: 2026-08-19_
     absorbed opportunistically.
 
 ## Done
+
+- 2026-08-20 - **v1.16 (UI-18): the nav bar survives a visit to the guidebook.** Clicking Guide
+  from inside a tenant emptied the header of everything else - Courses, Graph, Todos, Progress,
+  Insights, Cost all disappeared, and the browser's back button was the only way back to any of
+  them. Nothing to do with the guidebook itself: the header renders that block only when
+  `route.params.tenant` exists, and `#/guide` is a tenant-less route, so the link that was
+  supposed to help you left you with less to work with than any other page. The fix is a second
+  `guide` RouteDef, `#/t/:tenant/guide`, sharing the name so every route-name consumer
+  (`routeTitle`, `shouldSkipScrollReset`, the `aria-current` check) needed no change at all;
+  the header links whichever form matches where the reader is. The guidebook's own table of
+  contents had the same hazard one click later, and both callers now go through a single
+  `guideHrefFor` in `routeHrefs.ts` - the header's copy would have been gate-covered and the
+  guidebook's, in a `.tsx` file `node --test` cannot strip, would not, which is the exact
+  asymmetry the bug hid in. The nav's shape came out of `Header.tsx` into a pure `headerNav.ts`
+  so it could be tested at all; there is no DOM in this repo's test runner, so the alternative
+  was no guard. Also renamed the header nav landmark from "Main" to "Primary" - "Main"
+  duplicated what `<main>` already carries, and "Sections" would have collided with the
+  guidebook's own "Guidebook sections" on the one page both appear. Browser-verified over the
+  `examples/` fixtures through the reported journey.
 
 - 2026-08-19 - **v1.15: nothing a person operates, and no table, is nameless.** Three separate
   mechanisms were each producing a wrong accessible name, and the fix is a different shape for

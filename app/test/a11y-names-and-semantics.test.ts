@@ -196,3 +196,30 @@ test('ProgressPage: the per-course mastery table is aria-label={`Concept mastery
   const section = source.split('className="mastery-table" aria-label')[1]?.slice(0, 900) ?? '';
   assert.equal((section.match(/<th scope="col"/g) ?? []).length, 5);
 });
+
+// --- UI-18: the header's nav landmark is named, and not named "Main" -------
+
+test('Header: the nav landmark is aria-label="Primary", distinct from every other nav on the page', () => {
+  const source = read('../client/src/components/Header.tsx');
+  assert.match(
+    source,
+    /<nav className="main-nav" aria-label="Primary">/,
+    'the header nav must keep an explicit accessible name - an unnamed landmark is announced as a bare "navigation" alongside the page\'s other named ones',
+  );
+  assert.doesNotMatch(
+    source,
+    /aria-label="Main"/,
+    '"Main" duplicates the name <main> already carries, and is the wording UI-18 removed',
+  );
+  // The near-collision that made "Sections" the wrong replacement: GuidePage
+  // renders its own table of contents as <nav aria-label="Guidebook
+  // sections">, and both landmarks are listed together on that one page.
+  const guideSource = read('../client/src/pages/GuidePage.tsx');
+  const guideNavLabel = guideSource.match(/<nav className="guide-toc" aria-label="([^"]+)">/)?.[1];
+  assert.ok(guideNavLabel, 'expected GuidePage to still label its table-of-contents nav');
+  const headerNavLabel = source.match(/<nav className="main-nav" aria-label="([^"]+)">/)?.[1];
+  assert.ok(
+    headerNavLabel && !guideNavLabel!.toLowerCase().includes(headerNavLabel.toLowerCase()),
+    `the header's landmark name (${headerNavLabel}) must not be a substring of the guidebook's (${guideNavLabel})`,
+  );
+});

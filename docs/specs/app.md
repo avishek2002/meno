@@ -5,7 +5,9 @@ filter; the group write surface removed), v1.10 (note-path breadcrumb, course de
 back control), v1.11 (collapse state actually persists), v1.12 (breadcrumb up-navigation,
 truncatable routes, centralized href builders), v1.13 (skip link, header reflow,
 reduced-motion coverage, operable-control contrast), v1.14 (scroll clearance measured from
-the header), and v1.15 (accessible names on controls, tables and headings). Canonical formats owned elsewhere: check blocks and
+the header), v1.15 (accessible names on controls, tables and headings), and v1.16 (the
+tenant-scoped guidebook, so the nav bar survives a visit to Guide, and the header nav landmark
+renamed off "Main"). Canonical formats owned elsewhere: check blocks and
 callouts in
 [generate-module/references/check-formats.md](../../.agents/skills/generate-module/references/check-formats.md),
 todos in
@@ -148,6 +150,23 @@ write-authority seam (decision 14) is enforced in code.
    (`#/guide#glossary`), so the route pattern tolerates one trailing fragment and the page
    scrolls to it, honoring `prefers-reduced-motion`. A "Guide" nav link is present on every
    screen including the no-tenant empty state, which is exactly when help is most wanted.
+   **The guidebook is also reachable in a tenant-scoped form (v1.16, UI-18)**:
+   `#/t/:tenant/guide`, a second `RouteDef` sharing the name `guide` rather than a widened
+   pattern, for the same reason `course` further down is two entries - one alternative can only
+   declare one named capture group, and both forms independently need their own `#section`
+   group. Before this, the header's Guide link always pointed at the tenant-less URL, which
+   dropped the tenant from `route.params` on arrival and took the other six nav links (Courses,
+   Graph, Todos, Progress, Insights, Cost) down with it - visiting Guide from inside a tenant
+   left only the browser's own back button as a way out, since the nav block that would have
+   linked back to any of those pages had rendered nothing. The header now links whichever form
+   matches where the reader is (`tenantGuideHref` inside a tenant, `guideHref` outside one -
+   `app/shared/routeHrefs.ts`), and the guidebook's own table-of-contents links do the same, so
+   the tenant survives not only the first click into Guide but every section click inside it
+   too. The decision behind which entries the nav bar renders, in what order, and with what
+   `aria-current`, is a pure function (`app/client/src/headerNav.ts`) `Header.tsx` renders by
+   mapping over - the one piece of this that a DOM-free test can actually pin down, since this
+   repo has no DOM test library. The tenant-less form is unchanged and still the one link that
+   is always present regardless of where the reader is, per the reasoning two sentences up.
    `#/t/:tenant/c/:course` tolerates the same shape of trailing fragment
    (`#/t/:tenant/c/:course#<module-slug>`) as a module anchor: each module card on the course
    page carries `id={module.slug}`, `CoursePage` scrolls to it on load the same way `GuidePage`
@@ -279,6 +298,19 @@ write-authority seam (decision 14) is enforced in code.
     accessibility tree over the DevTools protocol with Playwright borrowed from a neighbouring
     project. That is the same borrow-and-return arrangement the v1.13 audit used, and it leaves
     the same gap: a future regression here fails silently unless somebody looks again.
+
+    **The header's nav landmark is named "Primary" (v1.16, UI-18).** It was "Main", which was
+    the wrong name twice over: it duplicated what the `<main>` element already carries, and a
+    reader asked for it to go. Renamed rather than deleted, because an unnamed `<nav>` is
+    announced as a bare "navigation" next to the three named ones a page can also carry
+    (`Breadcrumb`, `Lesson navigation`, `Guidebook sections`), which is worse than a redundant
+    name. Not "Sections" either: the guidebook's own table of contents is `Guidebook sections`,
+    and on that one page a landmark list would show two names where one is a substring of the
+    other, with nothing marking which is the site-wide chrome. Not "Primary navigation": the
+    role is already announced, so the longer form reads as "Primary navigation navigation".
+    Unlike the v1.15 names above, this one is gated - `a11y-names-and-semantics.test.ts` pins
+    both the name and the substring relationship to the guidebook's, since the collision, not
+    the wording, is the part a later edit would reintroduce by accident.
 
     These came out of an agent-run audit of all twelve pages against WCAG 2.2, the ARIA Authoring
     Practices Guide, and the documented axe-core rule set. What that audit could check was
@@ -464,6 +496,32 @@ both run before routing so they cover writes and unrouted paths equally.
 - Invariants 11-12: by construction (no route reads outside the content root; both
   renderers import `GLOSSARY`). Not machine-asserted - a future contributor could add a
   second copy of a definition and nothing would fail.
+- Behavior 11's tenant-scoped guidebook (v1.16, UI-18): `app/test/route-table.test.ts` proves the
+  ordering claim in the `guide` RouteDef's own comment directly - `#/t/alice/guide` resolves to
+  `guide` with `{ tenant: 'alice' }`, not to `tenant`, `note`, or `not-found` - rather than leaving
+  it argued only in prose; `app/test/route-hrefs.test.ts` covers `tenantGuideHref`'s encoding and
+  round-trips it through `matchRoute` with and without a section, and pins `guideHrefFor`, the
+  chooser both call sites go through. That last one is the load-bearing line of this change and
+  the reason it is a shared function rather than a ternary in each caller: the header's copy
+  would have been gate-covered and the guidebook's, living in a `.tsx` file `node --test` cannot
+  strip, would not - which is exactly the asymmetry the original bug hid in. The nav bar's own shape - which
+  entries render, in what order, current on which route, and which href Guide carries - is
+  `app/client/src/headerNav.ts`, a pure extraction with no DOM and no React import, covered by
+  `app/test/header-nav.test.ts`: all seven entries on the tenant-scoped guide route, Guide alone
+  with none, Guide current on both forms, and the Courses sub-route grouping (UI-03) preserved.
+  `Header.tsx` renders by mapping over that module's output, so what the test pins down is what
+  the header actually draws, not a parallel description of it - the same discipline
+  `courseList.ts`'s pure decisions get. Rendering itself - the header actually reappearing on
+  screen after a Guide click, and staying up through a section click - is not gate-covered, the
+  same DOM-free limit every other page-level behavior in this file carries. It was
+  **browser-verified** instead, the borrow-and-return arrangement v1.13 and v1.15 both used:
+  Playwright from a neighbouring project, driving the dev server over the `examples/` fixtures
+  through the exact journey the bug was reported on - open a tenant, click Guide, click a
+  guidebook section, click back to Courses - plus the tenant-less `#/guide` and a bookmarked deep
+  link to `#/t/<tenant>/guide#glossary`. All seven nav entries present and Guide marked current on
+  every tenant-scoped state, Guide alone on the tenant-less one, no console errors. The same gap
+  the other audits leave applies: a future regression in the rendering half fails silently unless
+  somebody drives it again.
 - Behavior 14 and invariant 15 (v1.12): `app/test/route-hrefs.test.ts` round-trips every builder
   through `matchRoute` and asserts the encoding of a value carrying a space, a `#`, a `/` and a
   non-ASCII character; `app/test/route-table.test.ts` walks a lesson URL's `/<letter>/<value>`

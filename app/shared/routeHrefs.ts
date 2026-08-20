@@ -35,6 +35,40 @@ export function tenantHref(tenant: string): string {
 }
 
 /**
+ * The one chooser in this file, not a third route pattern: given whatever
+ * tenant the reader currently has open (undefined if none), the guidebook URL
+ * that keeps them there - tenantGuideHref below inside a tenant, guideHref
+ * above outside one.
+ *
+ * It exists because that choice is the whole of UI-18 and it has two call
+ * sites, not one: the header's Guide link (headerNav.ts) and the guidebook's
+ * own table of contents (GuidePage.tsx). Getting it right in the header and
+ * wrong in the table of contents is not a hypothetical - it is the shape the
+ * bug took in the first place, where the nav block reappeared on arrival at
+ * the guide and vanished again on the first section click. One function with
+ * one test is what stops the two call sites from drifting apart again.
+ *
+ * Here rather than beside either caller because this file is already the
+ * shared home both of them import from, and because it is DOM-free: GuidePage
+ * is .tsx, which `node --test` cannot strip, so a copy of this ternary living
+ * inline there could never be covered by the gate.
+ */
+export function guideHrefFor(tenant: string | undefined, section?: string): string {
+  return tenant === undefined ? guideHref(section) : tenantGuideHref(tenant, section);
+}
+
+/**
+ * The tenant-scoped guidebook (UI-18): #/t/<tenant>/guide, optionally
+ * anchored at a section id the same way guideHref above is. Not
+ * percent-encoded on the section for the same reason courseModuleHref below
+ * is not - see that comment for the id grammar this fragment is drawn from.
+ */
+export function tenantGuideHref(tenant: string, section?: string): string {
+  const base = `${tenantHref(tenant)}/guide`;
+  return section === undefined ? base : `${base}#${section}`;
+}
+
+/**
  * The course-list deep link, #/t/<tenant>#course-<slug> - courseList.ts's
  * courseSlugFromFragment (the fragment scheme's owner) resolves it back to a
  * slug. Not percent-encoded, matching courseModuleHref below: a course slug

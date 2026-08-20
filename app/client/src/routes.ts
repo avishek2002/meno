@@ -23,6 +23,35 @@ export const ROUTES: RouteDef[] = [
   // The optional trailing fragment is the guidebook's in-page section links:
   // one hash router plus one document fragment, so a section stays linkable.
   { name: 'guide', pattern: /^#\/guide(?:#(?<section>[\w-]+))?$/ },
+  // The tenant-scoped form of the same page (UI-18): reached by clicking
+  // Guide from inside a tenant, so the header's other six nav links do not
+  // have to disappear just because the reader asked for help. This is a
+  // second RouteDef, not the tenant-less pattern above widened to make its
+  // own `tenant` group optional, for the same reason `course` further down
+  // is two entries instead of one: a single alternative can only declare one
+  // `(?<section>...)` group, and this route and the one above already need
+  // their own to carry the guidebook's #section anchor independently of
+  // whether a tenant is present. Keeping them as two named entries also
+  // means `tenantGuideHref` and `guideHref` (routeHrefs.ts) each keep
+  // emitting exactly the URL shape they always have - neither has to grow a
+  // branch for the other's case.
+  //
+  // Nothing above or below this entry can shadow it. `tenant` just below
+  // uses `[^/#]+` for its own group, which cannot span the literal `/guide`
+  // in this hash, and `tenant`'s pattern anchors with `$` right after that
+  // group (plus its own optional fragment) - so matching only as far as
+  // `alice` and leaving `/guide` unconsumed fails the match entirely rather
+  // than matching a prefix. `note` requires a literal `/n/` after the
+  // tenant, which `/guide` is not. `course`, `lesson` and the rest all
+  // require their own `/c/`, `/graph`, `/todos`, etc. immediately after the
+  // tenant, so none of them ever reach a bare `/guide` suffix either. Order
+  // relative to those entries therefore does not matter; this sits next to
+  // the tenant-less guide entry only to stay next to it, the same reasoning
+  // `course`'s two entries use. Proven by
+  // app/test/route-table.test.ts rather than argued here, per the review
+  // note on this change: regex claims like this one are exactly the kind
+  // that are wrong in a way reasoning alone does not catch.
+  { name: 'guide', pattern: /^#\/t\/(?<tenant>[^/#]+)\/guide(?:#(?<section>[\w-]+))?$/ },
   { name: 'lesson', pattern: /^#\/t\/(?<tenant>[^/]+)\/c\/(?<course>[^/]+)\/m\/(?<module>[^/]+)\/l\/(?<file>[^/]+)$/ },
   // The optional trailing #module fragment (UI-10) is a module anchor within
   // the course page, the same shape as guide's #section above - `course` has
