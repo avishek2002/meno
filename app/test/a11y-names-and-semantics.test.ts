@@ -223,3 +223,50 @@ test('Header: the nav landmark is aria-label="Primary", distinct from every othe
     `the header's landmark name (${headerNavLabel}) must not be a substring of the guidebook's (${guideNavLabel})`,
   );
 });
+
+// --- Notes side panel (docs/specs/notes.md): every control this feature
+// added must carry an accessible name, and the two coverage gaps a
+// four-lens review found (v1.18) - the panel's name going stale across a
+// section switch, and the conflict actions being two identical peers - are
+// pinned here too. ---------------------------------------------------------
+
+test('NotesPanel: the toggle button is named by its own visible text ("Notes" / "Close notes"), and carries aria-expanded/aria-controls', () => {
+  const source = read('../client/src/components/NotesPanel.tsx');
+  assert.match(source, /className="notes-toggle"\s*\n\s*aria-expanded=\{open\}\s*\n\s*aria-controls=\{panelId\}/);
+  assert.match(source, /\{open \? 'Close notes' : 'Notes'\}/);
+});
+
+test('NotesPanel: the panel aside is aria-label={`Notes: ${selected?.title ?? courseTitle}`}, so its name reaches the currently selected section', () => {
+  const source = read('../client/src/components/NotesPanel.tsx');
+  assert.match(source, /role="complementary"\s*\n\s*aria-label=\{`Notes: \$\{selected\?\.title \?\? courseTitle\}`\}/);
+});
+
+test('NotesPanel: the close button, the section select, and the textarea are each named', () => {
+  const source = read('../client/src/components/NotesPanel.tsx');
+  assert.match(source, /className="notes-close" aria-label="Close notes"/);
+  assert.match(source, /<label className="notes-section-label" htmlFor=\{selectId\}>\s*\n\s*Section\s*\n\s*<\/label>/);
+  assert.match(source, /id=\{selectId\} className="notes-section-select"/);
+  assert.match(source, /className="notes-textarea"\s*\n\s*aria-label=\{`Note: \$\{selected\?\.title \?\? 'section'\}`\}/);
+});
+
+test('NotesPanel: the save status is a named, polite live region distinct from the conflict alert', () => {
+  const source = read('../client/src/components/NotesPanel.tsx');
+  assert.match(source, /className="notes-status" role="status" aria-live="polite"/);
+  assert.match(source, /className="notes-conflict" role="alert"/);
+});
+
+test('NotesPanel: the two conflict actions are each named by their consequence, not by generic verbs, and are not styled as identical peers', () => {
+  // MODERATE-HIGH council finding: "Reload from disk" and "Overwrite" gave
+  // no accessible-name signal about which one discards the learner's words.
+  const source = read('../client/src/components/NotesPanel.tsx');
+  assert.match(source, /className="notes-conflict-keep" onClick=\{\(\) => handleResolve\('overwrite'\)\}>\s*\n\s*Keep what I wrote/);
+  assert.match(source, /className="notes-conflict-discard" onClick=\{\(\) => handleResolve\('reload'\)\}>\s*\n\s*Discard what I wrote/);
+});
+
+test('sectionNoteButtons.tsx: every per-heading note button is aria-label={`Notes: ${section.title}`}, never the bare word "Notes"', () => {
+  // docs/specs/notes.md, "The panel": the bare word "Notes" would repeat
+  // once per heading and name the widget rather than the section.
+  const source = read('../client/src/sectionNoteButtons.tsx');
+  assert.match(source, /button\.setAttribute\('aria-label', `Notes: \$\{section\.title\}`\);/);
+  assert.match(source, /icon\.setAttribute\('aria-hidden', 'true'\);/, 'the decorative pencil glyph must be hidden from assistive tech, leaving only the aria-label as the name');
+});

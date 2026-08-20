@@ -1,8 +1,9 @@
-// The whole HTTP surface. Writes are exactly five routes across two files -
-// the ledger (two) and todos.md (three) - and none of them accepts event,
-// source, or level from the client: there is no generic ledger endpoint, and
-// that absence is the enforcement mechanism (decision 14). groups.yml is read
-// here but never written; see app/server/groups.ts.
+// The whole HTTP surface. Writes are exactly six routes across three files -
+// the ledger (two), todos.md (three), and the notes file's PUT
+// (docs/specs/notes.md; its GET is read-only, same as todos') - and none of
+// them accepts event, source, or level from the client: there is no generic
+// ledger endpoint, and that absence is the enforcement mechanism (decision
+// 14). groups.yml is read here but never written; see app/server/groups.ts.
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { readFileSync, existsSync, statSync } from 'node:fs';
 import { join, extname } from 'node:path';
@@ -14,7 +15,7 @@ import { appendUiEvent, readLedgerEvents } from './ledger.ts';
 import { parseTodos, addTodo, patchTodo, parkTodo, sha256, TODO_KINDS, TODO_AUDIENCES } from './todos.ts';
 import { readGroups } from './groups.ts';
 import { resolveGroups } from '../../lib/groups.ts';
-import { parseLesson } from '../../lib/lesson.ts';
+import { parseLesson, lessonSections } from '../../lib/lesson.ts';
 import { deriveMastery } from '../../lib/mastery.ts';
 import { computeInsights } from '../../lib/insights.ts';
 import { loadInsightsInputs } from '../../lib/insights-io.ts';
@@ -22,7 +23,26 @@ import { readCostSnapshot } from '../../lib/cost-io.ts';
 import { loadVaultFiles, buildVaultGraph } from '../../lib/vault.ts';
 import { buildGraph } from '../../lib/graph.ts';
 import { getGlossary } from './glossary.ts';
-import type { LessonResponse, PublicCheck, SubmitRequest, SubmitResponse, InsightsResponse, GroupsResponse, CostResponse, GraphResponse, TodoKind, TodoAudience, NoteResponse } from '../shared/types.ts';
+import { parseNotes, notesBlocks, noteSeed, upsertNoteBlock } from './notes.ts';
+import type {
+  LessonResponse,
+  PublicCheck,
+  SubmitRequest,
+  SubmitResponse,
+  InsightsResponse,
+  GroupsResponse,
+  CostResponse,
+  GraphResponse,
+  TodoKind,
+  TodoAudience,
+  NoteResponse,
+  CourseNode,
+  CourseNotesResponse,
+  CourseNoteBlock,
+  CourseNotePutRequest,
+  CourseNotePutResponse,
+  CourseNotesConflict,
+} from '../shared/types.ts';
 import { writeFileAtomic } from './atomic.ts';
 
 interface Ctx {
@@ -118,7 +138,12 @@ const getLesson: Handler = (_req, res, p, ctx) => {
   if (!existsSync(file)) throw Object.assign(new Error('no such lesson'), { status: 404 });
   const text = readFileSync(file, 'utf8');
   const lesson = parseLesson(text);
-  const { html, links } = renderMarkdown(text, vaultIndex(tenantDir));
+  // Derived once, here, then threaded into the render path - never recomputed
+  // from the rendered hast tree - so the id addSectionIds writes and the
+  // sections entry this payload returns cannot disagree by construction
+  // (docs/specs/notes.md).
+  const sections = lessonSections(lesson.h2Headings);
+  const { html, links } = renderMarkdown(text, vaultIndex(tenantDir), { sectionIds: true, sections });
   const checks: PublicCheck[] = lesson.checks
     .filter((c) => c.id && c.type && c.concept && c.prompt)
     .map((c) => ({
@@ -135,6 +160,7 @@ const getLesson: Handler = (_req, res, p, ctx) => {
     transfers: lesson.transfers.map((t) => ({ title: t.title })),
     links,
     warnings: lesson.warnings,
+    sections,
   };
   json(res, 200, payload);
 };
@@ -333,6 +359,130 @@ const postTodoPark: Handler = async (req, res, p, ctx) => {
   json(res, 200, result);
 };
 
+// --- personal notes (docs/specs/notes.md; learner-owned, same If-Match
+// discipline as todos.md, not evidence - no ledger event, ever) ---
+
+function notesFilePath(ctx: Ctx, tenant: string, course: CourseNode): string {
+  return safePath(ctx.root, tenant, course.dir, `${course.slug}-notes.md`);
+}
+
+function courseNotesResponse(ctx: Ctx, tenant: string, course: CourseNode): CourseNotesResponse {
+  const file = notesFilePath(ctx, tenant, course);
+  const exists = existsSync(file);
+  const raw = exists ? readFileSync(file, 'utf8') : noteSeed(course.slug, course.title);
+  const parsed = parseNotes(raw);
+  return {
+    course: course.slug,
+    path: `${course.dir}/${course.slug}-notes.md`,
+    exists,
+    blocks: notesBlocks(parsed),
+    raw_sha256: sha256(raw),
+    warnings: parsed.warnings,
+  };
+}
+
+const getCourseNotes: Handler = (_req, res, p, ctx) => {
+  const { course } = resolveCourse(ctx, p.tenant, p.course);
+  json(res, 200, courseNotesResponse(ctx, p.tenant, course));
+};
+
+// Mirrors withTodosFile line for line: read (or seed, when the file does not
+// exist yet), compare If-Match, mutate the string, atomic replace, return the
+// new hash - the one write mechanism this feature uses (docs/specs/notes.md).
+function withNotesFile(
+  ctx: Ctx,
+  tenant: string,
+  course: CourseNode,
+  req: IncomingMessage,
+  mutate: (raw: string) => { raw: string; block: CourseNoteBlock; warnings: string[] },
+): { raw_sha256: string; block: CourseNoteBlock; warnings: string[]; created: boolean } {
+  const file = notesFilePath(ctx, tenant, course);
+  const created = !existsSync(file);
+  const raw = created ? noteSeed(course.slug, course.title) : readFileSync(file, 'utf8');
+  const ifMatch = req.headers['if-match'];
+  if (typeof ifMatch !== 'string' || ifMatch === '') {
+    throw Object.assign(new Error('If-Match required for notes writes'), { status: 428 });
+  }
+  if (ifMatch !== sha256(raw)) {
+    throw Object.assign(new Error('notes file changed since you read it'), { status: 409, notesConflict: true });
+  }
+  const { raw: next, block, warnings } = mutate(raw);
+  writeFileAtomic(file, next);
+  return { raw_sha256: sha256(next), block, warnings, created };
+}
+
+const SECTION_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
+// The same per-segment charset notes.ts's OPEN_LINE/parseOpenAttrs requires for
+// `lesson=<module>/<lesson>` - a value outside it, or containing an extra "/",
+// would write a `lesson=` line the parser can never re-match, degrading the
+// block to unrecognized text on every future write (docs/specs/notes.md).
+const MODULE_LESSON_RE = /^[A-Za-z0-9._-]+$/;
+const NOTE_TEXT_MAX = 32768;
+
+const putCourseNotes: Handler = async (req, res, p, ctx) => {
+  const body = (await readBody(req)) as unknown as CourseNotePutRequest & Record<string, unknown>;
+  const { course } = resolveCourse(ctx, p.tenant, p.course);
+
+  if (body.page !== 'course' && body.page !== 'lesson') {
+    throw Object.assign(new Error('page must be "course" or "lesson"'), { status: 400 });
+  }
+  if (typeof body.section !== 'string' || !SECTION_RE.test(body.section)) {
+    throw Object.assign(new Error('section must match ^[a-z0-9][a-z0-9-]{0,63}$'), { status: 400 });
+  }
+  let moduleSlug: string | null = null;
+  let lessonSlug: string | null = null;
+  if (body.page === 'lesson') {
+    if (typeof body.module !== 'string' || body.module === '' || typeof body.lesson !== 'string' || body.lesson === '') {
+      throw Object.assign(new Error('module and lesson are required when page="lesson"'), { status: 400 });
+    }
+    if (!MODULE_LESSON_RE.test(body.module) || !MODULE_LESSON_RE.test(body.lesson)) {
+      throw Object.assign(new Error('module and lesson must match ^[A-Za-z0-9._-]+$'), { status: 400 });
+    }
+    moduleSlug = body.module;
+    lessonSlug = body.lesson;
+  } else if (body.module !== undefined || body.lesson !== undefined) {
+    throw Object.assign(new Error('module and lesson must be absent when page="course"'), { status: 400 });
+  }
+  if (typeof body.text !== 'string') {
+    throw Object.assign(new Error('text is required'), { status: 400 });
+  }
+  if (body.text.length > NOTE_TEXT_MAX) {
+    throw Object.assign(new Error(`text exceeds ${NOTE_TEXT_MAX} characters`), { status: 400 });
+  }
+  if (body.text.includes('meno:note')) {
+    throw Object.assign(new Error('text may not contain a note marker'), { status: 400 });
+  }
+  if (body.page === 'lesson') {
+    const lessonFile = safePath(ctx.root, p.tenant, course.dir, 'modules', moduleSlug!, `${lessonSlug}.md`);
+    if (!existsSync(lessonFile)) throw Object.assign(new Error('no such lesson'), { status: 404 });
+  }
+
+  const address = { page: body.page, module: moduleSlug, lesson: lessonSlug, section: body.section };
+  const text = body.text;
+
+  try {
+    const result = withNotesFile(ctx, p.tenant, course, req, (raw) => upsertNoteBlock(raw, address, text));
+    if (result.created) {
+      const todoFile = safePath(ctx.root, p.tenant, 'todos.md');
+      const todoText = `Link ${course.slug}-notes into the course hub`;
+      const todoRaw = existsSync(todoFile) ? readFileSync(todoFile, 'utf8') : '# Todos\n';
+      if (!todoRaw.includes(todoText)) writeFileAtomic(todoFile, addTodo(todoRaw, todoText, 'vault', 'for-agent'));
+    }
+    const payload: CourseNotePutResponse = { raw_sha256: result.raw_sha256, block: result.block, warnings: result.warnings };
+    json(res, 200, payload);
+  } catch (e) {
+    if ((e as { notesConflict?: boolean }).notesConflict) {
+      const payload: CourseNotesConflict = {
+        error: (e as Error).message,
+        code: 'notes-conflict',
+        current: courseNotesResponse(ctx, p.tenant, course),
+      };
+      return json(res, 409, payload);
+    }
+    throw e;
+  }
+};
+
 // --- course groups (read-only; organization the app never writes) ---
 
 const getGroups: Handler = (_req, res, p, ctx) => {
@@ -384,6 +534,8 @@ const ROUTES: [string, RegExp, Handler][] = [
   ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/lesson\/(?<course>[^/]+)\/(?<module>[^/]+)\/(?<file>[^/]+)$/, getLesson],
   ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/note$/, getNote],
   ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/todos$/, getTodos],
+  ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/notes\/(?<course>[^/]+)$/, getCourseNotes],
+  ['PUT', /^\/api\/v1\/(?<tenant>[^/]+)\/notes\/(?<course>[^/]+)$/, putCourseNotes],
   ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/progress$/, getProgress],
   ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/insights$/, getInsights],
   ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/cost$/, getCost],

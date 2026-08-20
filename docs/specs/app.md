@@ -5,9 +5,9 @@ filter; the group write surface removed), v1.10 (note-path breadcrumb, course de
 back control), v1.11 (collapse state actually persists), v1.12 (breadcrumb up-navigation,
 truncatable routes, centralized href builders), v1.13 (skip link, header reflow,
 reduced-motion coverage, operable-control contrast), v1.14 (scroll clearance measured from
-the header), v1.15 (accessible names on controls, tables and headings), and v1.17 (the
+the header), v1.15 (accessible names on controls, tables and headings), v1.17 (the
 tenant-scoped guidebook, so the nav bar survives a visit to Guide, and the header nav landmark
-renamed off "Main"). Canonical formats owned elsewhere: check blocks and
+renamed off "Main"), and v1.18 (the personal-notes side panel). Canonical formats owned elsewhere: check blocks and
 callouts in
 [generate-module/references/check-formats.md](../../.agents/skills/generate-module/references/check-formats.md),
 todos in
@@ -334,6 +334,19 @@ write-authority seam (decision 14) is enforced in code.
     any of it looks good. The findings it raised and this change does not close are recorded in
     PROGRESS.md rather than silently dropped.
 
+16. A notes side panel, present on the course page and on every lesson page (v1.18). It writes
+    plain markdown into one file per course, sectioned so a note stays attached to the anatomy
+    part of the lesson that provoked it - never to selected text, and never to stored heading text
+    (a reworded heading keeps its note). Full format, anchoring model, and HTTP surface:
+    [notes.md](notes.md). At 1200 CSS pixels and above the panel pushes, taking the right margin
+    the reading column already leaves empty (`main.content`'s `max-width: 46rem` unchanged in
+    both states); below that it overlays over a scrim. Saving debounces about 2 seconds after the
+    last keystroke, plus an immediate flush on blur, on panel close, on route change, and on
+    `pagehide`. Every write carries an `If-Match` content hash; on a 409 the client keeps the
+    unsaved text in `localStorage` and offers exactly two choices - reload from disk (discard the
+    buffer, adopt the server's copy) or overwrite (re-send the same text against the conflict
+    body's hash) - never an auto-merge or a diff view.
+
 ## Architecture
 
 One process, two halves, one root `package.json`:
@@ -345,8 +358,9 @@ One process, two halves, one root `package.json`:
   frontmatter, gfm, three local transforms - wikilinks, callouts, check mounts -
   remark-rehype, rehype-raw, rehype-sanitize, stringify), `checks.ts` (grading),
   `ledger.ts` (the only UI write path to the ledger), `todos.ts` (line-precise ops),
-  `groups.ts` (reads the course-group file, over `lib/groups.ts`), `atomic.ts` (the two write
-  disciplines).
+  `groups.ts` (reads the course-group file, over `lib/groups.ts`), `notes.ts` (v1.18, the
+  personal-notes file: parse, serialize, upsert - [notes.md](notes.md)), `atomic.ts` (the two
+  write disciplines).
 - `app/client/` - Vite + React, dependencies react, react-dom, mermaid only; hash
   routing and data fetching hand-rolled. `src/guide/` holds the help copy as client-side
   data: `glossary.ts` (one entry per explained term, read by both the tooltips and the
@@ -363,7 +377,8 @@ One process, two halves, one root `package.json`:
 The HTTP surface (base `/api/v1`): reads - `health`, `tenants`, `:tenant/tree`,
 `:tenant/course/:course`, `:tenant/lesson/:course/:module/:file`, `:tenant/note?path=`,
 `:tenant/todos`, `:tenant/progress`, `:tenant/insights`, `:tenant/ledger`, `:tenant/groups`,
-`:tenant/graph`, `:tenant/glossary`. `:tenant/note?path=` also answers with the note's owning `course` and `domain`,
+`:tenant/graph`, `:tenant/glossary`, `:tenant/notes/:course` (v1.18, read-only half; see
+[notes.md](notes.md)). `:tenant/note?path=` also answers with the note's owning `course` and `domain`,
 or nulls, resolved from the same walk rather than from the path's shape (invariant 14).
 `:tenant/insights`
 has no write counterpart - it computes `lib/insights.ts`'s `computeInsights` fresh over the
@@ -373,7 +388,9 @@ reads each module's `terms.yml` sidecar off the same walk and merges them throug
 `lib/terms.ts`'s `mergeTerms`, so the format's rules are stated once and both the app and
 `tools/validate.ts` answer from them. Writes (the entire write surface) - `POST :tenant/check/submit`,
 `POST :tenant/lesson/read`, `POST :tenant/todos`, `PATCH :tenant/todos/:line`,
-`POST :tenant/todos/:line/park`. Five routes across two files: the ledger and `todos.md`.
+`POST :tenant/todos/:line/park`, `PUT :tenant/notes/:course` (v1.18). Six routes across three
+files: the ledger, `todos.md`, and the notes file (`app/server/notes.ts`, [notes.md](notes.md)) -
+not evidence, so it appends no ledger event either.
 `groups.yml` was the third from v1.5 until v1.6 and is now read-only to the app, which is worth
 stating rather than leaving as an absence - a group write was never load-bearing, and an agent
 or a text editor authors that file better than four routes and a panel did. The smallest write
@@ -406,12 +423,15 @@ both run before routing so they cover writes and unrouted paths equally.
 | `content/tenants/**` (tree, lessons, notes, manifests) | read | server | owned formats |
 | `content/tenants/<tenant>/progress/ledger.jsonl` | append (ui events only) | server via `appendUiEvent` | ledger.ui.schema.json |
 | `content/tenants/<tenant>/todos.md` | replace (atomic, If-Match) | server | todo-format.md |
+| `content/tenants/<tenant>/<domain>/<course>/<course>-notes.md` | replace (atomic, If-Match) | server, and the learner in Obsidian | [notes.md](notes.md) |
 | `content/tenants/<tenant>/groups.yml` | read | agents via second-brain, or the learner by hand | vault-conventions.md, groups.schema.json |
 | `content/tenants/<tenant>/<domain>/` (as the default grouping) | read | `lib/course-dirs.ts` walk | vault-conventions.md |
 | `content/tenants/<tenant>/progress/mastery.yml` | never (derives in memory) | tutor only | progress.md |
 | `app/client/dist` | read (static) | build | - |
 | browser `localStorage`, key `meno.courseList.open.v1:<tenant>` | replace | client | one JSON object, section id to open flag |
 | browser `localStorage`, key `meno.courseList.resume.v1:<tenant>` | replace | client | one JSON object: course, module, file, lesson title |
+| browser `localStorage`, key `meno.notes.open.v1:<tenant>` | replace | client | one boolean, panel open or closed |
+| browser `localStorage`, key `meno.notes.buffer.v1:<tenant>:<course>` | replace | client | one JSON object mapping a section key to unsaved note text, cleared on write success (invariant 13) |
 
 ## Invariants
 
@@ -441,10 +461,13 @@ both run before routing so they cover writes and unrouted paths equally.
     content root to render the guidebook or a tooltip.
 12. Every explained term has exactly one definition, in `src/guide/glossary.ts`; tooltips
     and the guidebook glossary both render from it rather than restating it.
-13. The client persists nothing but disposable view state, in `localStorage`, under keys prefixed
-    `meno.courseList.open.v1` or `meno.courseList.resume.v1`. No content, evidence, progress, or
-    todo is ever kept in the browser, and every screen renders correctly with the store empty,
-    full of stale ids, missing a resume record, or unavailable entirely.
+13. The client persists disposable view state, in `localStorage`, under keys prefixed
+    `meno.courseList.open.v1`, `meno.courseList.resume.v1`, or `meno.notes.open.v1`, plus - the one
+    narrowing v1.18 makes to this invariant - unsaved note text under `meno.notes.buffer.v1`, held
+    only between a failed write and its resolution and deleted the moment that write succeeds or
+    the learner chooses "reload from disk". No other content, evidence, progress, or todo is ever
+    kept in the browser, and every screen renders correctly with the store empty, full of stale
+    ids, missing a resume record, or unavailable entirely.
 14. The note breadcrumb links only what the server resolved. The client never infers a course
     from the shape of a path; `GET :tenant/note` answers with the owning course and domain or
     with nulls, and any segment without a server-confirmed target renders as text. A course slug
@@ -456,6 +479,14 @@ both run before routing so they cover writes and unrouted paths equally.
     `GraphResponse.route` field the server emits - and every meaningful prefix of a lesson URL,
     truncated at a `/<letter>/<value>` boundary, matches a named route rather than falling
     through to not-found.
+16. Parsing then serializing a notes file with no edit is byte-identical to the input, for every
+    input, and a write to one block changes only that block's body bytes - every other byte,
+    recognized or not, survives unchanged. No block is ever deleted; clearing a note empties its
+    body. Full detail: [notes.md](notes.md), invariants 1-3.
+17. A note is addressed by anatomy part key, never by comparing stored heading text to a lesson's
+    current heading text. Rewording a `##` heading that matches the anatomy table keeps its
+    section key, and its note keeps resolving to that heading, across the reword. Full detail:
+    [notes.md](notes.md), invariant 4.
 
 ## Verified by
 
@@ -588,6 +619,18 @@ both run before routing so they cover writes and unrouted paths equally.
   observed against the example tenant. Keyboard operation of the `<details>` summaries,
   focus-visible rings, and both colour schemes still are not - that walk was scripted, not driven
   by hand. Worth one manual pass, as with the guidebook above.
+
+- Invariants 16-17 and behavior 16: `app/test/notes-format.test.ts` (round-trip over the worked
+  example plus fixtures with no blocks, an unterminated marker, duplicate addresses, CRLF, and no
+  trailing newline; preservation under edit diffed region by region; empty-note and
+  creating-a-block cases), `app/test/notes-api.test.ts` (every status code in the `PUT` table, the
+  If-Match conflict round trip, the first-write-creates-the-file-and-one-todo property, and the
+  anatomy-key rewording property against a running server), and `app/test/section-ids.test.ts`
+  (rendered heading ids and `data-meno-section`, the `user-content-` clobber guard, and the
+  rewording property at the markdown-rendering layer). `app/test/notes-panel.test.ts` covers the
+  client half: section list assembly, both `localStorage` key schemes, the debounce and flush
+  decision, the conflict state machine, and source assertions for no `:target`, no
+  `document.getElementById`, and one `prefersReducedMotion()` call site.
 
 ## Open questions
 

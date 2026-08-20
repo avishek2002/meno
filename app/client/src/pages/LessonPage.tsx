@@ -1,6 +1,6 @@
 // #/t/:tenant/c/:course/m/:module/l/:file - lesson body, interactive checks,
 // mermaid diagrams, references, and the once-after-20s read-progress ping.
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useResource } from '../useResource';
 import { useCourseContext } from '../useCourseContext';
 import { useRegisterRevalidate } from '../RevalidateContext';
@@ -10,6 +10,7 @@ import { RenderedHtml } from '../components/RenderedHtml';
 import { ReferencesPanel } from '../components/ReferencesPanel';
 import { Breadcrumb, type BreadcrumbSegment } from '../components/Breadcrumb';
 import { LessonNav } from '../components/LessonNav';
+import { NotesPanel, type NotesFocusRequest } from '../components/NotesPanel';
 import { courseHref } from '../courseContext.ts';
 import { writeResumeState, type SectionStore } from '../courseList.ts';
 import { postJson } from '../api';
@@ -42,6 +43,14 @@ interface LessonPageProps {
 export function LessonPage({ tenant, course, module, file }: LessonPageProps) {
   const url = `/api/v1/${encodeURIComponent(tenant)}/lesson/${encodeURIComponent(course)}/${encodeURIComponent(module)}/${encodeURIComponent(file)}`;
   const { data, error, status, loading, revalidate } = useResource<LessonResponse>(url);
+
+  // Personal notes (docs/specs/notes.md): a per-heading note button opens the
+  // panel already focused on that section. Nonce rather than a bare key so a
+  // repeat click on the same heading still re-opens/re-focuses the panel.
+  const [notesFocusRequest, setNotesFocusRequest] = useState<NotesFocusRequest | null>(null);
+  const handleOpenNoteSection = useCallback((sectionKey: string): void => {
+    setNotesFocusRequest((prev) => ({ key: sectionKey, nonce: (prev?.nonce ?? 0) + 1 }));
+  }, []);
 
   // UI-06: the breadcrumb and prev/next both come from the same course fetch
   // that powers the course page (UI-02), never a lesson-local guess at the
@@ -149,9 +158,22 @@ export function LessonPage({ tenant, course, module, file }: LessonPageProps) {
         course={course}
         module={module}
         lesson={file}
+        noteSections={data.sections}
+        onOpenNoteSection={handleOpenNoteSection}
       />
       <ReferencesPanel sources={sources} />
       <LessonNav neighbours={neighbours} />
+      <NotesPanel
+        key={`${tenant}:${course}:${module}:${file}`}
+        tenant={tenant}
+        course={course}
+        courseTitle={courseTitle}
+        page="lesson"
+        module={module}
+        lesson={file}
+        sections={data.sections}
+        focusRequest={notesFocusRequest}
+      />
     </article>
   );
 }

@@ -93,6 +93,59 @@ export interface LessonResponse {
   transfers: { title: string }[];
   links: { resolved: Record<string, string>; broken: string[] };
   warnings: string[];
+  sections: LessonSection[];
+}
+
+// --- personal notes ---------------------------------------------------------
+//
+// Named CourseNote* rather than Note* because NoteResponse already means a
+// rendered vault note and the two must not be confused. Owned end to end by
+// docs/specs/notes.md; see that file for the file format, the anchoring
+// model, and the HTTP surface these types serve.
+
+export type NotePage = 'course' | 'lesson';
+
+export interface CourseNoteBlock {
+  page: NotePage;
+  module: string | null; // null when page === 'course'
+  lesson: string | null; // null when page === 'course'
+  section: string; // 'whole-course' | 'whole-lesson' | an anatomy key | 'h-<slug>'
+  text: string; // '' for an empty note
+}
+
+export interface CourseNotesResponse {
+  course: string; // slug
+  path: string; // vault-relative, e.g. software-engineering/rust-for-backend/rust-for-backend-notes.md
+  exists: boolean; // false when nothing has been saved yet
+  blocks: CourseNoteBlock[]; // file order
+  raw_sha256: string; // hash of the file, or of the seed when exists === false
+  warnings: string[];
+}
+
+export interface CourseNotePutRequest {
+  page: NotePage;
+  module?: string; // required iff page === 'lesson'
+  lesson?: string; // required iff page === 'lesson', the file slug with no .md
+  section: string;
+  text: string;
+}
+
+export interface CourseNotePutResponse {
+  raw_sha256: string;
+  block: CourseNoteBlock;
+  warnings: string[];
+}
+
+export interface CourseNotesConflict {
+  error: string;
+  code: 'notes-conflict';
+  current: CourseNotesResponse;
+}
+
+export interface LessonSection {
+  key: string;
+  title: string; // the heading text as authored, or 'Whole lesson'
+  anatomy_part: string | null; // the anatomy key when the heading matched a row, else null
 }
 
 export interface NoteResponse {

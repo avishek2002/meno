@@ -104,6 +104,11 @@ belongs to the agent. `groups.yml` was the second member of that class from v1.5
 its removal is the other half of the same rule: being *allowed* to write a file is not a reason
 to. The app reads it, the agent and the learner author it.
 
+`<course-slug>-notes.md` (v1.18, [specs/notes.md](specs/notes.md)) is the second member of the
+learner-owned class: written by the app under the same atomic, `If-Match`-guarded discipline, read
+by no gate, appending no ledger event. The hub wikilink pointing at it stays the agent's write
+(`second-brain`'s job), which is what keeps this seam the same width it was.
+
 Enforcement is by construction, not by validation: the server exposes no endpoint that
 accepts `event`, `source`, or `level` from a client - those literals are hardcoded
 server-side at the only two call sites that append. Mastery gates key exclusively on
@@ -169,7 +174,7 @@ spec row is stale.
 | [specs/validation.md](specs/validation.md) | validate checks, exit codes, policy | Phase 2 | 3, 5, v1.17 |
 | [specs/lessons.md](specs/lessons.md) | lesson generation, anatomy, checks | Phase 3 | v1.17 |
 | [specs/progress.md](specs/progress.md) | ledger events, mastery derivation, gates | Phase 3 | 5 |
-| [specs/app.md](specs/app.md) | server + client, API surface, write path | Phase 4 | v1.5, v1.6, v1.10, v1.11, v1.12, v1.13, v1.14, v1.15, v1.16, v1.17 |
+| [specs/app.md](specs/app.md) | server + client, API surface, write path | Phase 4 | v1.5, v1.6, v1.10, v1.11, v1.12, v1.13, v1.14, v1.15, v1.16, v1.17, v1.18 |
 | [specs/tutor-session.md](specs/tutor-session.md) | review sessions, grading, generate-ahead | Phase 5 | - |
 | [specs/citations.md](specs/citations.md) | audit protocol, stale-content flows | Phase 6 | - |
 | [specs/durability.md](specs/durability.md) | init, private mirror, restore | Phase 7 | - |
@@ -181,6 +186,7 @@ spec row is stale.
 | [specs/cost.md](specs/cost.md) | content-cost attribution: cost-source adapter contract, `computeCost` (`lib/cost.ts`), snapshot format, read-only endpoint, CLI, page | v1.7 | - |
 | [specs/graph.md](specs/graph.md) | knowledge-graph view: `lib/graph.ts` model, `lib/connects.ts` grammar, read-only endpoint, deterministic client layout | v1.8 | - |
 | [specs/subject-finder.md](specs/subject-finder.md) | find-subjects: consent-gated workspace scan (`lib/workspace-scan.ts`), snapshot format, privacy guards, candidate routing, evidence-packet handoff into elicit-needs | v1.9 | - |
+| [specs/notes.md](specs/notes.md) | personal notes: per-course notes file format, the two If-Match-guarded routes, anatomy-key section anchors, the side panel | v1.18 | - |
 
 Vault conventions (wikilinks, hub notes, todos) deliberately have no spec file: the
 `second-brain` skill and its references are the canonical owner, and a spec would duplicate

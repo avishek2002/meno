@@ -124,7 +124,7 @@ test('allSectionIds includes sections the filter hid, and writeOpenState against
 
 // --- case 13: source grep for the DOM-free / localStorage-fenced boundary ---
 
-test('localStorage appears only in the two named pages, and courseList.ts names no browser global', () => {
+test('localStorage appears only in the three named files, and courseList.ts/notesPanel.ts name no browser global', () => {
   const clientSrcDir = fileURLToPath(new URL('../client/src', import.meta.url));
 
   const files: string[] = [];
@@ -142,13 +142,17 @@ test('localStorage appears only in the two named pages, and courseList.ts names 
   // UI-16 added a second owner: the resume affordance is written from the
   // lesson page a learner leaves and read from the course list they return
   // to, so one file cannot own both ends the way open-state's single owner
-  // does. Every consumer still goes through courseList.ts's SectionStore
-  // shape rather than reaching for the global directly - that boundary,
-  // not a single-file count, is what this test actually guards.
+  // does. v1.18 (docs/specs/notes.md) added a third: NotesPanel.tsx assigns
+  // its own guarded `notesStore = localStorage` at module scope, the same
+  // shape LessonPage.tsx's resumeStore uses. Every consumer still goes
+  // through courseList.ts's SectionStore shape rather than reaching for the
+  // global directly - that boundary, not a single-file count, is what this
+  // test actually guards.
   const usingLocalStorage = files.filter((f) => readFileSync(f, 'utf8').includes('localStorage')).sort();
   const expected = [
     fileURLToPath(new URL('../client/src/pages/LessonPage.tsx', import.meta.url)),
     fileURLToPath(new URL('../client/src/pages/TenantCoursesPage.tsx', import.meta.url)),
+    fileURLToPath(new URL('../client/src/components/NotesPanel.tsx', import.meta.url)),
   ].sort();
   assert.deepEqual(usingLocalStorage, expected, `expected exactly these files to name localStorage, got: ${usingLocalStorage.join(', ')}`);
 

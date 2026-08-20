@@ -10,6 +10,7 @@ import { ErrorState } from '../components/ErrorState';
 import { RenderedHtml } from '../components/RenderedHtml';
 import { Meter } from '../components/Meter';
 import { Breadcrumb, type BreadcrumbSegment } from '../components/Breadcrumb';
+import { NotesPanel } from '../components/NotesPanel';
 import { useCourseContext } from '../useCourseContext';
 import { stripMd, type CourseLesson, type CourseModuleEntry, type CourseStructure } from '../courseContext.ts';
 import type { ClientCourseMastery, ClientModuleMastery } from '../clientTypes';
@@ -291,6 +292,11 @@ export function CoursePage({ tenant, course, module }: { tenant: string; course:
           <RenderedHtml html={hubHtml} tenant={tenant} className="prose" />
         </details>
       )}
+
+      {/* Personal notes (docs/specs/notes.md): the course page has no
+          anatomy headings, so it offers only the single whole-course
+          section - no `sections`/`focusRequest` wiring needed here. */}
+      <NotesPanel key={`${tenant}:${course}`} tenant={tenant} course={course} courseTitle={structure.title} page="course" />
     </section>
   );
 }

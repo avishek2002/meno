@@ -12,13 +12,16 @@ import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import rehypeStringify from 'rehype-stringify';
 import { visit, SKIP } from 'unist-util-visit';
 import { parse as parseYaml } from 'yaml';
+import type { LessonSection } from '../shared/types.ts';
 
 interface MdNode {
   type: string;
   value?: string;
   lang?: string | null;
   url?: string;
+  tagName?: string;
   children?: MdNode[];
+  properties?: Record<string, unknown>;
   data?: { hName?: string; hProperties?: Record<string, unknown> };
 }
 
@@ -122,6 +125,36 @@ function transformChecks(tree: MdNode): void {
   });
 }
 
+// docs/specs/notes.md, "Heading ids in rendered lesson HTML". Runs on the hast
+// tree AFTER pipeline.runSync (rehype-sanitize has already run), never
+// before: rehype-sanitize's default schema clobbers a pre-existing id with a
+// `user-content-` prefix, so setting it here is the only way the id reaches
+// the browser unprefixed. Only depth-2 (`##`, tagName 'h2') headings are
+// touched; depths 1 and 3-6 are left alone.
+//
+// Section keys are never re-derived here. `sections` is the exact array the
+// caller already computed once from the mdast tree (`lessonSections` over
+// `parseLesson(...).h2Headings`, the same derivation LessonResponse.sections
+// uses) and is threaded straight through - matched to the h2 elements by
+// document order, not by re-reading heading text off the post-sanitize hast
+// tree. A second, independent derivation from hast text would disagree with
+// the mdast one whenever a heading contains something the render pipeline
+// transforms - a wikilink resolved to its display text, for instance - so
+// there must be only one derivation, not two that are supposed to agree.
+function addSectionIds(hast: MdNode, sections: LessonSection[]): void {
+  const h2s: MdNode[] = [];
+  visit(hast as never, 'element', (node: unknown) => {
+    const n = node as MdNode;
+    if (n.tagName === 'h2') h2s.push(n);
+  });
+  const nonWhole = sections.filter((s) => s.key !== 'whole-lesson');
+  h2s.forEach((n, i) => {
+    const key = nonWhole[i]?.key;
+    if (!key) return;
+    n.properties = { ...n.properties, id: `sec-${key}`, 'data-meno-section': key };
+  });
+}
+
 const pipeline = unified()
   .use(remarkParse)
   .use(remarkFrontmatter)
@@ -131,13 +164,18 @@ const pipeline = unified()
   .use(rehypeSanitize, sanitizeSchema as never)
   .use(rehypeStringify);
 
-export function renderMarkdown(text: string, index: Map<string, string | null>): RenderResult {
+export function renderMarkdown(
+  text: string,
+  index: Map<string, string | null>,
+  opts?: { sectionIds?: boolean; sections?: LessonSection[] },
+): RenderResult {
   const links: RenderResult['links'] = { resolved: {}, broken: [] };
   const tree = pipeline.parse(text) as unknown as MdNode;
   transformChecks(tree);
   transformCallouts(tree);
   transformWikilinks(tree, index, links);
   const hast = pipeline.runSync(tree as never);
+  if (opts?.sectionIds) addSectionIds(hast as unknown as MdNode, opts.sections ?? []);
   const html = String(pipeline.stringify(hast as never));
   return { html, links };
 }
