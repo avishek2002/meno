@@ -68,6 +68,12 @@ test('#/t/alice/guide#glossary matches the tenant-scoped guide route with both t
   assert.deepEqual(route.params, { tenant: 'alice', section: 'glossary' });
 });
 
+test('#/t/alice/glossary matches glossary with the tenant param', () => {
+  const route = matchRoute('#/t/alice/glossary');
+  assert.equal(route.name, 'glossary');
+  assert.deepEqual(route.params, { tenant: 'alice' });
+});
+
 test('the graph route with ?focus= still matches, and without it still matches with tenant only', () => {
   const withFocus = matchRoute('#/t/alice/graph?focus=03-ownership');
   assert.equal(withFocus.name, 'graph');

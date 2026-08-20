@@ -82,6 +82,7 @@ export const ROUTES: RouteDef[] = [
   { name: 'progress', pattern: /^#\/t\/(?<tenant>[^/]+)\/progress$/ },
   { name: 'insights', pattern: /^#\/t\/(?<tenant>[^/]+)\/insights$/ },
   { name: 'cost', pattern: /^#\/t\/(?<tenant>[^/]+)\/cost$/ },
+  { name: 'glossary', pattern: /^#\/t\/(?<tenant>[^/]+)\/glossary$/ },
   // The browser puts everything after the first `#` into location.hash, so
   // `?focus=` written after the hash route lives inside the hash itself -
   // the optional query is folded into this one pattern, the same way `guide`

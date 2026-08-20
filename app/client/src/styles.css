@@ -305,7 +305,15 @@ h3 {
      overflow followed the reader down every page. Wrapping rather than
      collapsing behind a disclosure: the links stay visible and operable at
      every width, and a taller header is handled by --scroll-clearance
-     already existing for exactly that reason. */
+     already existing for exactly that reason.
+
+     That 715px figure was measured at seven links; v1.16 added Glossary and
+     did not re-measure, because there was no browser available to the session
+     that added it. Deliberately left as the original measurement rather than
+     updated to a guess: the mechanism here is count-independent (wrap plus the
+     ResizeObserver-driven --header-height in Header.tsx handle any number of
+     links), so the number is history, not a threshold anything reads. Re-measure
+     if the nav ever grows enough to wrap to a third row. */
   flex-wrap: wrap;
   gap: 1rem;
   margin-right: auto;
@@ -1431,6 +1439,56 @@ th {
 .cost-disclosure-primary {
   font-weight: 600;
   margin-top: 0;
+}
+
+/* ---------- glossary ----------
+   Terms render in curriculum order, never alphabetized. The nesting is what
+   makes that order legible rather than arbitrary: an h2 per course, an h3 per
+   module in teaching sequence, and entries inside each module in the order the
+   server sent them. Flattened into one alphabetical list, a term would sit
+   nowhere near the lesson that motivates it. */
+
+.glossary-course {
+  margin-bottom: 2rem;
+}
+
+.glossary-course h2 {
+  font-size: 1.05rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.4rem;
+}
+
+.glossary-entry {
+  border-bottom: 1px solid var(--border);
+  padding: 0.9rem 0;
+}
+
+.glossary-entry:last-child {
+  border-bottom: none;
+}
+
+.glossary-module {
+  margin: 1.1rem 0 0;
+}
+
+/* The module heading is quieter than the course above it and the term below:
+   it is a waypoint in the sequence, not a thing to read. */
+.glossary-module h3 {
+  margin: 0 0 0.2rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.glossary-entry h4 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+}
+
+.glossary-see-also {
+  font-style: italic;
 }
 
 /* ---------- infotips ----------

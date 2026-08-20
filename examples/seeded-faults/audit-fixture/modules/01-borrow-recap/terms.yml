@@ -1,0 +1,16 @@
+schema_version: 1
+terms:
+  - term: borrow
+    lesson: 01-borrowing-recap.md
+    definition: >-
+      A borrow is a reference to a value, created with `&`, that lets a function read
+      it without taking ownership away from the caller. Without borrowing, passing a
+      value to a function that only needed to look at it would move it away for good.
+  - term: Result
+    lesson: 01-borrowing-recap.md
+    definition: >-
+      `Result` is Rust's type for a recoverable error, forcing a function's signature
+      to declare that failure is part of its contract rather than letting an error pass
+      silently. Without it a caller could not tell, from the signature alone, whether a
+      failure is expected.
+    see_also: [borrow]

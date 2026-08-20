@@ -21,6 +21,7 @@ import { loadInsightsInputs } from '../../lib/insights-io.ts';
 import { readCostSnapshot } from '../../lib/cost-io.ts';
 import { loadVaultFiles, buildVaultGraph } from '../../lib/vault.ts';
 import { buildGraph } from '../../lib/graph.ts';
+import { getGlossary } from './glossary.ts';
 import type { LessonResponse, PublicCheck, SubmitRequest, SubmitResponse, InsightsResponse, GroupsResponse, CostResponse, GraphResponse, TodoKind, TodoAudience, NoteResponse } from '../shared/types.ts';
 import { writeFileAtomic } from './atomic.ts';
 
@@ -389,6 +390,7 @@ const ROUTES: [string, RegExp, Handler][] = [
   ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/ledger$/, getLedger],
   ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/groups$/, getGroups],
   ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/graph$/, getGraph],
+  ['GET', /^\/api\/v1\/(?<tenant>[^/]+)\/glossary$/, getGlossary],
   ['POST', /^\/api\/v1\/(?<tenant>[^/]+)\/check\/submit$/, postCheckSubmit],
   ['POST', /^\/api\/v1\/(?<tenant>[^/]+)\/lesson\/read$/, postLessonRead],
   ['POST', /^\/api\/v1\/(?<tenant>[^/]+)\/todos$/, postTodos],

@@ -128,6 +128,10 @@ export function costHref(tenant: string): string {
   return `${tenantHref(tenant)}/cost`;
 }
 
+export function glossaryHref(tenant: string): string {
+  return `${tenantHref(tenant)}/glossary`;
+}
+
 /** #/t/<tenant>/graph, optionally centred on a node via ?focus=. */
 export function graphHref(tenant: string, focus?: string): string {
   return focus === undefined ? `${tenantHref(tenant)}/graph` : `${tenantHref(tenant)}/graph?focus=${encodeURIComponent(focus)}`;

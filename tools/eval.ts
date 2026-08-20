@@ -18,6 +18,7 @@ import { createHash } from 'node:crypto';
 import { parse as parseYaml } from 'yaml';
 import { parseFrontmatter } from '../lib/frontmatter.ts';
 import { parseLesson, anatomyOf } from '../lib/lesson.ts';
+import { parseTerms, countSentences, countWords, DEFINITION_SENTENCES, MAX_DEFINITION_WORDS } from '../lib/terms.ts';
 import { runValidation } from './validate.ts';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
@@ -79,8 +80,48 @@ function curriculumChecklist(courseDir: string, budget: number, ceiling: string[
   return items;
 }
 
-function lessonsChecklist(lessonPaths: string[]): ChecklistItem[] {
+/**
+ * Does the module a lesson belongs to carry the vocabulary that lesson
+ * introduced?
+ *
+ * generate-module owns terms.yml as of v1.17, and the glossary is only as good
+ * as that habit. tools/validate.ts already refuses a terms.yml that skips a
+ * written lesson, but validate cannot see the failure that actually matters
+ * here: the skill quietly stopping emitting the file at all, which validate
+ * downgrades to a warning so existing vaults keep passing on upgrade. The eval
+ * gate is where that regression has to be an outright fail, because this is the
+ * one gate that asks "did the generation skill get worse".
+ */
+function termsChecklist(lessonPaths: string[]): ChecklistItem[] {
   const items: ChecklistItem[] = [];
+  const byModule = new Map<string, string[]>();
+  for (const p of lessonPaths) {
+    const modDir = p.slice(0, p.lastIndexOf('/'));
+    byModule.set(modDir, [...(byModule.get(modDir) ?? []), p.split('/').at(-1) as string]);
+  }
+  for (const [modDir, files] of byModule) {
+    const short = modDir.split('/').at(-1);
+    const termsFile = join(repoRoot, modDir, 'terms.yml');
+    if (!existsSync(termsFile)) {
+      items.push(check(`${short}: module has a terms.yml`, false, 'generate-module must emit one alongside the lesson bodies'));
+      continue;
+    }
+    items.push(check(`${short}: module has a terms.yml`, true));
+    const { doc, warnings } = parseTerms(readFileSync(termsFile, 'utf8'));
+    items.push(check(`${short}: terms.yml parses cleanly`, warnings.length === 0, warnings.join('; ')));
+    const covered = new Set([...doc.terms.map((t) => t.lesson), ...doc.no_terms]);
+    const missing = files.filter((f) => !covered.has(f));
+    items.push(check(`${short}: every generated lesson is covered or declared in no_terms`, missing.length === 0, missing.join(', ')));
+    const badSentences = doc.terms.filter((t) => countSentences(t.definition) !== DEFINITION_SENTENCES).map((t) => t.term);
+    items.push(check(`${short}: every definition is exactly ${DEFINITION_SENTENCES} sentences`, badSentences.length === 0, badSentences.join(', ')));
+    const tooLong = doc.terms.filter((t) => countWords(t.definition) > MAX_DEFINITION_WORDS).map((t) => t.term);
+    items.push(check(`${short}: no definition exceeds ${MAX_DEFINITION_WORDS} words`, tooLong.length === 0, tooLong.join(', ')));
+  }
+  return items;
+}
+
+function lessonsChecklist(lessonPaths: string[]): ChecklistItem[] {
+  const items: ChecklistItem[] = [...termsChecklist(lessonPaths)];
   for (const p of lessonPaths) {
     const lesson = parseLesson(readFileSync(join(repoRoot, p), 'utf8'));
     const anatomy = anatomyOf(lesson);

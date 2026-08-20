@@ -166,10 +166,10 @@ spec row is stale.
 | [specs/repo-and-tenancy.md](specs/repo-and-tenancy.md) | layout, entry points, tenancy boundary | Phase 0 | - |
 | [specs/interview.md](specs/interview.md) | elicit-needs, profile lifecycle | Phase 1 | - |
 | [specs/curriculum.md](specs/curriculum.md) | skeleton generation, sourcing, manifests | Phase 2 | - |
-| [specs/validation.md](specs/validation.md) | validate checks, exit codes, policy | Phase 2 | 3, 5 |
-| [specs/lessons.md](specs/lessons.md) | lesson generation, anatomy, checks | Phase 3 | - |
+| [specs/validation.md](specs/validation.md) | validate checks, exit codes, policy | Phase 2 | 3, 5, v1.17 |
+| [specs/lessons.md](specs/lessons.md) | lesson generation, anatomy, checks | Phase 3 | v1.17 |
 | [specs/progress.md](specs/progress.md) | ledger events, mastery derivation, gates | Phase 3 | 5 |
-| [specs/app.md](specs/app.md) | server + client, API surface, write path | Phase 4 | v1.5, v1.6, v1.10, v1.11, v1.12, v1.13, v1.14, v1.15, v1.16 |
+| [specs/app.md](specs/app.md) | server + client, API surface, write path | Phase 4 | v1.5, v1.6, v1.10, v1.11, v1.12, v1.13, v1.14, v1.15, v1.16, v1.17 |
 | [specs/tutor-session.md](specs/tutor-session.md) | review sessions, grading, generate-ahead | Phase 5 | - |
 | [specs/citations.md](specs/citations.md) | audit protocol, stale-content flows | Phase 6 | - |
 | [specs/durability.md](specs/durability.md) | init, private mirror, restore | Phase 7 | - |

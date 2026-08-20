@@ -22,6 +22,16 @@ import { parseContributors, parseUnit } from '../lib/attribution.ts';
 import { parseGroups } from '../lib/groups.ts';
 import { parseConnects } from '../lib/connects.ts';
 import { loadVaultFiles, buildVaultGraph, type VaultGraph } from '../lib/vault.ts';
+import {
+  parseTerms,
+  termKey,
+  countSentences,
+  countWords,
+  definitionsDiverge,
+  DEFINITION_SENTENCES,
+  MAX_DEFINITION_WORDS,
+  type TermEntry,
+} from '../lib/terms.ts';
 
 export interface Finding {
   level: 'error' | 'warning';
@@ -1418,6 +1428,198 @@ export function checkWorkspaceFixture(_target: string, files: string[]): Finding
  * persona) has no vault above it and skips resolution entirely rather than
  * being reported broken.
  */
+// The 12 findings this check owns are numbered in
+// .claude/CONTRACT-glossary.md's "tools/validate.ts findings" table; the
+// comment on each block below names the number so a contract change is easy
+// to re-diff against. Everything reads through lib/terms.ts's parseTerms
+// (never a second parser) and schemas/terms.schema.json (never a second
+// schema) - this file only adds the cross-file rules neither of those can
+// express on its own.
+export function checkTerms(_target: string, files: string[]): Finding[] {
+  const findings: Finding[] = [];
+  const validateTerms = loadSchema('terms.schema.json');
+
+  // Findings 11 and 12 are course-scoped (a term's siblings can live in any
+  // module of the course, generated in any order), so every module's kept
+  // entries are collected here first and compared once per course below,
+  // rather than being checked file by file like findings 1-10.
+  interface CourseTermRow {
+    key: string;
+    entry: TermEntry;
+    path: string;
+  }
+  const courseRows = new Map<string, CourseTermRow[]>();
+
+  for (const courseFile of files.filter((f) => f.endsWith('/course.yml'))) {
+    const courseDir = courseFile.slice(0, -'/course.yml'.length);
+    const moduleFiles = files.filter((f) => f.startsWith(join(courseDir, 'modules') + '/') && f.endsWith('/module.yml'));
+    const rows = courseRows.get(courseDir) ?? [];
+
+    for (const moduleFile of moduleFiles) {
+      const modDir = moduleFile.slice(0, -'/module.yml'.length);
+      const termsFile = join(modDir, 'terms.yml');
+
+      // module.yml drives findings 3/4/8/9 (lesson resolution and coverage).
+      // Its own shape is checkCourses'/checkLessons' job - parsed into a
+      // throwaway findings array here so a broken module.yml is not reported
+      // twice under two different check names.
+      const mod = parseYamlFile(moduleFile, [], 'terms');
+      const moduleLessons = mod ? ((mod.lessons as { file?: string }[]) ?? []).map((l) => l.file ?? '').filter(Boolean) : null;
+      const moduleLessonSet = new Set(moduleLessons ?? []);
+
+      if (!existsSync(termsFile)) {
+        // finding 10 (warning, decision 5): additive over content that
+        // already exists, so a module with a written lesson and no terms.yml
+        // at all is a nudge, not a red build. Reported at the terms.yml path
+        // that would exist, the same not-yet-there pattern checkMastery uses
+        // for mastery.yml.
+        if (moduleLessons?.some((f) => existsSync(join(modDir, f)))) {
+          findings.push({
+            level: 'warning',
+            check: 'terms',
+            path: displayPath(termsFile),
+            message: 'module has a written lesson body and no terms.yml (opt in with generate-module; additive, so this is a warning on upgrade)',
+          });
+        }
+        continue;
+      }
+
+      const rel = displayPath(termsFile);
+      const raw = readFileSync(termsFile, 'utf8');
+
+      // finding 1: parseTerms's own warnings (malformed YAML, non-mapping, a
+      // dropped entry). The app must stay silent and inert on a hand edit;
+      // validate is where the same signal becomes error-grade, because a
+      // dropped term is silent data loss from the author's side.
+      const { doc, warnings } = parseTerms(raw);
+      for (const w of warnings) findings.push({ level: 'error', check: 'terms', path: rel, message: w });
+
+      // finding 2: the schema half, over the raw parsed document rather than
+      // the doc above - parseTerms is permissive by design and does not
+      // enforce maxLength/maxItems/the lesson pattern, so those bounds still
+      // need an independent ajv pass to be caught at all.
+      const schemaDiscard: Finding[] = [];
+      const parsedRaw = parseYamlFile(termsFile, schemaDiscard, 'terms');
+      if (parsedRaw && !validateTerms(parsedRaw)) {
+        for (const err of validateTerms.errors ?? []) {
+          findings.push({ level: 'error', check: 'terms', path: rel, message: `${err.instancePath || '/'} ${err.message}` });
+        }
+      }
+
+      const entryLessons = new Set(doc.terms.map((t) => t.lesson));
+      const seenKeys = new Set<string>();
+
+      for (const entry of doc.terms) {
+        const key = termKey(entry.term);
+
+        // finding 3: the lesson named must be a real row in this module's
+        // own manifest - a term cannot be introduced by a lesson its module
+        // does not claim.
+        if (moduleLessons && !moduleLessonSet.has(entry.lesson)) {
+          findings.push({
+            level: 'error',
+            check: 'terms',
+            path: rel,
+            message: `term "${entry.term}" names lesson "${entry.lesson}", which is not in this module's module.yml (not in the manifest)`,
+          });
+        }
+        // finding 4: and that lesson must actually be written.
+        if (!existsSync(join(modDir, entry.lesson))) {
+          findings.push({
+            level: 'error',
+            check: 'terms',
+            path: rel,
+            message: `term "${entry.term}" names lesson "${entry.lesson}", which does not exist on disk`,
+          });
+        }
+        // finding 5: one entry per term key within a single file.
+        if (seenKeys.has(key)) {
+          findings.push({ level: 'error', check: 'terms', path: rel, message: `term "${entry.term}" is a duplicate term key already defined earlier in this file` });
+        }
+        seenKeys.add(key);
+
+        // finding 6: sentence count is the format's one hard shape rule.
+        const sentences = countSentences(entry.definition);
+        if (sentences !== DEFINITION_SENTENCES) {
+          findings.push({ level: 'error', check: 'terms', path: rel, message: `term "${entry.term}" definition has ${sentences} sentence(s), expected exactly ${DEFINITION_SENTENCES}` });
+        }
+        // finding 7: word count is a soft ceiling (decision 4) - two
+        // sentences that earn their length beat two that were truncated.
+        const words = countWords(entry.definition);
+        if (words > MAX_DEFINITION_WORDS) {
+          findings.push({ level: 'warning', check: 'terms', path: rel, message: `term "${entry.term}" definition is ${words} words, over the ${MAX_DEFINITION_WORDS}-word guideline` });
+        }
+
+        rows.push({ key, entry, path: rel });
+      }
+
+      // finding 8: coverage only binds once a module has opted in by having
+      // a terms.yml at all (finding 10 is the softer nudge before that) -
+      // every lesson body actually on disk then needs either a term entry
+      // or an explicit no_terms row.
+      if (moduleLessons) {
+        const noTermsSet = new Set(doc.no_terms);
+        for (const file of moduleLessons) {
+          if (existsSync(join(modDir, file)) && !entryLessons.has(file) && !noTermsSet.has(file)) {
+            findings.push({ level: 'error', check: 'terms', path: rel, message: `lesson "${file}" has a written body but no term entry and no no_terms row covers it` });
+          }
+        }
+      }
+
+      // finding 9: no_terms is a claim, not a preference - it must name a
+      // real lesson from this module and must not contradict an actual term
+      // entry for that same lesson.
+      for (const file of doc.no_terms) {
+        if (moduleLessons && !moduleLessonSet.has(file)) {
+          findings.push({ level: 'error', check: 'terms', path: rel, message: `no_terms names "${file}", which is not in this module's module.yml` });
+        } else if (entryLessons.has(file)) {
+          findings.push({ level: 'error', check: 'terms', path: rel, message: `no_terms names "${file}", but a term entry also defines a term for that lesson (contradiction)` });
+        }
+      }
+    }
+
+    courseRows.set(courseDir, rows);
+  }
+
+  for (const rows of courseRows.values()) {
+    const courseKeys = new Set(rows.map((r) => r.key));
+    const firstByKey = new Map<string, CourseTermRow>();
+    for (const row of rows) {
+      // finding 11: same term key, meaningfully different wording, anywhere
+      // in the course - compared against the first (canonical) definition,
+      // mirroring mergeTerms's own "first wins" rule so validate flags
+      // exactly what the merge will otherwise silently ignore.
+      const first = firstByKey.get(row.key);
+      if (!first) {
+        firstByKey.set(row.key, row);
+      } else if (definitionsDiverge(first.entry.definition, row.entry.definition)) {
+        findings.push({
+          level: 'warning',
+          check: 'terms',
+          path: row.path,
+          message: `term "${row.entry.term}" is defined differently here than in ${first.path}`,
+        });
+      }
+
+      // finding 12: see_also is a hint, not a link the client can break on -
+      // a forward reference to a module not yet generated is normal, so this
+      // is a warning naming the dangling value, never an error.
+      for (const related of row.entry.see_also ?? []) {
+        if (!courseKeys.has(termKey(related))) {
+          findings.push({
+            level: 'warning',
+            check: 'terms',
+            path: row.path,
+            message: `see_also "${related}" on term "${row.entry.term}" does not resolve to any term key in this course`,
+          });
+        }
+      }
+    }
+  }
+
+  return findings;
+}
+
 export function checkConnects(_target: string, files: string[]): Finding[] {
   const findings: Finding[] = [];
   const vaultRoots = files
@@ -1521,6 +1723,7 @@ const CHECKS: Record<string, Check> = {
   cost: checkCost,
   packs: checkPacks,
   groups: checkGroups,
+  terms: checkTerms,
   'course-layout': checkCourseLayout,
   tenancy: checkTenancy,
   connects: checkConnects,

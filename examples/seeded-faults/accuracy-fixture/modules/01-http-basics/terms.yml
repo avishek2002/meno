@@ -1,0 +1,40 @@
+schema_version: 1
+terms:
+  - term: stateless
+    lesson: 01-request-response.md
+    definition: >-
+      A stateless protocol handles every request independently of the ones before it,
+      remembering nothing about earlier exchanges on its own. Without an added
+      mechanism like a cookie, a server built on a stateless protocol could not tell
+      two requests came from the same visitor.
+  - term: safe method
+    lesson: 02-methods-and-safety.md
+    definition: >-
+      A safe HTTP method is one that promises to change nothing on the server, letting
+      a client treat it as read-only regardless of the implementation. Without that
+      promise a client could never issue a request purely for information without
+      risking a side effect.
+    see_also: [idempotent]
+  - term: idempotent
+    lesson: 02-methods-and-safety.md
+    definition: >-
+      An idempotent method produces the same end state on the server no matter how many
+      times an identical request is repeated. Without that guarantee a client
+      recovering from a lost response could never safely retry a request without
+      risking a duplicate effect.
+    see_also: [safe method]
+  - term: status code class
+    lesson: 03-status-codes.md
+    definition: >-
+      A status code class is the first digit of an HTTP response code, grouping every
+      code into one of five families that say which party should act next. Without the
+      class, a client would special-case hundreds of codes instead of relying on their
+      family.
+  - term: revalidation
+    lesson: 04-headers-and-caching.md
+    definition: >-
+      Revalidation is a cache asking the origin whether a stored response is still
+      current, using a token like `ETag` instead of re-downloading the body. Without it
+      a cache would have to choose between serving stale data or refetching in full
+      every time freshness runs out.
+    see_also: [status code class]

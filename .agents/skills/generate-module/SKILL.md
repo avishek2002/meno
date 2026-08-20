@@ -38,6 +38,24 @@ Template with exact formatting: [references/lesson-format.md](references/lesson-
 - With `sources/` empty or absent, generate normally with web anchors only and zero `source_type: user` citations.
 - Frontmatter per the lesson format reference, `schema_version` included, `review_after` set from the offsets.
 
+## The module's terms.yml
+
+Alongside the lesson bodies, this skill also writes or updates the module's `terms.yml`
+sidecar - the vocabulary those lessons introduce, merged across the whole course into the
+app's glossary tab. Full format, field reference, and worked example:
+[references/terms-format.md](references/terms-format.md).
+
+Give each lesson exactly one row per term it introduces. A definition is exactly two
+sentences, roughly 45 words: what it is (mechanism, plain language), then why it matters
+(what breaks or changes without it) - write it assuming the reader has just finished the
+lesson, so it may lean on terms this course already defined. A lesson that genuinely
+introduces no new vocabulary is declared in `no_terms:` rather than given a filler
+definition.
+
+**Terms are inert.** Unlike `concepts:`, a term never becomes a review item, never moves a
+mastery gate, and never enters a due computation - it is a reference surface over the
+lesson bodies, nothing more.
+
 ## Self-audit (blocking, every lesson)
 
 After drafting a lesson - before moving to the next one - audit it. A lesson with an unresolved finding is a draft, not a lesson. Two passes, both mandatory:
@@ -52,6 +70,9 @@ Same discipline as fetch-before-cite: procedural, no schema change, no new artif
 
 ## After the last lesson
 
+- Write or update this module's `terms.yml`, beside `module.yml`, per
+  [references/terms-format.md](references/terms-format.md) - every lesson body on disk
+  needs either a term entry or a `no_terms` line naming it.
 - In `module.yml`: set each lesson's `status` and the module's own `status` to `generated`; then regenerate `course.yml` (it is a derived view - see the manifest spec linked above).
 - Append a `generated` event per lesson to `progress/ledger.jsonl` (event line format in the lesson format reference) so due dates exist for the app and tutor.
 - Tell the learner where this module starts and what the next locked module is waiting on.

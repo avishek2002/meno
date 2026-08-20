@@ -40,7 +40,7 @@ _Last updated: 2026-08-20_
 
 ## Done
 
-- 2026-08-20 - **v1.16 (UI-18): the nav bar survives a visit to the guidebook.** Clicking Guide
+- 2026-08-20 - **v1.17 (UI-18): the nav bar survives a visit to the guidebook.** Clicking Guide
   from inside a tenant emptied the header of everything else - Courses, Graph, Todos, Progress,
   Insights, Cost all disappeared, and the browser's back button was the only way back to any of
   them. Nothing to do with the guidebook itself: the header renders that block only when
@@ -58,6 +58,54 @@ _Last updated: 2026-08-20_
   duplicated what `<main>` already carries, and "Sections" would have collided with the
   guidebook's own "Guidebook sections" on the one page both appear. Browser-verified over the
   `examples/` fixtures through the reported journey.
+- 2026-08-20 - **v1.17: a Glossary tab, over a per-module `terms.yml` sidecar.** Lessons already
+  carried `concepts:`, and reusing it for vocabulary was the obvious move and the wrong one -
+  `lib/mastery.ts` gives every concept a review state and a share of a gate, so every glossary
+  word would have become a spaced-repetition item behind a mastery gate. Terms got their own
+  deliberately inert format instead: `terms.yml` beside `module.yml`, `schemas/terms.schema.json`
+  at version 1 (a new file, so no migration and no bump to the lesson schema), merged through the
+  pure core in `lib/terms.ts` and served read-only at `GET /api/v1/:tenant/glossary`. The page
+  groups by course, then by module in teaching sequence - Pocock's dictionary-of-AI-coding
+  argument that the order is the teaching, except Meno gets the dependency order free from the
+  module sequence instead of hand-curating seven sections. A definition is exactly two sentences,
+  mechanism then consequence, roughly 45 words. Search is plain substring, matching the existing
+  course filter; no new dependency anywhere in the change.
+  - **The scope call, made knowingly.** The brief asked for "only terms the user has come across",
+    and the ledger already records a `read` event that would have delivered exactly that. The
+    maintainer chose the full course dictionary instead after the conflict was flagged, so the
+    feature reads the ledger nowhere and shows terms from lessons never opened. Revisit by
+    filtering on `read` events if the spoiler cost ever bites.
+  - **Guards.** Twelve `terms` findings in `tools/validate.ts`, plus a `termsChecklist` in the eval
+    gate - because validate deliberately downgrades "module has lessons but no terms.yml" to a
+    warning so existing vaults survive the upgrade, which means validate alone cannot catch
+    `generate-module` quietly ceasing to emit the file. All three guard sets were mutation-tested
+    (disable the check, confirm the specific test goes red) rather than trusted.
+  - **What the adversarial review caught, and it was worth running.** Four defects survived a
+    green gate. `lib/terms.ts` keyed a course by slug alone, so two courses sharing a slug in
+    different domains silently folded into one and reported each other's wording as divergent.
+    `parseTerms` dropped a scalar `see_also` with no warning, breaking its own always-warn rule -
+    and since the server calls `parseTerms` and never the schema, that erased a field from a
+    served page with nothing in `warnings` to show for it. `lesson` was stored untrimmed, which
+    both `.endsWith('.md')` and the schema's unanchored pattern let through, reaching the client
+    as a dead link. The page's `.glossary-module h3` used `var(--muted)`, a token that has never
+    existed in this stylesheet, so the "quieter than its neighbours" comment above it was simply
+    false in the rendered page. All four now have regression tests, each mutation-checked.
+  - **A fifth, found by accident.** `lib/terms.ts` shipped seven literal NUL bytes as composite-key
+    separators (`validate.ts` uses the escape sequence for the same job). Runtime behaviour is
+    identical, which is why nothing caught it - but a file containing a NUL is classified as
+    binary, so `grep` silently returns nothing on it. That is how it surfaced: repeated empty
+    searches against a file that plainly contained the string. Test 10 in `tools/test/terms.test.ts`
+    now forbids it.
+  - **The guidebook's own "Glossary" section is now "Interface terms".** Two same-named
+    destinations one click apart in the same header is a coin toss for anyone looking up a word.
+    The `#glossary` anchor is unchanged, so existing links still resolve.
+  - **Not verified live in a browser.** Browser automation is gated to `ui-bug-finder` and
+    `giftnote-web-qa` by `.claude/hooks/browser-tool-gate.sh`, so the endpoint was verified by
+    curl against `--root examples` and the page only at source and build level. The nav is now
+    eight links plus Guide; the 715px/100.95px wrap figures in `styles.css` and `Header.tsx`
+    were measured at seven and are labelled as such rather than re-guessed.
+  - Amends `specs/app.md`, `specs/lessons.md`, `specs/validation.md`. `tools/backfill-terms.ts` is
+    a one-shot migration emitting `TODO` skeletons, not the ongoing mechanism.
 
 - 2026-08-19 - **v1.15: nothing a person operates, and no table, is nameless.** Three separate
   mechanisms were each producing a wrong accessible name, and the fix is a different shape for

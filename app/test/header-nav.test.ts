@@ -6,9 +6,12 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildNavEntries } from '../client/src/headerNav.ts';
 
-const TENANT_LABELS = ['Courses', 'Graph', 'Todos', 'Progress', 'Insights', 'Cost'];
+// Glossary sits between Progress and Insights as of v1.17. The list is
+// order-sensitive on purpose: buildNavEntries owns nav order, so a reordering
+// is a behaviour change and should fail here rather than pass as a set.
+const TENANT_LABELS = ['Courses', 'Graph', 'Todos', 'Progress', 'Glossary', 'Insights', 'Cost'];
 
-test('on the tenant-scoped guide route, all six tenant entries plus Guide are returned', () => {
+test('on the tenant-scoped guide route, all seven tenant entries plus Guide are returned', () => {
   const entries = buildNavEntries('guide', 'alice');
   assert.deepEqual(entries.map((e) => e.label), [...TENANT_LABELS, 'Guide']);
   const guide = entries[entries.length - 1];

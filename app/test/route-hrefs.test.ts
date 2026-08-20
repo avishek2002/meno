@@ -18,6 +18,7 @@ import {
   courseModulePathHref,
   todosHref,
   progressHref,
+  glossaryHref,
   insightsHref,
   costHref,
   graphHref,
@@ -110,11 +111,12 @@ test('courseModulePathHref (path form) percent-encodes every segment', () => {
   assert.equal(courseModulePathHref(TRICKY, TRICKY, TRICKY), `#/t/${TRICKY_ENCODED}/c/${TRICKY_ENCODED}/m/${TRICKY_ENCODED}`);
 });
 
-test('todosHref, progressHref, insightsHref, costHref percent-encode the tenant', () => {
+test('todosHref, progressHref, insightsHref, costHref, glossaryHref percent-encode the tenant', () => {
   assert.equal(todosHref(TRICKY), `#/t/${TRICKY_ENCODED}/todos`);
   assert.equal(progressHref(TRICKY), `#/t/${TRICKY_ENCODED}/progress`);
   assert.equal(insightsHref(TRICKY), `#/t/${TRICKY_ENCODED}/insights`);
   assert.equal(costHref(TRICKY), `#/t/${TRICKY_ENCODED}/cost`);
+  assert.equal(glossaryHref(TRICKY), `#/t/${TRICKY_ENCODED}/glossary`);
 });
 
 test('graphHref percent-encodes tenant and an optional focus', () => {
@@ -191,11 +193,12 @@ test('round-trip: lesson', () => {
   assert.deepEqual(route.params, { tenant: TRICKY, course: TRICKY, module: TRICKY, file: TRICKY });
 });
 
-test('round-trip: todos, progress, insights, cost', () => {
+test('round-trip: todos, progress, insights, cost, glossary', () => {
   assert.deepEqual(matchRoute(todosHref(TRICKY)), { name: 'todos', params: { tenant: TRICKY } });
   assert.deepEqual(matchRoute(progressHref(TRICKY)), { name: 'progress', params: { tenant: TRICKY } });
   assert.deepEqual(matchRoute(insightsHref(TRICKY)), { name: 'insights', params: { tenant: TRICKY } });
   assert.deepEqual(matchRoute(costHref(TRICKY)), { name: 'cost', params: { tenant: TRICKY } });
+  assert.deepEqual(matchRoute(glossaryHref(TRICKY)), { name: 'glossary', params: { tenant: TRICKY } });
 });
 
 test('round-trip: graph, with and without ?focus=', () => {

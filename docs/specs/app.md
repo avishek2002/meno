@@ -5,7 +5,7 @@ filter; the group write surface removed), v1.10 (note-path breadcrumb, course de
 back control), v1.11 (collapse state actually persists), v1.12 (breadcrumb up-navigation,
 truncatable routes, centralized href builders), v1.13 (skip link, header reflow,
 reduced-motion coverage, operable-control contrast), v1.14 (scroll clearance measured from
-the header), v1.15 (accessible names on controls, tables and headings), and v1.16 (the
+the header), v1.15 (accessible names on controls, tables and headings), and v1.17 (the
 tenant-scoped guidebook, so the nav bar survives a visit to Guide, and the header nav landmark
 renamed off "Main"). Canonical formats owned elsewhere: check blocks and
 callouts in
@@ -150,7 +150,7 @@ write-authority seam (decision 14) is enforced in code.
    (`#/guide#glossary`), so the route pattern tolerates one trailing fragment and the page
    scrolls to it, honoring `prefers-reduced-motion`. A "Guide" nav link is present on every
    screen including the no-tenant empty state, which is exactly when help is most wanted.
-   **The guidebook is also reachable in a tenant-scoped form (v1.16, UI-18)**:
+   **The guidebook is also reachable in a tenant-scoped form (v1.17, UI-18)**:
    `#/t/:tenant/guide`, a second `RouteDef` sharing the name `guide` rather than a widened
    pattern, for the same reason `course` further down is two entries - one alternative can only
    declare one named capture group, and both forms independently need their own `#section`
@@ -176,6 +176,22 @@ write-authority seam (decision 14) is enforced in code.
 12. `#/t/:tenant/graph` renders the whole tenant vault as one picture, joined to the ledger -
     what is planned but unwritten, what is mastered, and how courses connect. See
     [graph.md](graph.md) for the full behavior.
+12a. `#/t/:tenant/glossary` lists the vocabulary the tenant's generated lesson bodies
+    introduced (v1.17). One entry per term per course: the first definition encountered in
+    curriculum order is canonical, and every later lesson defining the same term becomes a
+    backlink, so a word appears once with its history rather than once per lesson. **Ordering is
+    curriculum order, never alphabetical** - grouped by course, then by module in teaching
+    sequence, then by lesson within a module - because a glossary read alongside a course is
+    read in the order the course teaches, and alphabetizing separates a term from the lesson
+    that motivates it. A search input narrows it by plain case-insensitive substring over the
+    term and its definition, the same rule the course filter applies to a title and slug; there
+    is no fuzzy matching and no search dependency.
+    **The page reads no ledger.** It shows every term from every generated lesson body,
+    including lessons the learner has not opened, and it carries no read, due, or mastery state
+    of any kind. That is a deliberate scope choice, not an oversight: a term is display
+    vocabulary, and wiring the glossary to progress would make a reference surface into
+    evidence. The mastery-bearing list is `concepts:`, which lives in the manifest and is
+    untouched by this feature.
 13. Getting out of a note, and one step back (v1.10). A note is reached by following a wikilink
     from anywhere in the vault, so it is the screen most likely to be entered with no idea where
     it sits. The note body's own heading (already inside the rendered HTML) is the page's only
@@ -299,7 +315,7 @@ write-authority seam (decision 14) is enforced in code.
     project. That is the same borrow-and-return arrangement the v1.13 audit used, and it leaves
     the same gap: a future regression here fails silently unless somebody looks again.
 
-    **The header's nav landmark is named "Primary" (v1.16, UI-18).** It was "Main", which was
+    **The header's nav landmark is named "Primary" (v1.17, UI-18).** It was "Main", which was
     the wrong name twice over: it duplicated what the `<main>` element already carries, and a
     reader asked for it to go. Renamed rather than deleted, because an unnamed `<nav>` is
     announced as a bare "navigation" next to the three named ones a page can also carry
@@ -347,12 +363,15 @@ One process, two halves, one root `package.json`:
 The HTTP surface (base `/api/v1`): reads - `health`, `tenants`, `:tenant/tree`,
 `:tenant/course/:course`, `:tenant/lesson/:course/:module/:file`, `:tenant/note?path=`,
 `:tenant/todos`, `:tenant/progress`, `:tenant/insights`, `:tenant/ledger`, `:tenant/groups`,
-`:tenant/graph`. `:tenant/note?path=` also answers with the note's owning `course` and `domain`,
+`:tenant/graph`, `:tenant/glossary`. `:tenant/note?path=` also answers with the note's owning `course` and `domain`,
 or nulls, resolved from the same walk rather than from the path's shape (invariant 14).
 `:tenant/insights`
 has no write counterpart - it computes `lib/insights.ts`'s `computeInsights` fresh over the
 same walk and adds the list of narrative report files under `insights/` (spec:
-[insights.md](insights.md)). Writes (the entire write surface) - `POST :tenant/check/submit`,
+[insights.md](insights.md)). `:tenant/glossary` (v1.17) has no write counterpart either - it
+reads each module's `terms.yml` sidecar off the same walk and merges them through
+`lib/terms.ts`'s `mergeTerms`, so the format's rules are stated once and both the app and
+`tools/validate.ts` answer from them. Writes (the entire write surface) - `POST :tenant/check/submit`,
 `POST :tenant/lesson/read`, `POST :tenant/todos`, `PATCH :tenant/todos/:line`,
 `POST :tenant/todos/:line/park`. Five routes across two files: the ledger and `todos.md`.
 `groups.yml` was the third from v1.5 until v1.6 and is now read-only to the app, which is worth
@@ -496,7 +515,7 @@ both run before routing so they cover writes and unrouted paths equally.
 - Invariants 11-12: by construction (no route reads outside the content root; both
   renderers import `GLOSSARY`). Not machine-asserted - a future contributor could add a
   second copy of a definition and nothing would fail.
-- Behavior 11's tenant-scoped guidebook (v1.16, UI-18): `app/test/route-table.test.ts` proves the
+- Behavior 11's tenant-scoped guidebook (v1.17, UI-18): `app/test/route-table.test.ts` proves the
   ordering claim in the `guide` RouteDef's own comment directly - `#/t/alice/guide` resolves to
   `guide` with `{ tenant: 'alice' }`, not to `tenant`, `note`, or `not-found` - rather than leaving
   it argued only in prose; `app/test/route-hrefs.test.ts` covers `tenantGuideHref`'s encoding and

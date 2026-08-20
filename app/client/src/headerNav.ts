@@ -14,6 +14,7 @@ import {
   graphHref,
   todosHref,
   progressHref,
+  glossaryHref,
   insightsHref,
   costHref,
 } from '../../shared/routeHrefs.ts';
@@ -44,14 +45,14 @@ function currentFor(name: string, route: string): 'page' | undefined {
 
 /**
  * The ordered nav entries for `route` (a route name, e.g. `route.name`) given
- * whichever tenant, if any, the current URL carries. Six tenant-scoped links
+ * whichever tenant, if any, the current URL carries. Seven tenant-scoped links
  * plus Guide when a tenant is known; Guide alone when it is not (UI-18) - the
  * list must never come back empty, because #/guide is deliberately reachable
  * with no tenant, on the reasoning that the screen someone needs help on may
  * be the one with no tenant yet (see Header.tsx's comment on the same point).
  *
  * Guide's own href switches form with `tenant`: `tenantGuideHref` inside a
- * tenant, so the six other links and Guide all point at the same tenant, and
+ * tenant, so the seven other links and Guide all point at the same tenant, and
  * `guideHref` outside one. That switch is what fixes UI-18 - before it, the
  * header always linked plain `#/guide`, which matched the tenant-less `guide`
  * RouteDef even when a tenant was open, and the nav block above it would not
@@ -70,6 +71,7 @@ export function buildNavEntries(route: string, tenant: string | undefined): NavE
       { label: 'Graph', href: graphHref(tenant), current: currentFor('graph', route) },
       { label: 'Todos', href: todosHref(tenant), current: currentFor('todos', route) },
       { label: 'Progress', href: progressHref(tenant), current: currentFor('progress', route) },
+      { label: 'Glossary', href: glossaryHref(tenant), current: currentFor('glossary', route) },
       { label: 'Insights', href: insightsHref(tenant), current: currentFor('insights', route) },
       { label: 'Cost', href: costHref(tenant), current: currentFor('cost', route) },
     );

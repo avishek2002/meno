@@ -23,6 +23,7 @@ test('tenant-scoped report pages read "<label> - <tenant> - meno"', () => {
   assert.equal(routeTitle(route('insights', { tenant: 'alice' })), 'Insights - alice - meno');
   assert.equal(routeTitle(route('cost', { tenant: 'alice' })), 'Cost - alice - meno');
   assert.equal(routeTitle(route('graph', { tenant: 'alice' })), 'Graph - alice - meno');
+  assert.equal(routeTitle(route('glossary', { tenant: 'alice' })), 'Glossary - alice - meno');
 });
 
 test('course and lesson titles lead with the identifier, not the word for the kind of page', () => {
@@ -66,6 +67,7 @@ test('routeNames covers every route the table can produce, plus the not-found fa
     [
       'cost',
       'course',
+      'glossary',
       'graph',
       'guide',
       'home',

@@ -15,6 +15,7 @@ import {
   absolutePathHits,
   checkSpecTableText,
   checkSpecVersions,
+  checkTerms,
   runValidation,
 } from '../validate.ts';
 
@@ -467,6 +468,250 @@ test('duplicate lesson file within a module.yml is a warning', () => {
       (f) => f.level === 'warning' && f.check === 'refs' && f.message.includes('duplicate lesson file') && f.message.includes('01-alpha.md'),
     ),
     'a duplicate lesson file within one module is a warning naming the file',
+  );
+});
+
+// --- terms: the glossary sidecar (.claude/CONTRACT-glossary.md's 12 findings) ---
+
+// A clean two-sentence definition, reused as the baseline everywhere a test
+// is not itself pinning the sentence/word-count findings, so those findings
+// never fire as noise on a fixture built to isolate a different one.
+const CLEAN_DEF = 'A borrow is a reference that lets code read a value without taking ownership of it. Without borrowing every call would have to copy the value instead.';
+
+function termsCourseFixture(modules: {
+  slug: string;
+  lessons: { file: string; title?: string }[];
+  termsYml?: string;
+  writeLessonBodies?: string[];
+}[]): { dir: string; files: string[] } {
+  const dir = mkdtempSync(join(tmpdir(), 'meno-terms-'));
+  const courseDir = join(dir, 'demo-course');
+  mkdirSync(courseDir, { recursive: true });
+  writeFileSync(join(courseDir, 'course.yml'), 'schema_version: 1\nslug: demo-course\ntitle: Demo course\n');
+
+  for (const mod of modules) {
+    const modDir = join(courseDir, 'modules', mod.slug);
+    mkdirSync(modDir, { recursive: true });
+    const lessonLines = mod.lessons
+      .map((l) => `  - file: ${l.file}\n    title: ${l.title ?? l.file}\n    concept: alpha\n    status: generated`)
+      .join('\n');
+    writeFileSync(join(modDir, 'module.yml'), `schema_version: 1\nmodule: ${mod.slug}\nlessons:\n${lessonLines}\n`);
+    if (mod.termsYml !== undefined) writeFileSync(join(modDir, 'terms.yml'), mod.termsYml);
+    for (const file of mod.writeLessonBodies ?? []) writeFileSync(join(modDir, file), '# lesson body\n');
+  }
+  return { dir, files: walkTree(dir) };
+}
+
+test('terms finding 1: a malformed entry parseTerms drops is an error naming the drop', () => {
+  const { dir, files } = termsCourseFixture([
+    {
+      slug: '01-first',
+      lessons: [{ file: '01-first.md' }],
+      termsYml: `schema_version: 1\nterms:\n  - lesson: 01-first.md\n    definition: "${CLEAN_DEF}"\n`,
+      writeLessonBodies: ['01-first.md'],
+    },
+  ]);
+  const findings = checkTerms(dir, files);
+  assert.ok(
+    findings.some((f) => f.level === 'error' && f.check === 'terms' && f.message.includes('dropped')),
+    'a term entry missing "term" is dropped by parseTerms and reported as an error',
+  );
+});
+
+test('terms finding 2: a document failing terms.schema.json is an error naming the ajv path', () => {
+  const { dir, files } = termsCourseFixture([
+    {
+      slug: '01-first',
+      lessons: [{ file: '01-first.md' }],
+      termsYml: `schema_version: 1\nterms:\n  - term: borrow\n    lesson: 01-first.md\n    definition: "${CLEAN_DEF}"\n    see_also: ownership\n`,
+      writeLessonBodies: ['01-first.md'],
+    },
+  ]);
+  const findings = checkTerms(dir, files);
+  assert.ok(
+    findings.some((f) => f.level === 'error' && f.check === 'terms' && f.message.includes('see_also')),
+    'see_also as a bare string, not an array, fails the schema even though parseTerms tolerates it',
+  );
+});
+
+test('terms finding 3: a lesson not in this module\'s own module.yml is an error', () => {
+  const { dir, files } = termsCourseFixture([
+    {
+      slug: '01-first',
+      lessons: [{ file: '01-first.md' }],
+      termsYml: `schema_version: 1\nterms:\n  - term: borrow\n    lesson: 02-other.md\n    definition: "${CLEAN_DEF}"\n`,
+      writeLessonBodies: ['01-first.md', '02-other.md'],
+    },
+  ]);
+  const findings = checkTerms(dir, files);
+  assert.ok(
+    findings.some((f) => f.level === 'error' && f.check === 'terms' && f.message.includes('02-other.md') && f.message.includes('not in')),
+    'a term naming a lesson this module.yml does not list is an error, even though the file exists on disk',
+  );
+});
+
+test('terms finding 4: a lesson that does not exist on disk is an error', () => {
+  const { dir, files } = termsCourseFixture([
+    {
+      slug: '01-first',
+      lessons: [{ file: '01-first.md' }],
+      termsYml: `schema_version: 1\nterms:\n  - term: borrow\n    lesson: 01-first.md\n    definition: "${CLEAN_DEF}"\n`,
+      writeLessonBodies: [], // 01-first.md is listed but never written
+    },
+  ]);
+  const findings = checkTerms(dir, files);
+  assert.ok(
+    findings.some((f) => f.level === 'error' && f.check === 'terms' && f.message.includes('01-first.md') && f.message.includes('not exist on disk')),
+    'a term introduced by an unwritten lesson is an error',
+  );
+});
+
+test('terms finding 5: two entries sharing a term key in one file is an error', () => {
+  const { dir, files } = termsCourseFixture([
+    {
+      slug: '01-first',
+      lessons: [{ file: '01-first.md' }, { file: '02-second.md' }],
+      termsYml: `schema_version: 1\nterms:\n  - term: borrow\n    lesson: 01-first.md\n    definition: "${CLEAN_DEF}"\n  - term: borrow\n    lesson: 02-second.md\n    definition: "${CLEAN_DEF}"\n`,
+      writeLessonBodies: ['01-first.md', '02-second.md'],
+    },
+  ]);
+  const findings = checkTerms(dir, files);
+  assert.ok(
+    findings.some((f) => f.level === 'error' && f.check === 'terms' && f.message.includes('duplicate')),
+    'two entries in one terms.yml sharing a term key is an error',
+  );
+});
+
+test('terms finding 6: a definition that is not exactly two sentences is an error', () => {
+  const { dir, files } = termsCourseFixture([
+    {
+      slug: '01-first',
+      lessons: [{ file: '01-first.md' }],
+      termsYml: `schema_version: 1\nterms:\n  - term: borrow\n    lesson: 01-first.md\n    definition: "A borrow is a reference. It lets code read a value. Without it the code cannot compile."\n`,
+      writeLessonBodies: ['01-first.md'],
+    },
+  ]);
+  const findings = checkTerms(dir, files);
+  assert.ok(
+    findings.some((f) => f.level === 'error' && f.check === 'terms' && f.message.includes('sentence')),
+    'a three-sentence definition is an error naming the sentence count',
+  );
+});
+
+test('terms finding 7: a definition over the word cap is a warning, not an error', () => {
+  const words1 = Array.from({ length: 30 }, (_, i) => `word${i}`).join(' ');
+  const words2 = Array.from({ length: 20 }, (_, i) => `term${i}`).join(' ');
+  const longDef = `${words1}. ${words2}.`;
+  const { dir, files } = termsCourseFixture([
+    {
+      slug: '01-first',
+      lessons: [{ file: '01-first.md' }],
+      termsYml: `schema_version: 1\nterms:\n  - term: borrow\n    lesson: 01-first.md\n    definition: "${longDef}"\n`,
+      writeLessonBodies: ['01-first.md'],
+    },
+  ]);
+  const findings = checkTerms(dir, files);
+  assert.ok(
+    findings.some((f) => f.level === 'warning' && f.check === 'terms' && f.message.includes('word')),
+    'a definition past the 45-word guideline is a warning naming the word count',
+  );
+  assert.ok(
+    !findings.some((f) => f.level === 'error' && f.message.includes('sentence')),
+    'the word cap alone must never produce a sentence-count error',
+  );
+});
+
+test('terms finding 8: a written lesson body with no term entry and no no_terms row is an error', () => {
+  const { dir, files } = termsCourseFixture([
+    {
+      slug: '01-first',
+      lessons: [{ file: '01-first.md' }, { file: '02-second.md' }],
+      termsYml: `schema_version: 1\nterms:\n  - term: borrow\n    lesson: 01-first.md\n    definition: "${CLEAN_DEF}"\n`,
+      writeLessonBodies: ['01-first.md', '02-second.md'],
+    },
+  ]);
+  const findings = checkTerms(dir, files);
+  assert.ok(
+    findings.some((f) => f.level === 'error' && f.check === 'terms' && f.message.includes('02-second.md')),
+    '02-second.md has a written body, no term entry, and no no_terms row - that is an error',
+  );
+});
+
+test('terms finding 9: no_terms naming an unlisted lesson, or one with its own term entry, is an error', () => {
+  const { dir, files } = termsCourseFixture([
+    {
+      slug: '01-first',
+      lessons: [{ file: '01-first.md' }],
+      termsYml: `schema_version: 1\nterms:\n  - term: borrow\n    lesson: 01-first.md\n    definition: "${CLEAN_DEF}"\n\nno_terms:\n  - 01-first.md\n  - 09-ghost.md\n`,
+      writeLessonBodies: ['01-first.md'],
+    },
+  ]);
+  const findings = checkTerms(dir, files);
+  assert.ok(
+    findings.some((f) => f.level === 'error' && f.check === 'terms' && f.message.includes('09-ghost.md')),
+    'no_terms naming a lesson module.yml does not list is an error',
+  );
+  assert.ok(
+    findings.some((f) => f.level === 'error' && f.check === 'terms' && f.message.includes('01-first.md') && f.message.includes('no_terms')),
+    'no_terms naming a lesson that also has a term entry is a contradiction, not a preference',
+  );
+});
+
+test('terms finding 10: a module with a written lesson and no terms.yml at all is a warning', () => {
+  const { dir, files } = termsCourseFixture([
+    {
+      slug: '01-first',
+      lessons: [{ file: '01-first.md' }],
+      // termsYml intentionally omitted - the module never opted in
+      writeLessonBodies: ['01-first.md'],
+    },
+  ]);
+  const findings = checkTerms(dir, files);
+  assert.ok(
+    findings.some((f) => f.level === 'warning' && f.check === 'terms'),
+    'a module with a generated lesson and no terms.yml at all is a warning, not an error (decision 5)',
+  );
+  assert.ok(
+    !findings.some((f) => f.level === 'error'),
+    'no terms.yml at all must never itself produce an error',
+  );
+});
+
+test('terms finding 11: two entries anywhere in one course sharing a key with diverging definitions is a warning', () => {
+  const { dir, files } = termsCourseFixture([
+    {
+      slug: '01-first',
+      lessons: [{ file: '01-first.md' }],
+      termsYml: `schema_version: 1\nterms:\n  - term: lifetime\n    lesson: 01-first.md\n    definition: "A lifetime is the span of the program for which a reference stays valid. Without it the compiler cannot rule out a dangling pointer."\n`,
+      writeLessonBodies: ['01-first.md'],
+    },
+    {
+      slug: '02-second',
+      lessons: [{ file: '02-first.md' }],
+      termsYml: `schema_version: 1\nterms:\n  - term: lifetime\n    lesson: 02-first.md\n    definition: "A gift note is a short message a shopper attaches at checkout. Without it the recipient has no context for the parcel."\n`,
+      writeLessonBodies: ['02-first.md'],
+    },
+  ]);
+  const findings = checkTerms(dir, files);
+  assert.ok(
+    findings.some((f) => f.level === 'warning' && f.check === 'terms' && f.message.includes('lifetime') && f.message.includes('differently')),
+    'the same term key defined unrelatedly in two modules of one course is a warning',
+  );
+});
+
+test('terms finding 12: a see_also that resolves to no term key in the same course is a warning', () => {
+  const { dir, files } = termsCourseFixture([
+    {
+      slug: '01-first',
+      lessons: [{ file: '01-first.md' }],
+      termsYml: `schema_version: 1\nterms:\n  - term: borrow\n    lesson: 01-first.md\n    definition: "${CLEAN_DEF}"\n    see_also: [nonexistent-term]\n`,
+      writeLessonBodies: ['01-first.md'],
+    },
+  ]);
+  const findings = checkTerms(dir, files);
+  assert.ok(
+    findings.some((f) => f.level === 'warning' && f.check === 'terms' && f.message.includes('nonexistent-term')),
+    'a see_also value naming no term in the same course is a warning, never an error (a forward reference is normal)',
   );
 });
 

@@ -1,0 +1,31 @@
+schema_version: 1
+terms:
+  - term: Cargo
+    lesson: 01-cargo-and-toolchain.md
+    definition: >-
+      Cargo is Rust's package manager and build system, combining project scaffolding,
+      dependency management, and compilation into one command-line tool. Without it a
+      Rust project would need a hand-maintained build script and a separately invoked
+      compiler, the way earlier systems languages required.
+  - term: shadowing
+    lesson: 02-syntax-for-experienced-developers.md
+    definition: >-
+      Shadowing is declaring a new `let` binding with a name already in use, which
+      replaces the old binding and may change its type. Without it a developer would
+      need a new name whenever a value needs a different type later in the same scope.
+  - term: ownership
+    lesson: 03-ownership.md
+    definition: >-
+      Ownership is the compile-time rule that gives each value exactly one responsible
+      variable, which Rust frees automatically when that variable goes out of scope.
+      Without it the compiler would need a garbage collector at runtime to decide when
+      memory is safe to reclaim.
+    see_also: [move]
+  - term: move
+    lesson: 03-ownership.md
+    definition: >-
+      A move is the transfer of a value's ownership from one variable to another, which
+      happens by default whenever a non-Copy value like a String is assigned or passed
+      to a function. Without it two variables could believe they owned one heap
+      allocation at once.
+    see_also: [ownership]
