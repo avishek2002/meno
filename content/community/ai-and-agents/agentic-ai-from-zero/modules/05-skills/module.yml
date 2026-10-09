@@ -1,0 +1,53 @@
+schema_version: 1
+module: 05-skills
+title: Skills
+status: skeleton
+serves: [O5]
+prerequisites: [04-memory-and-instructions]
+est_hours: 2
+concepts:
+  - what-a-skill-is
+  - skill-triggering
+  - writing-a-skill
+objectives:
+  - id: M5-1
+    text: Explain what a skill contains and how it differs from an instruction file
+    bloom: understand
+  - id: M5-2
+    text: Explain how an agent picks a skill from its name and description and what makes triggering fail
+    bloom: understand
+  - id: M5-3
+    text: Apply the skill format to write a small skill with a precise description and test that it triggers correctly
+    bloom: apply
+sources:                       # each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "Claude Code docs: Extend Claude with skills"
+    url: https://code.claude.com/docs/en/skills
+    archived_url: https://web.archive.org/web/20261009073950/https://code.claude.com/docs/en/skills
+    accessed: 2026-10-09
+    source_type: web
+    why: shows a skill as a SKILL.md file Claude uses when relevant or when invoked, anchoring the what-a-skill-is and writing-a-skill lessons
+  - title: "Agent Skills specification"
+    url: https://agentskills.io/specification
+    archived_url: https://web.archive.org/web/20261002143519/https://agentskills.io/specification
+    accessed: 2026-10-09
+    source_type: web
+    why: the open format for SKILL.md frontmatter (name and description), body, and progressive disclosure, anchoring skill structure across harnesses
+  - title: "Codex docs: Build skills"
+    url: https://learn.chatgpt.com/docs/build-skills
+    archived_url: https://web.archive.org/web/20261009073917/https://learn.chatgpt.com/docs/build-skills
+    accessed: 2026-10-09
+    source_type: web
+    why: explains that Codex loads each skill's name and description first and the full SKILL.md only on use, via explicit or implicit invocation, anchoring the skill-triggering lesson
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-what-a-skill-is.md
+    title: What a skill is
+    concept: what-a-skill-is
+    status: planned
+  - file: 02-skill-triggering.md
+    title: How a skill triggers
+    concept: skill-triggering
+    status: planned
+  - file: 03-writing-a-skill.md
+    title: Writing a skill
+    concept: writing-a-skill
+    status: planned

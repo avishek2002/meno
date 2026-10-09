@@ -1,0 +1,53 @@
+schema_version: 1
+module: 04-memory-and-instructions
+title: Memory and instructions
+status: skeleton
+serves: [O4]
+prerequisites: [03-terminal-and-git]
+est_hours: 2
+concepts:
+  - instruction-files
+  - memory-vs-context
+  - context-hygiene
+objectives:
+  - id: M4-1
+    text: Apply the CLAUDE.md and AGENTS.md conventions to write an instruction file that tells an agent how a project works
+    bloom: apply
+  - id: M4-2
+    text: Distinguish what the agent re-reads each session from what it remembers and what sits in the live context window
+    bloom: understand
+  - id: M4-3
+    text: Keep context lean by choosing what to include, when to start fresh, and when to compact
+    bloom: apply
+sources:                       # each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "Claude Code docs: How Claude remembers your project"
+    url: https://code.claude.com/docs/en/memory
+    archived_url: https://web.archive.org/web/20261007150822/https://code.claude.com/docs/en/memory
+    accessed: 2026-10-09
+    source_type: web
+    why: separates instruction files from auto memory and states both load at the start of a session, anchoring the instruction-files and memory-vs-context lessons
+  - title: "Codex docs: AGENTS.md"
+    url: https://learn.chatgpt.com/docs/agent-configuration/agents-md
+    archived_url: https://web.archive.org/web/20260930155336/https://learn.chatgpt.com/docs/agent-configuration/agents-md
+    accessed: 2026-10-09
+    source_type: web
+    why: explains how Codex discovers and layers AGENTS.md instruction files, the second harness's instruction-file lesson and the cross-tool convention
+  - title: "Anthropic: Effective context engineering for AI agents"
+    url: https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents
+    archived_url: https://web.archive.org/web/20261006140652/https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents
+    accessed: 2026-10-09
+    source_type: web
+    why: frames context as a finite resource and covers compaction and note-taking to manage it, anchoring the context-hygiene lesson
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-instruction-files.md
+    title: Instruction files
+    concept: instruction-files
+    status: planned
+  - file: 02-memory-vs-context.md
+    title: Memory versus context
+    concept: memory-vs-context
+    status: planned
+  - file: 03-context-hygiene.md
+    title: Context hygiene
+    concept: context-hygiene
+    status: planned

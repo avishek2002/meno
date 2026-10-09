@@ -15,6 +15,21 @@ Contributors: @avishek2002.
 - Design event-driven hooks and permission rules that enforce guardrails deterministically, failing closed where the model's judgment must not be the last line of defense
 - Evaluate which model tier a task needs, route work to the cheapest capable model, and verify the routing against usage instrumentation
 
+## ai-and-agents/agentic-ai-from-zero - Agentic AI from zero
+
+Audience: complete beginners to agentic AI with no command-line or programming experience - comfortable with a computer and a chat assistant; learns the terminal and git along the way. Hours: 16-20.
+
+Contributors: @avishek2002.
+
+- Explain how a chat model, a harness, and tools combine into an agent that completes multi-step work
+- Apply retrieval practice, spaced review, and claim checking to learn from an AI tutor without trusting it blindly
+- Apply basic shell commands and the git workflow of commit, branch, and pull request to a small project of your own
+- Apply instruction files and memory habits so an agent's context stays lean and useful across sessions
+- Apply the skill format to build a skill that an agent triggers on the right requests and not on the wrong ones
+- Apply a trust checklist to a connector before adding it, then add one and verify what it can reach
+- Apply a read-the-code check to every hook you run and build one small hook of your own
+- Apply delegation, model-tier choice, and worktrees to split one real task across sub-agents safely
+
 ## ai-and-agents/intro-to-ai-and-agents - Intro to AI and agents
 
 Audience: developers fluent on the command line who are new to AI - comfortable with git, scripting, and APIs (application programming interfaces), no machine learning background assumed. Hours: 14-16.

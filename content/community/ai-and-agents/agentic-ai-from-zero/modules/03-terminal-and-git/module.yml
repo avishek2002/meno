@@ -1,0 +1,59 @@
+schema_version: 1
+module: 03-terminal-and-git
+title: The terminal and git
+status: skeleton
+serves: [O3]
+prerequisites: [02-learning-with-an-ai-tutor]
+est_hours: 2
+concepts:
+  - shell-basics
+  - commits-and-branches
+  - pull-requests
+objectives:
+  - id: M3-1
+    text: Navigate folders and run, read, and stop basic commands in a terminal
+    bloom: apply
+  - id: M3-2
+    text: Record changes as commits on a branch and describe what each commit stores
+    bloom: apply
+  - id: M3-3
+    text: Open a pull request and explain what review adds before changes merge
+    bloom: apply
+sources:                       # each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "Apple: Terminal User Guide"
+    url: https://support.apple.com/guide/terminal/welcome/mac
+    archived_url: https://web.archive.org/web/20260927202121/https://support.apple.com/guide/terminal/welcome/mac
+    accessed: 2026-10-09
+    source_type: web
+    why: the vendor's introduction to opening Terminal and running commands on macOS, anchoring the shell-basics lesson for a first-time user
+  - title: "Pro Git: Recording Changes to the Repository"
+    url: https://git-scm.com/book/en/v2/Git-Basics-Recording-Changes-to-the-Repository
+    archived_url: https://web.archive.org/web/20261001042615/https://git-scm.com/book/en/v2/Git-Basics-Recording-Changes-to-the-Repository
+    accessed: 2026-10-09
+    source_type: web
+    why: walks through status, add, and commit and the staging area, anchoring the commits lesson
+  - title: "Pro Git: Branches in a Nutshell"
+    url: https://git-scm.com/book/en/v2/Git-Branching-Branches-in-a-Nutshell
+    archived_url: https://web.archive.org/web/20261007013319/https://git-scm.com/book/en/v2/Git-Branching-Branches-in-a-Nutshell
+    accessed: 2026-10-09
+    source_type: web
+    why: explains a commit as a snapshot with pointers and a branch as a movable pointer, anchoring the branches lesson
+  - title: "GitHub Docs: Pull requests"
+    url: https://docs.github.com/en/pull-requests/reference/pull-requests
+    archived_url: https://web.archive.org/web/20261009005615/https://docs.github.com/en/pull-requests/reference/pull-requests
+    accessed: 2026-10-09
+    source_type: web
+    why: defines a pull request as a way to propose, review, and merge code changes, anchoring the pull-requests lesson
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-shell-basics.md
+    title: Shell basics
+    concept: shell-basics
+    status: planned
+  - file: 02-commits-and-branches.md
+    title: Commits and branches
+    concept: commits-and-branches
+    status: planned
+  - file: 03-pull-requests.md
+    title: Pull requests
+    concept: pull-requests
+    status: planned

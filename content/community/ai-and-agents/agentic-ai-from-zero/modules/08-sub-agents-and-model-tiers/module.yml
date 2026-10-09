@@ -1,0 +1,59 @@
+schema_version: 1
+module: 08-sub-agents-and-model-tiers
+title: Sub-agents and model tiers
+status: skeleton
+serves: [O8]
+prerequisites: [07-hooks]
+est_hours: 2
+concepts:
+  - sub-agents-and-delegation
+  - model-tiers-and-cost
+  - parallel-work-and-worktrees
+objectives:
+  - id: M8-1
+    text: Explain what a sub-agent is and apply a simple rule for what to delegate and what to keep
+    bloom: apply
+  - id: M8-2
+    text: Match a task to a model tier and explain the cost and quality trade-off
+    bloom: apply
+  - id: M8-3
+    text: Use git worktrees so parallel agents cannot overwrite each other's changes
+    bloom: apply
+sources:                       # each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "Claude Code docs: Create custom subagents"
+    url: https://code.claude.com/docs/en/sub-agents
+    archived_url: https://web.archive.org/web/20261006151503/https://code.claude.com/docs/en/sub-agents
+    accessed: 2026-10-09
+    source_type: web
+    why: states each subagent runs in its own context window with its own tools and permissions, anchoring the sub-agents-and-delegation lesson
+  - title: "Codex docs: Subagents"
+    url: https://learn.chatgpt.com/docs/agent-configuration/subagents
+    archived_url: https://web.archive.org/web/20261003080209/https://learn.chatgpt.com/docs/agent-configuration/subagents
+    accessed: 2026-10-09
+    source_type: web
+    why: describes spawning specialized agents in parallel and collecting results, the second harness's delegation and parallel-work lessons
+  - title: "git-worktree manual page"
+    url: https://git-scm.com/docs/git-worktree
+    archived_url: https://web.archive.org/web/20261005230838/https://git-scm.com/docs/git-worktree
+    accessed: 2026-10-09
+    source_type: web
+    why: documents linked working trees that let one repository have several checked-out branches at once, anchoring the parallel-work lesson
+  - title: "Claude Code docs: Model configuration"
+    url: https://code.claude.com/docs/en/model-config
+    archived_url: https://web.archive.org/web/20261009162131/https://code.claude.com/docs/en/model-config
+    accessed: 2026-10-09
+    source_type: web
+    why: describes model aliases and choosing a model per session or per task, anchoring the model-tiers-and-cost lesson
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-sub-agents-and-delegation.md
+    title: Sub-agents and delegation
+    concept: sub-agents-and-delegation
+    status: planned
+  - file: 02-model-tiers-and-cost.md
+    title: Model tiers and cost
+    concept: model-tiers-and-cost
+    status: planned
+  - file: 03-parallel-work-and-worktrees.md
+    title: Parallel work and worktrees
+    concept: parallel-work-and-worktrees
+    status: planned
