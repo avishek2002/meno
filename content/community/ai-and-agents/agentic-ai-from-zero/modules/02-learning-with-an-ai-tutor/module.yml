@@ -1,0 +1,59 @@
+schema_version: 1
+module: 02-learning-with-an-ai-tutor
+title: Learning with an AI tutor
+status: skeleton
+serves: [O2]
+prerequisites: [01-what-an-agent-is]
+est_hours: 2
+concepts:
+  - retrieval-practice
+  - spaced-review-and-mastery
+  - checking-ai-claims
+objectives:
+  - id: M2-1
+    text: Explain why recalling from memory beats rereading and use it on one real topic
+    bloom: apply
+  - id: M2-2
+    text: Explain why spacing reviews and gating progress on demonstrated mastery work, and schedule a review plan
+    bloom: apply
+  - id: M2-3
+    text: Check a tutor's factual claim against a primary source and decide whether to trust it
+    bloom: apply
+sources:                       # each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "Roediger and Karpicke (2006): Test-enhanced learning"
+    url: https://pubmed.ncbi.nlm.nih.gov/16507066/
+    archived_url: https://web.archive.org/web/20261006074447/https://pubmed.ncbi.nlm.nih.gov/16507066/
+    accessed: 2026-10-09
+    source_type: web
+    why: shows that taking a memory test produces greater delayed retention than restudying, anchoring the retrieval-practice lesson
+  - title: "Cepeda et al. (2006): Distributed practice in verbal recall tasks"
+    url: https://pubmed.ncbi.nlm.nih.gov/16719566/
+    archived_url: https://web.archive.org/web/20261006074447/https://pubmed.ncbi.nlm.nih.gov/16719566/
+    accessed: 2026-10-09
+    source_type: web
+    why: meta-analysis of 839 assessments showing the best gap between study sessions grows with the retention interval, anchoring the spaced-review lesson
+  - title: "Bloom (1984): The 2 Sigma Problem (ERIC record)"
+    url: https://eric.ed.gov/?id=EJ303699
+    archived_url: https://web.archive.org/web/20260919214101/https://eric.ed.gov/?id=EJ303699
+    accessed: 2026-10-09
+    source_type: web
+    why: reports mastery learning and one-to-one tutoring results, anchoring the mastery-gate half of the spaced-review-and-mastery lesson
+  - title: "Claude docs: Reduce hallucinations"
+    url: https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/reduce-hallucinations
+    archived_url: https://web.archive.org/web/20261004113937/https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/reduce-hallucinations
+    accessed: 2026-10-09
+    source_type: web
+    why: lists practical techniques such as allowing the model to say it does not know and requiring quotes from sources, anchoring the checking-ai-claims lesson
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-retrieval-practice.md
+    title: Retrieval practice
+    concept: retrieval-practice
+    status: planned
+  - file: 02-spaced-review-and-mastery.md
+    title: Spaced review and mastery gates
+    concept: spaced-review-and-mastery
+    status: planned
+  - file: 03-checking-ai-claims.md
+    title: Checking AI claims
+    concept: checking-ai-claims
+    status: planned

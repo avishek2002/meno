@@ -40,6 +40,7 @@ _Last updated: 2026-08-20_
 
 ## Done
 
+- 2026-10-10 - **Community pack `ai-and-agents/agentic-ai-from-zero` added.** First pack for someone who has only chatted with AI and never used a terminal: 8 modules of about 2 hours each (what an agent is, learning with Meno, terminal and git, memory and instruction files, skills, MCP, hooks, sub-agents and model tiers), harness-agnostic across Claude Code and Codex, 29 sources verified live with archive anchors. Objectives capped at `apply` so a weekend-sized `build` profile adopts it without ceiling errors.
 - 2026-08-20 - **v1.19: the graph canvas gets controls, and a node opens a card instead of a
   page.** Two halves of one complaint - the graph was hard to see into, and clicking a node threw
   you out of it. Zoom and pan already existed (wheel, background-drag, 0.2x to 4x) but had no

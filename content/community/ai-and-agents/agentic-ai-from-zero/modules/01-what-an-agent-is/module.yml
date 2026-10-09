@@ -1,0 +1,59 @@
+schema_version: 1
+module: 01-what-an-agent-is
+title: What an agent is
+status: skeleton
+serves: [O1]
+prerequisites: []
+est_hours: 2
+concepts:
+  - model-vs-agent
+  - agent-loop
+  - tools-and-permissions
+objectives:
+  - id: M1-1
+    text: Distinguish a model that only replies from an agent that acts, including what the context window holds
+    bloom: understand
+  - id: M1-2
+    text: Describe the loop of gathering context, acting, and checking for one concrete task, including the stopping condition
+    bloom: understand
+  - id: M1-3
+    text: Explain how tools extend an agent's reach and how permissions decide what it may do without asking
+    bloom: understand
+sources:                       # each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "Anthropic: Building effective agents"
+    url: https://www.anthropic.com/engineering/building-effective-agents
+    archived_url: https://web.archive.org/web/20261009110851/https://www.anthropic.com/engineering/building-effective-agents
+    accessed: 2026-10-09
+    source_type: web
+    why: defines workflows against agents (the model directing its own tool use) and the stopping conditions that bound an agent loop, anchoring the model-vs-agent and agent-loop lessons
+  - title: "Claude Code docs: How Claude Code works"
+    url: https://code.claude.com/docs/en/how-claude-code-works
+    archived_url: https://web.archive.org/web/20261004045045/https://code.claude.com/docs/en/how-claude-code-works
+    accessed: 2026-10-09
+    source_type: web
+    why: describes the agentic loop of gathering context, taking action, and verifying results, and the tools that give the model reach, anchoring the agent-loop and tools lessons
+  - title: "Claude Code docs: Configure permissions"
+    url: https://code.claude.com/docs/en/permissions
+    archived_url: https://web.archive.org/web/20261008153633/https://code.claude.com/docs/en/permissions
+    accessed: 2026-10-09
+    source_type: web
+    why: documents allow, deny, and ask rules and permission modes for tool use in one harness, anchoring the tools-and-permissions lesson
+  - title: "Codex docs: Agent approvals and security"
+    url: https://learn.chatgpt.com/docs/agent-approvals-security
+    archived_url: https://web.archive.org/web/20261009053742/https://learn.chatgpt.com/docs/agent-approvals-security
+    accessed: 2026-10-09
+    source_type: web
+    why: describes the OS-enforced sandbox plus the approval policy that decides when the agent must stop and ask, the second harness's version of the permissions lesson
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-model-vs-agent.md
+    title: A chat model is not an agent
+    concept: model-vs-agent
+    status: planned
+  - file: 02-agent-loop.md
+    title: The agent loop
+    concept: agent-loop
+    status: planned
+  - file: 03-tools-and-permissions.md
+    title: Tools and permissions
+    concept: tools-and-permissions
+    status: planned

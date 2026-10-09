@@ -1,0 +1,59 @@
+schema_version: 1
+module: 06-mcp-and-connectors
+title: Connectors and MCP
+status: skeleton
+serves: [O6]
+prerequisites: [05-skills]
+est_hours: 2
+concepts:
+  - mcp-servers
+  - connector-trust-and-injection
+  - adding-a-server
+objectives:
+  - id: M6-1
+    text: Explain what a Model Context Protocol (MCP) server offers an agent and how it differs from built-in tools
+    bloom: understand
+  - id: M6-2
+    text: Apply a trust checklist to a connector and describe how text it returns could hijack an agent
+    bloom: apply
+  - id: M6-3
+    text: Add an MCP server to your agent and confirm which tools it exposes
+    bloom: apply
+sources:                       # each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "Model Context Protocol: Introduction"
+    url: https://modelcontextprotocol.io/docs/2026-07-28/getting-started/intro
+    archived_url: https://web.archive.org/web/20261008155525/https://modelcontextprotocol.io/docs/2026-07-28/getting-started/intro
+    accessed: 2026-10-09
+    source_type: web
+    why: introduces MCP as an open standard for connecting AI applications to tools and data, anchoring the mcp-servers lesson
+  - title: "Model Context Protocol: Security best practices"
+    url: https://modelcontextprotocol.io/docs/2026-07-28/tutorials/security/security_best_practices
+    archived_url: https://web.archive.org/web/20261005230002/https://modelcontextprotocol.io/docs/2026-07-28/tutorials/security/security_best_practices
+    accessed: 2026-10-09
+    source_type: web
+    why: catalogues attacks such as the confused deputy and token passthrough with mitigations, anchoring the connector-trust lesson
+  - title: "OWASP GenAI: LLM01 Prompt Injection"
+    url: https://genai.owasp.org/llmrisk/llm01-prompt-injection/
+    archived_url: https://web.archive.org/web/20261009184846/https://genai.owasp.org/llmrisk/llm01-prompt-injection/
+    accessed: 2026-10-09
+    source_type: web
+    why: defines direct and indirect prompt injection, where text from an external source alters the model's behavior, anchoring the injection half of the connector-trust lesson
+  - title: "Claude Code docs: Connect Claude Code to tools via MCP"
+    url: https://code.claude.com/docs/en/mcp
+    archived_url: https://web.archive.org/web/20261006213259/https://code.claude.com/docs/en/mcp
+    accessed: 2026-10-09
+    source_type: web
+    why: shows adding local and remote MCP servers and warns to verify trust in each server, anchoring the adding-a-server lesson
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-mcp-servers.md
+    title: MCP servers
+    concept: mcp-servers
+    status: planned
+  - file: 02-connector-trust-and-injection.md
+    title: Connector trust and prompt injection
+    concept: connector-trust-and-injection
+    status: planned
+  - file: 03-adding-a-server.md
+    title: Adding a server
+    concept: adding-a-server
+    status: planned

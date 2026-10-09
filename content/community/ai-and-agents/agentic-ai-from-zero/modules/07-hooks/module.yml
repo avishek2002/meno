@@ -1,0 +1,53 @@
+schema_version: 1
+module: 07-hooks
+title: Hooks
+status: skeleton
+serves: [O7]
+prerequisites: [06-mcp-and-connectors]
+est_hours: 2
+concepts:
+  - hook-events
+  - hook-input-and-output
+  - auditing-what-runs
+objectives:
+  - id: M7-1
+    text: Name the events a hook can attach to and choose the right one for a given behavior
+    bloom: understand
+  - id: M7-2
+    text: Describe what a hook receives and how its output or exit code changes what the agent does
+    bloom: apply
+  - id: M7-3
+    text: Audit every hook you run by reading its code, and decide whether to trust it
+    bloom: apply
+sources:                       # each fetched live and archived at authoring time; see generate-curriculum/references/sourcing.md
+  - title: "Claude Code docs: Hooks reference"
+    url: https://code.claude.com/docs/en/hooks
+    archived_url: https://web.archive.org/web/20261006103338/https://code.claude.com/docs/en/hooks
+    accessed: 2026-10-09
+    source_type: web
+    why: lists hook events, matchers, the JSON input a hook receives, and exit-code behavior, anchoring the hook-events and hook-input-and-output lessons
+  - title: "Claude Code docs: Automate actions with hooks"
+    url: https://code.claude.com/docs/en/hooks-guide
+    archived_url: https://web.archive.org/web/20261005022701/https://code.claude.com/docs/en/hooks-guide
+    accessed: 2026-10-09
+    source_type: web
+    why: a worked guide to configuring and testing a first hook, anchoring the auditing-what-runs lesson
+  - title: "Codex docs: Hooks"
+    url: https://learn.chatgpt.com/docs/hooks
+    archived_url: https://web.archive.org/web/20260927105749/https://learn.chatgpt.com/docs/hooks
+    accessed: 2026-10-09
+    source_type: web
+    why: documents Codex hook events, trust review of each hook, and the input and output contract, the second harness's hook lessons
+lessons:                       # planned at pack time; generate-module writes bodies at adoption
+  - file: 01-hook-events.md
+    title: Hook events
+    concept: hook-events
+    status: planned
+  - file: 02-hook-input-and-output.md
+    title: Hook input and output
+    concept: hook-input-and-output
+    status: planned
+  - file: 03-auditing-what-runs.md
+    title: Auditing what runs
+    concept: auditing-what-runs
+    status: planned

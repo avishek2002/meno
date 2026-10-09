@@ -1,0 +1,89 @@
+schema_version: 1
+slug: agentic-ai-from-zero
+title: Agentic AI from zero
+created: 2026-10-09
+status: draft                  # topic pack: pre-contract, not yet adopted by a tenant
+hub: ./agentic-ai-from-zero-hub.md
+objectives:
+  - id: O1
+    text: Explain how a chat model, a harness, and tools combine into an agent that completes multi-step work
+    bloom: understand
+    assessed_by: a written trace of one small task naming each tool call, what came back, how the plan changed, and when the agent stopped
+  - id: O2
+    text: Apply retrieval practice, spaced review, and claim checking to learn from an AI tutor without trusting it blindly
+    bloom: apply
+    assessed_by: a short study log showing recall attempts made before looking, a review scheduled at widening gaps, and two tutor claims checked against a source
+  - id: O3
+    text: Apply basic shell commands and the git workflow of commit, branch, and pull request to a small project of your own
+    bloom: apply
+    assessed_by: a small repository where you made two commits on a branch and opened a pull request, with the command history to show it
+  - id: O4
+    text: Apply instruction files and memory habits so an agent's context stays lean and useful across sessions
+    bloom: apply
+    assessed_by: an instruction file of under 60 lines that you wrote for a real project plus a short note on what you left out and why
+  - id: O5
+    text: Apply the skill format to build a skill that an agent triggers on the right requests and not on the wrong ones
+    bloom: apply
+    assessed_by: a working skill folder with a SKILL.md and two test prompts, one that should trigger it and one that should not, with the observed results
+  - id: O6
+    text: Apply a trust checklist to a connector before adding it, then add one and verify what it can reach
+    bloom: apply
+    assessed_by: a one-page trust check of one real MCP server covering what it can read and do, how prompt injection could reach the agent through it, and your decision
+  - id: O7
+    text: Apply a read-the-code check to every hook you run and build one small hook of your own
+    bloom: apply
+    assessed_by: a short check of one hook you run, stating its event, what it reads, what it can change, and whether you keep it, plus one small hook you wrote
+  - id: O8
+    text: Apply delegation, model-tier choice, and worktrees to split one real task across sub-agents safely
+    bloom: apply
+    assessed_by: a written plan splitting one real task across sub-agents, naming the model tier for each, the cost trade-off, and how parallel changes stay separate
+modules:                       # ordered; every field here mirrors module.yml at regen time
+  - n: 1
+    slug: 01-what-an-agent-is
+    title: What an agent is
+    status: skeleton
+    est_hours: 2
+    serves: [O1]
+  - n: 2
+    slug: 02-learning-with-an-ai-tutor
+    title: Learning with an AI tutor
+    status: skeleton
+    est_hours: 2
+    serves: [O2]
+  - n: 3
+    slug: 03-terminal-and-git
+    title: The terminal and git
+    status: skeleton
+    est_hours: 2
+    serves: [O3]
+  - n: 4
+    slug: 04-memory-and-instructions
+    title: Memory and instructions
+    status: skeleton
+    est_hours: 2
+    serves: [O4]
+  - n: 5
+    slug: 05-skills
+    title: Skills
+    status: skeleton
+    est_hours: 2
+    serves: [O5]
+  - n: 6
+    slug: 06-mcp-and-connectors
+    title: Connectors and MCP
+    status: skeleton
+    est_hours: 2
+    serves: [O6]
+  - n: 7
+    slug: 07-hooks
+    title: Hooks
+    status: skeleton
+    est_hours: 2
+    serves: [O7]
+  - n: 8
+    slug: 08-sub-agents-and-model-tiers
+    title: Sub-agents and model tiers
+    status: skeleton
+    est_hours: 2
+    serves: [O8]
+
